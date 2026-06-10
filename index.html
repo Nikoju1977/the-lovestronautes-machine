@@ -336,14 +336,14 @@ function nikoRetryBtn(container, fn) {
 'use strict';
 
 // ── VARIABLES GLOBALES & AUTO-SAVE ────────────────────────────────
-const trackLengths = { kick: 16, acid: 16, fm: 16, metal: 16, auto: 16 };
-const trackSteps = { kick: 0, acid: 0, fm: 0, metal: 0, auto: 0 };
-const trackChaos = { kick: 0, acid: 0, fm: 0, metal: 0 };
-const aiTimeline = [], agentAdvice = [];
-const bpm = 128;
-const isPlaying = false, isPilot = false, isAiAuto = false;
-const tension = 0, morphAmount = 0;
-const curPat = 'A', matrix;
+let trackLengths = { kick: 16, acid: 16, fm: 16, metal: 16, auto: 16 };
+let trackSteps = { kick: 0, acid: 0, fm: 0, metal: 0, auto: 0 };
+let trackChaos = { kick: 0, acid: 0, fm: 0, metal: 0 };
+let aiTimeline = [], agentAdvice = [];
+let bpm = 128;
+let isPlaying = false, isPilot = false, isAiAuto = false;
+let tension = 0, morphAmount = 0;
+let curPat = 'A', matrix;
 
 function initPats() {
     return {
@@ -353,15 +353,15 @@ function initPats() {
         D:{ kick:Array(16).fill(0), acid:[{note:'F2',vel:.65},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null], fm:['F4',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null], metal:Array(16).fill(0), auto:Array(16).fill(0.3) }
     };
 }
-const patterns = initPats();
+let patterns = initPats();
 
 function saveLiveState() {
-    const state = { pat: patterns, lengths: trackLengths, chaos: trackChaos, bpm: bpm, cur: curPat };
+    let state = { pat: patterns, lengths: trackLengths, chaos: trackChaos, bpm: bpm, cur: curPat };
     safeStorage.setItem('lovestronautes_state', JSON.stringify(state));
 }
 function loadLiveState() {
     try {
-        const s = JSON.parse(safeStorage.getItem('lovestronautes_state'));
+        let s = JSON.parse(safeStorage.getItem('lovestronautes_state'));
         if (s && s.pat) { patterns = s.pat; trackLengths = s.lengths || trackLengths; trackChaos = s.chaos || trackChaos; bpm = s.bpm || 128; curPat = s.cur || 'A'; }
     } catch(e){}
     matrix = patterns[curPat];
@@ -369,11 +369,11 @@ function loadLiveState() {
 loadLiveState();
 
 function $id(id) { return document.getElementById(id); }
-function mkEl(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
-function setStatus(msg, cls) { const s = $id('status'); s.textContent = msg; s.className = cls || ''; }
+function mkEl(tag, cls) { let e = document.createElement(tag); if (cls) e.className = cls; return e; }
+function setStatus(msg, cls) { let s = $id('status'); s.textContent = msg; s.className = cls || ''; }
 
 // ── BLINDAGE ANTI-CRASH (WAKE LOCK & UNLOAD) ─────────────────────
-const wakeLock = null;
+let wakeLock = null;
 async function requestWakeLock() {
     try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) {}
 }
@@ -381,20 +381,20 @@ document.addEventListener('visibilitychange', function() { if (wakeLock !== null
 window.addEventListener('beforeunload', function(e) { if(isPlaying) { e.preventDefault(); e.returnValue = ''; } });
 
 // ── AUDIO ENGINE & MULTI-OUT ──────────────────────────────────────
-const ctx = null, audioReady = false, isMultiOut = false;
-const masterFilter, distShaper, analyserNode;
-const chanGain = {}, chanVol = {kick:1,acid:.7,fm:.52,metal:.45};
-const duckingGain = null, channelMerger = null;
+let ctx = null, audioReady = false, isMultiOut = false;
+let masterFilter, distShaper, analyserNode;
+let chanGain = {}, chanVol = {kick:1,acid:.7,fm:.52,metal:.45};
+let duckingGain = null, channelMerger = null;
 
-function hz(note) { const notes = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11}; const m = String(note||'').match(/^([A-G][b#]?)(\d)$/); if(!m) return 440; return 440 * Math.pow(2, (notes[m[1]] - 9 + (parseInt(m[2]) - 4) * 12) / 12); }
-function makeDistCurve(k) { k = Math.max(0.001, k); const n = 256, c = new Float32Array(n); for (const i=0; i<n; i++) { const x = (i * 2 / n) - 1; c[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x)); } return c; }
-function makeBitCrushCurve(bits) { const n = 256, c = new Float32Array(n), step = Math.pow(1/2, bits); for (const i=0; i<n; i++) { const x = (i * 2 / n) - 1; c[i] = Math.round(x / step) * step; } return c; }
+function hz(note) { let notes = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11}; let m = String(note||'').match(/^([A-G][b#]?)(\d)$/); if(!m) return 440; return 440 * Math.pow(2, (notes[m[1]] - 9 + (parseInt(m[2]) - 4) * 12) / 12); }
+function makeDistCurve(k) { k = Math.max(0.001, k); let n = 256, c = new Float32Array(n); for (let i=0; i<n; i++) { let x = (i * 2 / n) - 1; c[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x)); } return c; }
+function makeBitCrushCurve(bits) { let n = 256, c = new Float32Array(n), step = Math.pow(1/2, bits); for (let i=0; i<n; i++) { let x = (i * 2 / n) - 1; c[i] = Math.round(x / step) * step; } return c; }
 
 function initAudio() {
     if (audioReady) { ctx && ctx.resume(); return; }
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { setStatus('NO AUDIO API', 'al'); return; }
 
-    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -8; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.12;
+    let comp = ctx.createDynamicsCompressor(); comp.threshold.value = -8; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.12;
     
     // Multi-Out Routing (Si Interface > 2 canaux)
     if (isMultiOut && ctx.destination.maxChannelCount >= 4) {
@@ -409,10 +409,10 @@ function initAudio() {
     analyserNode = ctx.createAnalyser(); analyserNode.fftSize = 256; analyserNode.smoothingTimeConstant = 0.75; analyserNode.connect(comp);
     masterFilter = ctx.createBiquadFilter(); masterFilter.type = 'lowpass'; masterFilter.frequency.value = 18000; masterFilter.connect(analyserNode);
 
-    window.phaserStages = []; const lastNode = ctx.createGain(); lastNode.gain.value = 1; const entryPhaser = lastNode;
-    for (const i=0; i<4; i++) { const ap = ctx.createBiquadFilter(); ap.type = 'allpass'; ap.frequency.value = 1000; ap.Q.value = 2; lastNode.connect(ap); lastNode = ap; phaserStages.push(ap); }
+    window.phaserStages = []; let lastNode = ctx.createGain(); lastNode.gain.value = 1; let entryPhaser = lastNode;
+    for (let i=0; i<4; i++) { let ap = ctx.createBiquadFilter(); ap.type = 'allpass'; ap.frequency.value = 1000; ap.Q.value = 2; lastNode.connect(ap); lastNode = ap; phaserStages.push(ap); }
     lastNode.connect(masterFilter);
-    window.phaserLFO = ctx.createOscillator(); phaserLFO.frequency.value = 0.2; const phaserDepth = ctx.createGain(); phaserDepth.gain.value = 800;
+    window.phaserLFO = ctx.createOscillator(); phaserLFO.frequency.value = 0.2; let phaserDepth = ctx.createGain(); phaserDepth.gain.value = 800;
     phaserLFO.connect(phaserDepth); phaserStages.forEach(function(ap) { phaserDepth.connect(ap.frequency); }); phaserLFO.start();
 
     distShaper = ctx.createWaveShaper(); distShaper.curve = makeDistCurve(0.001); distShaper.connect(entryPhaser);
@@ -420,7 +420,7 @@ function initAudio() {
     window.sp1200Crusher = ctx.createWaveShaper(); sp1200Crusher.curve = makeBitCrushCurve(16); sp1200Crusher.connect(duckingGain);
 
     ['kick','acid','fm','metal'].forEach(function(t) {
-        const g = ctx.createGain(); g.gain.value = chanVol[t];
+        let g = ctx.createGain(); g.gain.value = chanVol[t];
         
         // Routage physique si Multi-Out actif
         if (isMultiOut && channelMerger) {
@@ -445,12 +445,12 @@ $id('routing-btn').addEventListener('click', function() {
 });
 
 // ── WEB MIDI (IN/OUT & VJ SYNC) ──────────────────────────────────
-const midiOut = null, midiIn = null;
+let midiOut = null, midiIn = null;
 function initMIDI() {
     if (navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess().then(function(access) {
-            for (const o of access.outputs.values()) { midiOut = o; break; }
-            for (const i of access.inputs.values()) {
+            for (let o of access.outputs.values()) { midiOut = o; break; }
+            for (let i of access.inputs.values()) {
                 midiIn = i;
                 midiIn.onmidimessage = handleMIDIIn;
                 break;
@@ -462,7 +462,7 @@ function initMIDI() {
 
 // Map MIDI IN (Generic CCs) -> Lovestronautes
 function handleMIDIIn(e) {
-    const cmd = e.data[0] >> 4, channel = e.data[0] & 0xf, type = e.data[1], val = e.data[2] / 127.0;
+    let cmd = e.data[0] >> 4, channel = e.data[0] & 0xf, type = e.data[1], val = e.data[2] / 127.0;
     if (cmd === 11) { // CC Message
         if(type === 20 && chanGain['kick']) chanGain['kick'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
         if(type === 21 && chanGain['acid']) chanGain['acid'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
@@ -481,50 +481,50 @@ function sendMIDIVJ(type, val) {
 }
 
 // ── SYNTHS (P-LOCKS & ENGINES) ───────────────────────────────────
-function _gate(dest, time, sus, rel, peak) { const g = ctx.createGain(); g.gain.setValueAtTime(0.001, time); g.gain.linearRampToValueAtTime(peak, time + 0.004); g.gain.setValueAtTime(peak, time + sus); g.gain.exponentialRampToValueAtTime(0.001, time + sus + rel); g.connect(dest); return g; }
+function _gate(dest, time, sus, rel, peak) { let g = ctx.createGain(); g.gain.setValueAtTime(0.001, time); g.gain.linearRampToValueAtTime(peak, time + 0.004); g.gain.setValueAtTime(peak, time + sus); g.gain.exponentialRampToValueAtTime(0.001, time + sus + rel); g.connect(dest); return g; }
 
 function triggerKick(time) {
-    if (!ctx) return; const dur = 0.45; const o = ctx.createOscillator(); o.frequency.setValueAtTime(250, time); o.frequency.exponentialRampToValueAtTime(45, time + 0.08); o.frequency.linearRampToValueAtTime(30, time + dur);
-    const g = _gate(chanGain.kick, time, 0.001, dur, 1.2); o.connect(g); o.start(time); o.stop(time + dur + 0.1);
+    if (!ctx) return; let dur = 0.45; let o = ctx.createOscillator(); o.frequency.setValueAtTime(250, time); o.frequency.exponentialRampToValueAtTime(45, time + 0.08); o.frequency.linearRampToValueAtTime(30, time + dur);
+    let g = _gate(chanGain.kick, time, 0.001, dur, 1.2); o.connect(g); o.start(time); o.stop(time + dur + 0.1);
     if (!isMultiOut && duckingGain) { duckingGain.gain.cancelScheduledValues(time); duckingGain.gain.setValueAtTime(duckingGain.gain.value, time); duckingGain.gain.linearRampToValueAtTime(tension > 0.5 ? 0.05 : 0.15, time + 0.005); duckingGain.gain.exponentialRampToValueAtTime(1.0, time + 0.35); }
 }
 
 function triggerAcid(note, vel, time, pLockMorph) {
-    if (!ctx) return; const f = hz(note), dur = (60 / (bpm * 4)) * 0.7;
-    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
-    const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 18; 
-    const localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount; // P-LOCK SUPPORT
-    const envMax = 4000 * vel + (localMorph * 3000);
+    if (!ctx) return; let f = hz(note), dur = (60 / (bpm * 4)) * 0.7;
+    let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+    let filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 18; 
+    let localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount; // P-LOCK SUPPORT
+    let envMax = 4000 * vel + (localMorph * 3000);
     filt.frequency.setValueAtTime(100, time); filt.frequency.exponentialRampToValueAtTime(envMax, time + 0.03); filt.frequency.exponentialRampToValueAtTime(200, time + dur);
-    const g = _gate(chanGain.acid, time, dur * 0.2, dur * 0.8, vel * 0.9); o.connect(filt); filt.connect(g); o.start(time); o.stop(time + dur + 0.1);
+    let g = _gate(chanGain.acid, time, dur * 0.2, dur * 0.8, vel * 0.9); o.connect(filt); filt.connect(g); o.start(time); o.stop(time + dur + 0.1);
 }
 
 function triggerFM(note, time, pLockMorph) {
-    if (!ctx) return; const f = hz(note), dur = (60 / (bpm * 4)) * 1.5; const g = _gate(chanGain.fm, time, dur * 0.3, dur * 0.7, 0.4); const detunes = [-12, 0, 15]; 
-    const localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount;
-    detunes.forEach(function(det) { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det + (localMorph * 50); o.connect(g); o.start(time); o.stop(time + dur + 0.1); });
+    if (!ctx) return; let f = hz(note), dur = (60 / (bpm * 4)) * 1.5; let g = _gate(chanGain.fm, time, dur * 0.3, dur * 0.7, 0.4); let detunes = [-12, 0, 15]; 
+    let localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount;
+    detunes.forEach(function(det) { let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det + (localMorph * 50); o.connect(g); o.start(time); o.stop(time + dur + 0.1); });
 }
 
 function triggerMetal(time) {
-    if (!ctx) return; const ratios = [1, 1.31, 1.85, 2.47, 3.1, 4.1], dur = 0.12; const g = _gate(chanGain.metal, time, 0.001, 0.12, 0.38);
-    ratios.forEach(function(r) { const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 220 * r * (0.97 + Math.random() * 0.06); o.connect(g); o.start(time); o.stop(time + dur + 0.02); });
+    if (!ctx) return; let ratios = [1, 1.31, 1.85, 2.47, 3.1, 4.1], dur = 0.12; let g = _gate(chanGain.metal, time, 0.001, 0.12, 0.38);
+    ratios.forEach(function(r) { let o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 220 * r * (0.97 + Math.random() * 0.06); o.connect(g); o.start(time); o.stop(time + dur + 0.02); });
 }
 
 // ── SCHEDULER & TURING ───────────────────────────────────────────
-const SEQ = { playing:false, masterStep:0, nextTime:0, timer:null, barCount:0 };
-const stepEls={}, displayStep=-1;
+let SEQ = { playing:false, masterStep:0, nextTime:0, timer:null, barCount:0 };
+let stepEls={}, displayStep=-1;
 
 function scheduleStep(time) {
-    const m = matrix; if (m.kick[trackSteps.kick]) triggerKick(time);
+    let m = matrix; if (m.kick[trackSteps.kick]) triggerKick(time);
     
-    const ac = m.acid[trackSteps.acid]; const tRate = trackChaos.acid + (morphAmount * 0.15); const gRate = trackChaos.acid * 0.4;
+    let ac = m.acid[trackSteps.acid]; let tRate = trackChaos.acid + (morphAmount * 0.15); let gRate = trackChaos.acid * 0.4;
     if (ac) { triggerAcid((ac.note || 'G2'), ac.vel || 0.8, time, ac.morph); if (Math.random() < tRate) { m.acid[trackSteps.acid].note = ['G2','C3','F2','Eb2','Ab2'][Math.floor(Math.random()*5)]; saveLiveState(); } } 
     else if (Math.random() < gRate) { m.acid[trackSteps.acid] = { note: ['G2','C3','F2','Eb2'][Math.floor(Math.random()*4)], vel: 0.7 }; buildSeq(); saveLiveState(); }
 
-    const fm = m.fm[trackSteps.fm]; const tfRate = trackChaos.fm + (morphAmount * 0.1);
-    if (fm) { const fNote = fm.note || fm; triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { const nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
+    let fm = m.fm[trackSteps.fm]; let tfRate = trackChaos.fm + (morphAmount * 0.1);
+    if (fm) { let fNote = fm.note || fm; triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
 
-    const met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) triggerMetal(time); }
+    let met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) triggerMetal(time); }
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
 
     trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
@@ -538,7 +538,7 @@ function schedulerTick() {
         if (SEQ.masterStep === 0) {
             SEQ.barCount++;
             if (isPilot && aiTimeline.length > 0) {
-                const kf = aiTimeline.find(function(k) { return k.bar === SEQ.barCount; });
+                let kf = aiTimeline.find(function(k) { return k.bar === SEQ.barCount; });
                 if (kf) {
                     if (kf.pat) { curPat = kf.pat; matrix = patterns[curPat]; document.querySelectorAll('.pt').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-pat')===curPat);}); if (kf.pat === "C") sendMIDIVJ('drop'); }
                     if (kf.polyrhythm) { trackLengths = kf.polyrhythm; }
@@ -546,7 +546,7 @@ function schedulerTick() {
                     buildSeq(); setStatus('GHOST PILOT: BAR ' + SEQ.barCount, 'mg');
                 }
                 if (agentAdvice.length > 0) {
-                    const adv = agentAdvice.find(function(a) { return a.bar === SEQ.barCount; });
+                    let adv = agentAdvice.find(function(a) { return a.bar === SEQ.barCount; });
                     if (adv) { $id('agent-name').textContent='['+adv.agent+']'; $id('agent-msg').textContent=adv.msg; $id('agent-name').style.color=adv.agent.includes('DP')?'var(--p)':'var(--al)'; }
                 }
             }
@@ -568,8 +568,8 @@ function applyMorph(m) {
 function rafLoop() {
     requestAnimationFrame(rafLoop);
     if (analyserNode) {
-        const buf = new Float32Array(256); analyserNode.getFloatTimeDomainData(buf);
-        const rms = 0; for (const i=0;i<256;i++) rms += buf[i]*buf[i]; rms = Math.sqrt(rms/256);
+        let buf = new Float32Array(256); analyserNode.getFloatTimeDomainData(buf);
+        let rms = 0; for (let i=0;i<256;i++) rms += buf[i]*buf[i]; rms = Math.sqrt(rms/256);
         tension = Math.min(1, rms * 8) * 0.5 + ((Math.sin(Date.now()*0.0004)+1)/2) * 0.5;
     }
     $id('tension-fill').style.width = (tension*100)+'%'; $id('tension-val').textContent = Math.round(tension*100)+'%';
@@ -577,7 +577,7 @@ function rafLoop() {
 
     // Visuels Sequenceur
     if (ctx && SEQ.playing) {
-        const nStep = trackSteps.kick === 0 ? 15 : trackSteps.kick - 1; // Approx
+        let nStep = trackSteps.kick === 0 ? 15 : trackSteps.kick - 1; // Approx
         if (nStep !== displayStep) {
             displayStep = nStep;
             ['kick','acid','fm','metal'].forEach(function(t) { if(stepEls[t]) stepEls[t].forEach(function(el,idx){ el.classList.toggle('playing', idx===nStep); }); });
@@ -588,17 +588,17 @@ function rafLoop() {
 }
 
 // ── UI BUILDERS ──────────────────────────────────────────────────
-const TRACKS = ['kick','acid','fm','metal'];
+let TRACKS = ['kick','acid','fm','metal'];
 function buildSeq() {
-    const p=$id('panel-seq'); p.innerHTML=''; stepEls={};
+    let p=$id('panel-seq'); p.innerHTML=''; stepEls={};
     TRACKS.forEach(function(name) {
-        const isMetal=(name==='metal'); const card=mkEl('div','tcard'+(isMetal?' mc':''));
+        let isMetal=(name==='metal'); let card=mkEl('div','tcard'+(isMetal?' mc':''));
         card.innerHTML = '<div class="thead'+(isMetal?' mm':'')+'"><span class="ttitle'+(isMetal?' mm':'')+'">'+name.toUpperCase()+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
-        const grid=mkEl('div','sgrid'); stepEls[name]=[];
-        for (const i=0;i<16;i++) {
-            const s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
-            const val=matrix[name][i]; if ((name==='kick'||name==='metal')?!!val:(val!=null)) s.classList.add('on');
-            (function(trk,idx,el2) { el2.addEventListener('click', function() { const active=!!matrix[trk][idx]; matrix[trk][idx]=active?null:(trk==='kick'||trk==='metal'?1:{note:['C2','G2','C4'][TRACKS.indexOf(trk)],vel:.8}); el2.classList.toggle('on',!active); saveLiveState(); }); })(name,i,s);
+        let grid=mkEl('div','sgrid'); stepEls[name]=[];
+        for (let i=0;i<16;i++) {
+            let s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
+            let val=matrix[name][i]; if ((name==='kick'||name==='metal')?!!val:(val!=null)) s.classList.add('on');
+            (function(trk,idx,el2) { el2.addEventListener('click', function() { let active=!!matrix[trk][idx]; matrix[trk][idx]=active?null:(trk==='kick'||trk==='metal'?1:{note:['C2','G2','C4'][TRACKS.indexOf(trk)],vel:.8}); el2.classList.toggle('on',!active); saveLiveState(); }); })(name,i,s);
             stepEls[name].push(s); grid.appendChild(s);
         }
         card.appendChild(grid); p.appendChild(card);
@@ -606,16 +606,16 @@ function buildSeq() {
 }
 
 function buildMixer() {
-    const p=$id('panel-mix'); p.innerHTML=''; const row=mkEl('div','mxrow');
+    let p=$id('panel-mix'); p.innerHTML=''; let row=mkEl('div','mxrow');
     TRACKS.forEach(function(name) {
-        const ch=mkEl('div','mxch'); ch.innerHTML = '<div class="chdot" style="background:var(--p)"></div><div class="chname">'+name+'</div>';
-        const vGrp=mkEl('div'); vGrp.style.cssText='display:flex; gap:10px; margin-top:5px;';
-        const vol=document.createElement('input'); vol.type='range'; vol.className='vfader'; vol.min=0; vol.max=1; vol.step=0.01; vol.value=chanVol[name];
-        const chaos=document.createElement('input'); chaos.type='range'; chaos.className='vfader'; chaos.min=0; chaos.max=1; chaos.step=0.01; chaos.value=trackChaos[name]; chaos.style.accentColor='var(--m)';
-        const vCol=mkEl('div'); vCol.innerHTML='<div class="chlbl">VOL</div>'; vCol.appendChild(vol);
-        const cCol=mkEl('div'); cCol.innerHTML='<div class="chlbl" style="color:var(--m)">MUT</div>'; cCol.appendChild(chaos);
+        let ch=mkEl('div','mxch'); ch.innerHTML = '<div class="chdot" style="background:var(--p)"></div><div class="chname">'+name+'</div>';
+        let vGrp=mkEl('div'); vGrp.style.cssText='display:flex; gap:10px; margin-top:5px;';
+        let vol=document.createElement('input'); vol.type='range'; vol.className='vfader'; vol.min=0; vol.max=1; vol.step=0.01; vol.value=chanVol[name];
+        let chaos=document.createElement('input'); chaos.type='range'; chaos.className='vfader'; chaos.min=0; chaos.max=1; chaos.step=0.01; chaos.value=trackChaos[name]; chaos.style.accentColor='var(--m)';
+        let vCol=mkEl('div'); vCol.innerHTML='<div class="chlbl">VOL</div>'; vCol.appendChild(vol);
+        let cCol=mkEl('div'); cCol.innerHTML='<div class="chlbl" style="color:var(--m)">MUT</div>'; cCol.appendChild(chaos);
         vGrp.appendChild(vCol); vGrp.appendChild(cCol); ch.appendChild(vGrp);
-        const len=document.createElement('input'); len.type='range'; len.className='pfader'; len.min=1; len.max=16; len.step=1; len.value=trackLengths[name];
+        let len=document.createElement('input'); len.type='range'; len.className='pfader'; len.min=1; len.max=16; len.step=1; len.value=trackLengths[name];
         ch.appendChild(len); row.appendChild(ch);
         vol.addEventListener('input',function(e){ chanVol[name]=parseFloat(e.target.value); if(chanGain[name]) chanGain[name].gain.setTargetAtTime(chanVol[name],ctx?ctx.currentTime:0,.01); });
         chaos.addEventListener('input',function(e){ trackChaos[name]=parseFloat(e.target.value); saveLiveState(); });
@@ -625,13 +625,13 @@ function buildMixer() {
 }
 
 function buildFX() {
-    const p = $id('panel-fx'); p.innerHTML = '<div class="fxcard"><div class="fxtitle">🎛️ CHAOS PAD (X:PHASER / Y:CRUSH)</div><div id="chaos-pad" class="cpad-wrap"><div id="chaos-puck" class="cpad-puck"></div><div class="cpad-lbl c-tl">12-BIT DESTRUCTION</div><div class="cpad-lbl c-tr">LASER SWEEP</div><div class="cpad-lbl c-bl">CLEAN</div><div class="cpad-lbl c-br">SLOW SWEEP</div></div></div>';
-    const pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false; 
+    let p = $id('panel-fx'); p.innerHTML = '<div class="fxcard"><div class="fxtitle">🎛️ CHAOS PAD (X:PHASER / Y:CRUSH)</div><div id="chaos-pad" class="cpad-wrap"><div id="chaos-puck" class="cpad-puck"></div><div class="cpad-lbl c-tl">12-BIT DESTRUCTION</div><div class="cpad-lbl c-tr">LASER SWEEP</div><div class="cpad-lbl c-bl">CLEAN</div><div class="cpad-lbl c-br">SLOW SWEEP</div></div></div>';
+    let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false; 
     function updateP() { if(!ctx)return; if(window.sp1200Crusher) sp1200Crusher.curve = makeBitCrushCurve(Math.max(2, 16 - (padY*14))); if(window.phaserLFO) phaserLFO.frequency.setTargetAtTime(0.05 + (padX*14.95), ctx.currentTime, 0.05); }
-    function mv(e) { if(!isTouch)return; const r=pad.getBoundingClientRect(), cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY; padX=Math.max(0,Math.min(1,(cx-r.left)/r.width)); padY=Math.max(0,Math.min(1,1-((cy-r.top)/r.height))); puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); }
+    function mv(e) { if(!isTouch)return; let r=pad.getBoundingClientRect(), cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY; padX=Math.max(0,Math.min(1,(cx-r.left)/r.width)); padY=Math.max(0,Math.min(1,1-((cy-r.top)/r.height))); puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); }
     pad.addEventListener('mousedown', function(e){isTouch=true;puck.classList.add('active');mv(e);}); window.addEventListener('mousemove', mv); window.addEventListener('mouseup', function(){isTouch=false;puck.classList.remove('active');});
     pad.addEventListener('touchstart', function(e){e.preventDefault();isTouch=true;puck.classList.add('active');mv(e);},{passive:false}); window.addEventListener('touchmove', function(e){if(isTouch){e.preventDefault();mv(e);}},{passive:false}); window.addEventListener('touchend', function(){isTouch=false;puck.classList.remove('active');});
-    function spr() { requestAnimationFrame(spr); if(!isTouch) { const dx=0.5-padX, dy=0.0-padY; if(Math.abs(dx)>0.01||Math.abs(dy)>0.01) { padX+=dx*0.1; padY+=dy*0.1; puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); } } } spr();
+    function spr() { requestAnimationFrame(spr); if(!isTouch) { let dx=0.5-padX, dy=0.0-padY; if(Math.abs(dx)>0.01||Math.abs(dy)>0.01) { padX+=dx*0.1; padY+=dy*0.1; puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); } } } spr();
 }
 
 function buildDNA() {
@@ -659,15 +659,15 @@ $id('close-cfg2').addEventListener('click',function(){$id('cfg-sheet').classList
 $id('morph-slider').addEventListener('input',function(e){ applyMorph(parseFloat(e.target.value)); });
 
 document.querySelectorAll('.nt').forEach(function(tab){ tab.addEventListener('click',function(){ document.querySelectorAll('.nt').forEach(function(t){t.classList.remove('active');}); document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');}); tab.classList.add('active'); $id('panel-'+tab.getAttribute('data-panel')).classList.add('active'); }); });
-$id('pat-tabs').addEventListener('click',function(e){ const btn=e.target.closest('.pt'); if(!btn)return; curPat=btn.getAttribute('data-pat'); matrix=patterns[curPat]; document.querySelectorAll('.pt').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-pat')===curPat);}); buildSeq(); saveLiveState(); });
+$id('pat-tabs').addEventListener('click',function(e){ let btn=e.target.closest('.pt'); if(!btn)return; curPat=btn.getAttribute('data-pat'); matrix=patterns[curPat]; document.querySelectorAll('.pt').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-pat')===curPat);}); buildSeq(); saveLiveState(); });
 
-const _mutating=false;
+let _mutating=false;
 $id('test-btn').addEventListener('click', async function() {
-    if(_mutating) return; const key = $id('api-key').value.trim(); if(!key) { setStatus('CLÉ MISTRAL MANQUANTE', 'al'); return; }
+    if(_mutating) return; let key = $id('api-key').value.trim(); if(!key) { setStatus('CLÉ MISTRAL MANQUANTE', 'al'); return; }
     _mutating = true; setStatus('INVOCATION DES AGENTS...', 'mg'); $id('ai-st').textContent = '⚡ Calcul en cours...';
     try {
-        const res = await nikoFetch('https://api.mistral.ai/v1/chat/completions', { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key}, body: JSON.stringify({ model: 'mistral-large-latest', response_format: {type: 'json_object'}, messages: [{role: 'system', content: 'Tu es 2 agents: DP-909 (Groove) et GESA-666 (Dark). Réponds JSON: {"timeline":[{"bar":0,"pat":"A","polyrhythm":{"kick":16,"acid":15,"fm":16,"metal":16},"morph_target":0.1}], "live_advice":[{"bar":0,"agent":"DP-909","msg":"Monte le filtre"}]}'}, {role: 'user', content: $id('ai-prompt').value}] }) });
-        const data = await res.json(); const gen = JSON.parse(data.choices[0].message.content.trim());
+        let res = await nikoFetch('https://api.mistral.ai/v1/chat/completions', { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key}, body: JSON.stringify({ model: 'mistral-large-latest', response_format: {type: 'json_object'}, messages: [{role: 'system', content: 'Tu es 2 agents: DP-909 (Groove) et GESA-666 (Dark). Réponds JSON: {"timeline":[{"bar":0,"pat":"A","polyrhythm":{"kick":16,"acid":15,"fm":16,"metal":16},"morph_target":0.1}], "live_advice":[{"bar":0,"agent":"DP-909","msg":"Monte le filtre"}]}'}, {role: 'user', content: $id('ai-prompt').value}] }) });
+        let data = await res.json(); let gen = JSON.parse(data.choices[0].message.content.trim());
         aiTimeline = gen.timeline; agentAdvice = gen.live_advice; $id('ai-st').textContent = '✅ Agents chargés !';
     } catch(e) { $id('ai-st').textContent = '❌ Erreur'; } finally { _mutating = false; }
 });
