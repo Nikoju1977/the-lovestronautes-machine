@@ -281,6 +281,17 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
     </div>
 </div>
 
+<script>/* Studio Niko · helpers vague C */
+window.safeStorage = window.safeStorage || (function(){var mem=new Map(),ls=null;try{ls=window.localStorage;var t='__niko__';ls.setItem(t,'1');ls.removeItem(t);}catch(e){ls=null;}
+return{getItem:function(k){try{return ls?ls.getItem(k):(mem.has(k)?mem.get(k):null);}catch(e){return mem.has(k)?mem.get(k):null;}},
+setItem:function(k,v){try{if(ls){ls.setItem(k,String(v));return;}}catch(e){}mem.set(k,String(v));},
+removeItem:function(k){try{if(ls)ls.removeItem(k);}catch(e){}mem.delete(k);},
+clear:function(){try{if(ls)ls.clear();}catch(e){}mem.clear();},
+key:function(i){try{if(ls)return ls.key(i);}catch(e){}var a=Array.from(mem.keys());return i<a.length?a[i]:null;},
+get length(){try{if(ls)return ls.length;}catch(e){}return mem.size;}};})();
+window.nikoFetch = window.nikoFetch || function(url,opts){function xhr(){opts=opts||{};return new Promise(function(res,rej){var x=new XMLHttpRequest();x.open((opts.method||'GET'),url,true);if(opts.headers){Object.keys(opts.headers).forEach(function(h){try{x.setRequestHeader(h,opts.headers[h]);}catch(e){}});}x.onload=function(){res({ok:x.status>=200&&x.status<300,status:x.status,statusText:x.statusText,url:url,text:function(){return Promise.resolve(x.responseText);},json:function(){return Promise.resolve(JSON.parse(x.responseText));},headers:{get:function(n){return x.getResponseHeader(n);}}});};x.onerror=function(){rej(new TypeError('Network request failed'));};x.send(opts.body||null);});}
+if(window.fetch){return window.fetch(url,opts).catch(function(){return xhr();});}return xhr();};
+</script>
 <script>
 
 /* ── AbortController + Retry + Debounce — Studio Niko Design ── */
@@ -292,7 +303,7 @@ const nikoFetch = (() => {
     opts.signal = _ctrl.signal;
     for(let i=0; i<retries; i++) {
       try {
-        const r = await fetch(url, opts);
+        const r = await nikoFetch(url, opts);
         if(!r.ok) throw new Error(`HTTP ${r.status}`);
         return r;
       } catch(e) {
@@ -346,11 +357,11 @@ const patterns = initPats();
 
 function saveLiveState() {
     const state = { pat: patterns, lengths: trackLengths, chaos: trackChaos, bpm: bpm, cur: curPat };
-    localStorage.setItem('lovestronautes_state', JSON.stringify(state));
+    safeStorage.setItem('lovestronautes_state', JSON.stringify(state));
 }
 function loadLiveState() {
     try {
-        const s = JSON.parse(localStorage.getItem('lovestronautes_state'));
+        const s = JSON.parse(safeStorage.getItem('lovestronautes_state'));
         if (s && s.pat) { patterns = s.pat; trackLengths = s.lengths || trackLengths; trackChaos = s.chaos || trackChaos; bpm = s.bpm || 128; curPat = s.cur || 'A'; }
     } catch(e){}
     matrix = patterns[curPat];
@@ -626,7 +637,7 @@ function buildFX() {
 function buildDNA() {
     $id('panel-dna').innerHTML = '<div class="dnacard"><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
     $id('save-dna').addEventListener('click', function(){ saveLiveState(); setStatus('SAUVEGARDE FORCÉE', 'ok'); });
-    $id('nuke-dna').addEventListener('click', function(){ localStorage.removeItem('lovestronautes_state'); location.reload(); });
+    $id('nuke-dna').addEventListener('click', function(){ safeStorage.removeItem('lovestronautes_state'); location.reload(); });
 }
 
 buildSeq(); buildMixer(); buildFX(); buildDNA();
@@ -655,7 +666,7 @@ $id('test-btn').addEventListener('click', async function() {
     if(_mutating) return; const key = $id('api-key').value.trim(); if(!key) { setStatus('CLÉ MISTRAL MANQUANTE', 'al'); return; }
     _mutating = true; setStatus('INVOCATION DES AGENTS...', 'mg'); $id('ai-st').textContent = '⚡ Calcul en cours...';
     try {
-        const res = await fetch('https://api.mistral.ai/v1/chat/completions', { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key}, body: JSON.stringify({ model: 'mistral-large-latest', response_format: {type: 'json_object'}, messages: [{role: 'system', content: 'Tu es 2 agents: DP-909 (Groove) et GESA-666 (Dark). Réponds JSON: {"timeline":[{"bar":0,"pat":"A","polyrhythm":{"kick":16,"acid":15,"fm":16,"metal":16},"morph_target":0.1}], "live_advice":[{"bar":0,"agent":"DP-909","msg":"Monte le filtre"}]}'}, {role: 'user', content: $id('ai-prompt').value}] }) });
+        const res = await nikoFetch('https://api.mistral.ai/v1/chat/completions', { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key}, body: JSON.stringify({ model: 'mistral-large-latest', response_format: {type: 'json_object'}, messages: [{role: 'system', content: 'Tu es 2 agents: DP-909 (Groove) et GESA-666 (Dark). Réponds JSON: {"timeline":[{"bar":0,"pat":"A","polyrhythm":{"kick":16,"acid":15,"fm":16,"metal":16},"morph_target":0.1}], "live_advice":[{"bar":0,"agent":"DP-909","msg":"Monte le filtre"}]}'}, {role: 'user', content: $id('ai-prompt').value}] }) });
         const data = await res.json(); const gen = JSON.parse(data.choices[0].message.content.trim());
         aiTimeline = gen.timeline; agentAdvice = gen.live_advice; $id('ai-st').textContent = '✅ Agents chargés !';
     } catch(e) { $id('ai-st').textContent = '❌ Erreur'; } finally { _mutating = false; }
@@ -674,7 +685,7 @@ if('serviceWorker' in navigator) {
 const CACHE='niko-v1';
 const ASSETS=['./','/index.html'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
-self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||nikoFetch(e.request))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
     `;
     const blob = new Blob([swCode],{type:'text/javascript'});
