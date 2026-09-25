@@ -1,16 +1,24 @@
 {
- "name": "the-lovestronautes-machine",
- "short_name": "the-lovestro",
- "start_url": ".",
- "display": "standalone",
- "background_color": "#050a0d",
- "theme_color": "#050a0d",
- "icons": [
-  {
-   "src": "icon.svg",
-   "sizes": "any",
-   "type": "image/svg+xml",
-   "purpose": "any"
-  }
- ]
+  "id": "./",
+  "name": "Thelovestronautes Machine",
+  "short_name": "Lovestronautes",
+  "description": "Séquenceur live psytrance Web Audio avec patterns, morphing, MIDI et mode hors-ligne.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050a0d",
+  "theme_color": "#050a0d",
+  "categories": [
+    "music",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }
