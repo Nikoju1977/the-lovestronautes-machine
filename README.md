@@ -13,7 +13,7 @@
 - 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
 - 🎚️ BPM éditable + Tap Tempo, **swing 50–75 %**, morphing et automation live
 - 🎛️ Mixeur, chaos pad, clavier tactile et oscilloscope temps réel
-- ☄ **Biniou électronique** : anche synthétique, drone A, drive, tone, echo et espace/reverb
+- ☄ **Biniou électronique / Cyber Breton** : piste BINI dédiée, anche synthétique, drone A, harmoniseurs ±1 octave, pitch bend MIDI, drive, tone, echo et espace/reverb
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
 - ● **Enregistrement du master** en WebM/Ogg selon le navigateur (mode stéréo)
@@ -24,7 +24,7 @@
 
 ## Biniou électronique
 
-Dans l'onglet **FX**, activez **BINIOU E** pour router le clavier live et la piste FM vers une voix de biniou synthétique. **DRONE A** ajoute un bourdon continu. Les réglages **Drive**, **Tone**, **Echo** et **Space** façonnent le caractère électronique en temps réel.
+Dans l'onglet **FX**, activez **BINIOU E** pour armer le clavier live et la nouvelle piste **BINI** du séquenceur. **DRONE A** ajoute un bourdon continu. Le mode **CYBER** ajoute une harmonisation à l'octave grave et aiguë, un vibrato plus nerveux et davantage de saturation. **Harmony** règle le niveau des octaves, tandis que **Pitch** — ou un vrai message MIDI Pitch Bend — transpose le biniou sur ±12 demi-tons. **Drive**, **Tone**, **Echo** et **Space** façonnent ensuite la chaîne d'effets.
 
 ## Stack
 
