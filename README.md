@@ -11,8 +11,11 @@
 ## Fonctionnalités
 
 - 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
-- 🎚️ BPM éditable + Tap Tempo, morphing et automation live
+- 🎚️ BPM éditable + Tap Tempo, **swing 50–75 %**, morphing et automation live
 - 🎛️ Mixeur, chaos pad, clavier tactile et oscilloscope temps réel
+- ↶ **Undo/Redo** sur les éditions de performance principales
+- ⇩ **Export / import JSON** du projet complet
+- ● **Enregistrement du master** en WebM/Ogg selon le navigateur (mode stéréo)
 - 🔌 Web MIDI In/Out et routage audio 4 canaux
 - 🧠 Ghost Pilot Mistral optionnel
 - 💾 Sauvegarde locale des patterns et réglages
@@ -31,6 +34,16 @@ python3 -m http.server 8080
 ```
 
 Puis ouvrez `http://localhost:8080` et appuyez sur **ARMEMENT SYSTÈME LIVE**.
+
+## Validation
+
+Le dépôt inclut un contrôle statique sans dépendances :
+
+```bash
+node scripts/validate.mjs
+```
+
+La même validation est exécutée automatiquement par GitHub Actions sur les pushes et pull requests.
 
 ## Licence
 
