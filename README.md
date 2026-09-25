@@ -13,6 +13,7 @@
 - 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
 - 🎚️ BPM éditable + Tap Tempo, **swing 50–75 %**, morphing et automation live
 - 🎛️ Mixeur, chaos pad, clavier tactile et oscilloscope temps réel
+- ☄ **Biniou électronique** : anche synthétique, drone A, drive, tone, echo et espace/reverb
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
 - ● **Enregistrement du master** en WebM/Ogg selon le navigateur (mode stéréo)
@@ -20,6 +21,10 @@
 - 🧠 Ghost Pilot Mistral optionnel
 - 💾 Sauvegarde locale des patterns et réglages
 - 📱 PWA installable avec mode hors-ligne
+
+## Biniou électronique
+
+Dans l'onglet **FX**, activez **BINIOU E** pour router le clavier live et la piste FM vers une voix de biniou synthétique. **DRONE A** ajoute un bourdon continu. Les réglages **Drive**, **Tone**, **Echo** et **Space** façonnent le caractère électronique en temps réel.
 
 ## Stack
 
