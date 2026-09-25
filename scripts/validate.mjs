@@ -62,11 +62,14 @@ assert(html.includes('function toggleMasterRecording()'), 'enregistrement master
 assert(html.includes('function triggerBiniou('), 'moteur biniou électronique présent');
 assert(html.includes('function startBiniouDrone()'), 'drone biniou présent');
 assert(html.includes('function updateBiniouFX()'), 'chaîne FX biniou présente');
+assert(html.includes("let TRACKS = ['kick','acid','fm','biniou','metal']"), 'piste BINI dédiée présente');
+assert(html.includes('biniouParams.cyber'), 'mode Cyber Breton présent');
+assert(html.includes('cmd === 14'), 'Pitch Bend MIDI biniou présent');
 assert(html.includes("id=\"export-project\"") && html.includes("id=\"import-project\""), 'export/import projet présents');
 
 const requiredIds = [
   'play-btn','tap-btn','bpm-input','swing-slider','morph-slider',
-  'undo-btn','redo-btn','rec-btn','midi-btn','routing-btn','biniou-toggle','biniou-drone','biniou-drive','biniou-tone','biniou-echo','biniou-space',
+  'undo-btn','redo-btn','rec-btn','midi-btn','routing-btn','biniou-toggle','biniou-drone','biniou-cyber','biniou-reset-pitch','biniou-drive','biniou-tone','biniou-echo','biniou-space','biniou-harmony','biniou-pitch',
   'panel-seq','panel-mix','panel-fx','panel-dna','kbd','scope'
 ];
 const missingIds = requiredIds.filter(id => !ids.includes(id));
