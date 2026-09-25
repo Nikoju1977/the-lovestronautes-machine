@@ -352,6 +352,7 @@ let aiTimeline = [], agentAdvice = [];
 let bpm = 128, swing = 0.50;
 let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
+let chanVol = {kick:1,acid:.7,fm:.52,metal:.45};
 let curPat = 'A', matrix;
 
 function initPats() {
@@ -469,7 +470,7 @@ window.addEventListener('beforeunload', function(e) { if(isPlaying) { e.preventD
 let ctx = null, audioReady = false;
 let masterFilter, distShaper, analyserNode;
 let scopeCanvas = null, scopeCtx = null, scopeBuffer = new Float32Array(256);
-let chanGain = {}, chanVol = {kick:1,acid:.7,fm:.52,metal:.45};
+let chanGain = {};
 let duckingGain = null, channelMerger = null, recordingDest = null;
 let mediaRecorder = null, recordChunks = [];
 
