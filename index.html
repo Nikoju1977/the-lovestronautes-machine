@@ -983,6 +983,23 @@ function buildMixer() {
     p.appendChild(row);
 }
 
+function syncBiniouUI() {
+    const bToggle = $id('biniou-toggle');
+    if (!bToggle) return;
+    bToggle.classList.toggle('on', biniouEnabled);
+    bToggle.textContent = biniouEnabled ? 'BINIOU E: ON' : 'BINIOU E: OFF';
+    ['drive','tone','echo','space'].forEach(function(key) {
+        const input = $id('biniou-' + key), out = $id('biniou-' + key + '-v');
+        if (input) input.value = biniouParams[key];
+        if (out) out.textContent = Math.round(biniouParams[key] * 100) + '%';
+    });
+    const droneBtn = $id('biniou-drone');
+    if (droneBtn) {
+        droneBtn.classList.toggle('on', !!biniouDroneNodes);
+        droneBtn.textContent = biniouDroneNodes ? '◉ DRONE A: ON' : '○ DRONE A: OFF';
+    }
+}
+
 function buildFX() {
     let p = $id('panel-fx');
     p.innerHTML =
@@ -998,19 +1015,10 @@ function buildFX() {
       '<div class="fxcard"><div class="fxtitle">🎛️ CHAOS PAD (X:PHASER / Y:CRUSH)</div><div id="chaos-pad" class="cpad-wrap"><div id="chaos-puck" class="cpad-puck"></div><div class="cpad-lbl c-tl">12-BIT DESTRUCTION</div><div class="cpad-lbl c-tr">LASER SWEEP</div><div class="cpad-lbl c-bl">CLEAN</div><div class="cpad-lbl c-br">SLOW SWEEP</div></div></div>';
 
     const bToggle = $id('biniou-toggle');
-    function syncBiniouControls() {
-        bToggle.classList.toggle('on', biniouEnabled);
-        bToggle.textContent = biniouEnabled ? 'BINIOU E: ON' : 'BINIOU E: OFF';
-        ['drive','tone','echo','space'].forEach(function(key) {
-            const input = $id('biniou-' + key), out = $id('biniou-' + key + '-v');
-            input.value = biniouParams[key];
-            out.textContent = Math.round(biniouParams[key] * 100) + '%';
-        });
-    }
     bToggle.addEventListener('click', function() {
         biniouEnabled = !biniouEnabled;
         saveLiveState();
-        syncBiniouControls();
+        syncBiniouUI();
         setStatus(biniouEnabled ? 'BINIOU ÉLECTRONIQUE ARMÉ' : 'BINIOU ÉLECTRONIQUE OFF', biniouEnabled ? 'mg' : '');
     });
     $id('biniou-drone').addEventListener('click', function() {
@@ -1025,7 +1033,7 @@ function buildFX() {
             saveLiveState();
         });
     });
-    syncBiniouControls();
+    syncBiniouUI();
 
     let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false; 
     function updateP() { if(!ctx)return; if(window.sp1200Crusher) sp1200Crusher.curve = makeBitCrushCurve(Math.max(2, 16 - (padY*14))); if(window.phaserLFO) phaserLFO.frequency.setTargetAtTime(0.05 + (padX*14.95), ctx.currentTime, 0.05); }
@@ -1088,7 +1096,7 @@ function buildKeyboard() {
 
 function syncProjectUI() {
     matrix = patterns[curPat];
-    buildSeq(); buildMixer(); buildDNA(); buildFX();
+    buildSeq(); buildMixer(); buildDNA();
     $id('bpm-input').value = bpm;
     $id('morph-slider').value = morphAmount;
     $id('swing-slider').value = swing.toFixed(2);
@@ -1100,10 +1108,11 @@ function syncProjectUI() {
         Object.keys(chanVol).forEach(function(name){ if (chanGain[name]) chanGain[name].gain.setTargetAtTime(chanVol[name], ctx.currentTime, .01); });
         applyMorph(morphAmount, false);
     }
+    syncBiniouUI();
     updateHistoryUI();
 }
 
-buildKeyboard(); syncProjectUI();
+buildFX(); buildKeyboard(); syncProjectUI();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 function doUnlock() { initAudio(); }
