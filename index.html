@@ -127,6 +127,14 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
 /* FX & CHAOS PAD */
 .fxcard{background:rgba(0,0,0,.5);border:1px solid var(--bo);border-radius:7px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .fxtitle{font-family:var(--hd);font-size:.68rem;font-weight:900;letter-spacing:2px;color:var(--p)}
+.biniou-card{border-color:rgba(255,170,0,.32);background:linear-gradient(145deg,rgba(255,170,0,.04),rgba(255,0,234,.035))}
+.biniou-title{color:var(--am);text-shadow:0 0 9px rgba(255,170,0,.2)}
+.biniou-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.biniou-param{display:grid;grid-template-columns:62px 1fr 38px;align-items:center;gap:7px}
+.biniou-param label,.biniou-param output{font-size:.48rem;letter-spacing:1px;color:var(--am)}
+.biniou-param output{text-align:right}
+.biniou-param input{width:100%;accent-color:var(--am)}
+.biniou-hint{font-size:.48rem;line-height:1.45;color:rgba(255,255,255,.34)}
 .filtbig{background:rgba(57,255,20,.03);border:1px solid rgba(57,255,20,.18);border-radius:6px;padding:10px} .filtlbl{font-family:var(--hd);font-size:.7rem;font-weight:900;color:var(--p);letter-spacing:2px;text-align:center;margin-bottom:7px}
 #master-filter{width:100%;accent-color:var(--p)} #master-filter::-webkit-slider-thumb{height:26px;width:26px;margin-top:-12px;background:var(--p)}
 .filtsub{font-size:.5rem;color:rgba(57,255,20,.3);text-align:center;margin-top:4px}
@@ -353,6 +361,8 @@ let bpm = 128, swing = 0.50;
 let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
 let chanVol = {kick:1,acid:.7,fm:.52,metal:.45};
+let biniouEnabled = false;
+let biniouParams = { drive:0.42, echo:0.28, space:0.24, tone:0.62 };
 let curPat = 'A', matrix;
 
 function initPats() {
@@ -376,7 +386,14 @@ function projectState() {
         swing: swing,
         cur: curPat,
         multiOut: isMultiOut,
-        morph: morphAmount
+        morph: morphAmount,
+        biniou: {
+            enabled: biniouEnabled,
+            drive: biniouParams.drive,
+            echo: biniouParams.echo,
+            space: biniouParams.space,
+            tone: biniouParams.tone
+        }
     };
 }
 
@@ -401,6 +418,12 @@ function applyProjectState(state, persist) {
     curPat = ['A','B','C','D'].includes(state.cur) ? state.cur : 'A';
     isMultiOut = !!state.multiOut;
     morphAmount = Number.isFinite(state.morph) ? Math.max(0, Math.min(1, state.morph)) : 0;
+    if (state.biniou && typeof state.biniou === 'object') {
+        biniouEnabled = !!state.biniou.enabled;
+        ['drive','echo','space','tone'].forEach(function(key) {
+            if (Number.isFinite(state.biniou[key])) biniouParams[key] = Math.max(0, Math.min(1, state.biniou[key]));
+        });
+    }
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
 }
@@ -464,7 +487,7 @@ async function requestWakeLock() {
     try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) {}
 }
 document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible' && isPlaying) requestWakeLock(); });
-window.addEventListener('beforeunload', function(e) { if(isPlaying) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', function(e) { stopBiniouDrone(); if(isPlaying) { e.preventDefault(); e.returnValue = ''; } });
 
 // ── AUDIO ENGINE & MULTI-OUT ──────────────────────────────────────
 let ctx = null, audioReady = false;
@@ -473,10 +496,74 @@ let scopeCanvas = null, scopeCtx = null, scopeBuffer = new Float32Array(256);
 let chanGain = {};
 let duckingGain = null, channelMerger = null, recordingDest = null;
 let mediaRecorder = null, recordChunks = [];
+let biniouInput = null, biniouDrive = null, biniouTone = null, biniouDelay = null, biniouFeedback = null, biniouDelayWet = null, biniouDry = null, biniouReverb = null, biniouReverbWet = null;
+let biniouDroneNodes = null;
 
 function hz(note) { let notes = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11}; let m = String(note||'').match(/^([A-G][b#]?)(\d)$/); if(!m) return 440; return 440 * Math.pow(2, (notes[m[1]] - 9 + (parseInt(m[2]) - 4) * 12) / 12); }
 function makeDistCurve(k) { k = Math.max(0.001, k); let n = 256, c = new Float32Array(n); for (let i=0; i<n; i++) { let x = (i * 2 / n) - 1; c[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x)); } return c; }
 function makeBitCrushCurve(bits) { let n = 256, c = new Float32Array(n), step = Math.pow(1/2, bits); for (let i=0; i<n; i++) { let x = (i * 2 / n) - 1; c[i] = Math.round(x / step) * step; } return c; }
+
+function makeImpulse(seconds, decay) {
+    const rate = ctx.sampleRate;
+    const length = Math.max(1, Math.floor(rate * seconds));
+    const impulse = ctx.createBuffer(2, length, rate);
+    for (let c=0;c<2;c++) {
+        const data = impulse.getChannelData(c);
+        for (let i=0;i<length;i++) {
+            const env = Math.pow(1 - i / length, decay);
+            data[i] = (Math.random() * 2 - 1) * env;
+        }
+    }
+    return impulse;
+}
+
+function updateBiniouFX() {
+    if (!ctx || !biniouDrive) return;
+    biniouDrive.curve = makeDistCurve(20 + biniouParams.drive * 360);
+    biniouDrive.oversample = '2x';
+    biniouTone.frequency.setTargetAtTime(2800 + biniouParams.tone * 6200, ctx.currentTime, 0.03);
+    biniouDelay.delayTime.setTargetAtTime(0.10 + biniouParams.echo * 0.31, ctx.currentTime, 0.03);
+    biniouFeedback.gain.setTargetAtTime(0.08 + biniouParams.echo * 0.55, ctx.currentTime, 0.03);
+    biniouDelayWet.gain.setTargetAtTime(biniouParams.echo * 0.62, ctx.currentTime, 0.03);
+    biniouReverbWet.gain.setTargetAtTime(biniouParams.space * 0.72, ctx.currentTime, 0.03);
+    biniouDry.gain.setTargetAtTime(0.88 - biniouParams.space * 0.18, ctx.currentTime, 0.03);
+}
+
+function initBiniouFX() {
+    if (!ctx || biniouInput) return;
+    biniouInput = ctx.createGain();
+    biniouInput.gain.value = 0.72;
+
+    biniouDrive = ctx.createWaveShaper();
+    biniouTone = ctx.createBiquadFilter();
+    biniouTone.type = 'lowpass';
+    biniouTone.Q.value = 0.7;
+
+    biniouDry = ctx.createGain();
+    biniouDelay = ctx.createDelay(1.2);
+    biniouFeedback = ctx.createGain();
+    biniouDelayWet = ctx.createGain();
+    biniouReverb = ctx.createConvolver();
+    biniouReverb.buffer = makeImpulse(1.65, 2.6);
+    biniouReverbWet = ctx.createGain();
+
+    biniouInput.connect(biniouDrive);
+    biniouDrive.connect(biniouTone);
+    biniouTone.connect(biniouDry);
+    biniouDry.connect(duckingGain);
+
+    biniouTone.connect(biniouDelay);
+    biniouDelay.connect(biniouDelayWet);
+    biniouDelayWet.connect(duckingGain);
+    biniouDelay.connect(biniouFeedback);
+    biniouFeedback.connect(biniouDelay);
+
+    biniouTone.connect(biniouReverb);
+    biniouReverb.connect(biniouReverbWet);
+    biniouReverbWet.connect(duckingGain);
+
+    updateBiniouFX();
+}
 
 function initAudio() {
     if (audioReady) { ctx && ctx.resume(); return; }
@@ -510,6 +597,7 @@ function initAudio() {
     distShaper = ctx.createWaveShaper(); distShaper.curve = makeDistCurve(0.001); distShaper.connect(entryPhaser);
     duckingGain = ctx.createGain(); duckingGain.connect(distShaper);
     window.sp1200Crusher = ctx.createWaveShaper(); sp1200Crusher.curve = makeBitCrushCurve(16); sp1200Crusher.connect(duckingGain);
+    initBiniouFX();
 
     ['kick','acid','fm','metal'].forEach(function(t) {
         let g = ctx.createGain(); g.gain.value = chanVol[t];
@@ -649,6 +737,96 @@ function triggerFM(note, time, pLockMorph) {
     detunes.forEach(function(det) { let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det + (localMorph * 50); o.connect(g); o.start(time); o.stop(time + dur + 0.1); });
 }
 
+function triggerBiniou(note, time, vel=0.85, pLockMorph) {
+    if (!ctx || !biniouInput) return;
+    const f = hz(note) * 2; // registre brillant proche du biniou kozh
+    const dur = Math.max(0.22, (60 / (bpm * 4)) * 1.65);
+    const level = Math.max(0.12, Math.min(1.15, vel));
+    const localMorph = Number.isFinite(pLockMorph) ? pLockMorph : morphAmount;
+
+    const voice = ctx.createGain();
+    voice.gain.setValueAtTime(0.001, time);
+    voice.gain.exponentialRampToValueAtTime(0.46 * level, time + 0.012);
+    voice.gain.setValueAtTime(0.42 * level, time + dur * 0.55);
+    voice.gain.exponentialRampToValueAtTime(0.001, time + dur + 0.18);
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 520; hp.Q.value = 0.45;
+    const nasal = ctx.createBiquadFilter();
+    nasal.type = 'peaking'; nasal.frequency.value = 1900 + localMorph * 900; nasal.Q.value = 2.8; nasal.gain.value = 10;
+    const bite = ctx.createBiquadFilter();
+    bite.type = 'peaking'; bite.frequency.value = 3500 + localMorph * 1200; bite.Q.value = 3.2; bite.gain.value = 6;
+
+    const reed = ctx.createOscillator();
+    reed.type = 'sawtooth';
+    reed.frequency.setValueAtTime(f, time);
+    const buzz = ctx.createOscillator();
+    buzz.type = 'square';
+    buzz.frequency.setValueAtTime(f * 1.003, time);
+
+    const reedGain = ctx.createGain(); reedGain.gain.value = 0.72;
+    const buzzGain = ctx.createGain(); buzzGain.gain.value = 0.18 + localMorph * 0.08;
+
+    const vibrato = ctx.createOscillator();
+    vibrato.frequency.value = 5.3 + localMorph * 0.9;
+    const vibratoDepth = ctx.createGain();
+    vibratoDepth.gain.value = 9 + localMorph * 10;
+    vibrato.connect(vibratoDepth);
+    vibratoDepth.connect(reed.detune);
+    vibratoDepth.connect(buzz.detune);
+
+    reed.connect(reedGain); buzz.connect(buzzGain);
+    reedGain.connect(hp); buzzGain.connect(hp);
+    hp.connect(nasal); nasal.connect(bite); bite.connect(voice); voice.connect(biniouInput);
+
+    reed.start(time); buzz.start(time); vibrato.start(time);
+    const stopAt = time + dur + 0.24;
+    reed.stop(stopAt); buzz.stop(stopAt); vibrato.stop(stopAt);
+}
+
+function startBiniouDrone() {
+    if (!ctx || !biniouInput || biniouDroneNodes) return;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.20, ctx.currentTime + 0.35);
+
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = 'lowpass'; lowpass.frequency.value = 950; lowpass.Q.value = 1.2;
+    gain.connect(lowpass); lowpass.connect(biniouInput);
+
+    const freqs = [110, 220, 330];
+    const oscs = freqs.map(function(freq, i) {
+        const o = ctx.createOscillator();
+        o.type = i === 0 ? 'sawtooth' : 'square';
+        o.frequency.value = freq;
+        o.detune.value = i === 1 ? -4 : (i === 2 ? 3 : 0);
+        const g = ctx.createGain(); g.gain.value = [0.62,0.20,0.08][i];
+        o.connect(g); g.connect(gain); o.start();
+        return o;
+    });
+    biniouDroneNodes = {gain:gain, oscs:oscs};
+}
+
+function stopBiniouDrone() {
+    if (!ctx || !biniouDroneNodes) return;
+    const nodes = biniouDroneNodes;
+    biniouDroneNodes = null;
+    const now = ctx.currentTime;
+    nodes.gain.gain.cancelScheduledValues(now);
+    nodes.gain.gain.setValueAtTime(Math.max(0.001, nodes.gain.gain.value), now);
+    nodes.gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    nodes.oscs.forEach(function(o){ try { o.stop(now + 0.25); } catch(e){} });
+}
+
+function setBiniouDrone(active) {
+    if (active) startBiniouDrone(); else stopBiniouDrone();
+    const btn = $id('biniou-drone');
+    if (btn) {
+        btn.classList.toggle('on', !!biniouDroneNodes);
+        btn.textContent = biniouDroneNodes ? '◉ DRONE A: ON' : '○ DRONE A: OFF';
+    }
+}
+
 function triggerMetal(time) {
     if (!ctx) return; let ratios = [1, 1.31, 1.85, 2.47, 3.1, 4.1], dur = 0.12; let g = _gate(chanGain.metal, time, 0.001, 0.12, 0.38);
     ratios.forEach(function(r) { let o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 220 * r * (0.97 + Math.random() * 0.06); o.connect(g); o.start(time); o.stop(time + dur + 0.02); });
@@ -666,7 +844,7 @@ function scheduleStep(time) {
     else if (Math.random() < gRate) { m.acid[trackSteps.acid] = { note: ['G2','C3','F2','Eb2'][Math.floor(Math.random()*4)], vel: 0.7 }; buildSeq(); saveLiveState(); }
 
     let fm = m.fm[trackSteps.fm]; let tfRate = trackChaos.fm + (morphAmount * 0.1);
-    if (fm) { let fNote = fm.note || fm; triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
+    if (fm) { let fNote = fm.note || fm; if (biniouEnabled) triggerBiniou(fNote, time, fm.vel || 0.82, fm.morph); else triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
 
     let met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) triggerMetal(time); }
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
@@ -806,7 +984,49 @@ function buildMixer() {
 }
 
 function buildFX() {
-    let p = $id('panel-fx'); p.innerHTML = '<div class="fxcard"><div class="fxtitle">🎛️ CHAOS PAD (X:PHASER / Y:CRUSH)</div><div id="chaos-pad" class="cpad-wrap"><div id="chaos-puck" class="cpad-puck"></div><div class="cpad-lbl c-tl">12-BIT DESTRUCTION</div><div class="cpad-lbl c-tr">LASER SWEEP</div><div class="cpad-lbl c-bl">CLEAN</div><div class="cpad-lbl c-br">SLOW SWEEP</div></div></div>';
+    let p = $id('panel-fx');
+    p.innerHTML =
+      '<div class="fxcard biniou-card">' +
+        '<div class="fxtitle biniou-title">☄ BINIOU ÉLECTRONIQUE // BZH REED ENGINE</div>' +
+        '<div class="biniou-hint">Active le biniou pour remplacer la voix FM par une anche électronique aiguë. Le clavier et la piste FM pilotent alors le biniou. Le drone A reste continu.</div>' +
+        '<div class="biniou-actions"><button class="mb a" id="biniou-toggle"></button><button class="mb m" id="biniou-drone">○ DRONE A: OFF</button></div>' +
+        '<div class="biniou-param"><label>DRIVE</label><input type="range" id="biniou-drive" min="0" max="1" step="0.01"><output id="biniou-drive-v"></output></div>' +
+        '<div class="biniou-param"><label>TONE</label><input type="range" id="biniou-tone" min="0" max="1" step="0.01"><output id="biniou-tone-v"></output></div>' +
+        '<div class="biniou-param"><label>ECHO</label><input type="range" id="biniou-echo" min="0" max="1" step="0.01"><output id="biniou-echo-v"></output></div>' +
+        '<div class="biniou-param"><label>SPACE</label><input type="range" id="biniou-space" min="0" max="1" step="0.01"><output id="biniou-space-v"></output></div>' +
+      '</div>' +
+      '<div class="fxcard"><div class="fxtitle">🎛️ CHAOS PAD (X:PHASER / Y:CRUSH)</div><div id="chaos-pad" class="cpad-wrap"><div id="chaos-puck" class="cpad-puck"></div><div class="cpad-lbl c-tl">12-BIT DESTRUCTION</div><div class="cpad-lbl c-tr">LASER SWEEP</div><div class="cpad-lbl c-bl">CLEAN</div><div class="cpad-lbl c-br">SLOW SWEEP</div></div></div>';
+
+    const bToggle = $id('biniou-toggle');
+    function syncBiniouControls() {
+        bToggle.classList.toggle('on', biniouEnabled);
+        bToggle.textContent = biniouEnabled ? 'BINIOU E: ON' : 'BINIOU E: OFF';
+        ['drive','tone','echo','space'].forEach(function(key) {
+            const input = $id('biniou-' + key), out = $id('biniou-' + key + '-v');
+            input.value = biniouParams[key];
+            out.textContent = Math.round(biniouParams[key] * 100) + '%';
+        });
+    }
+    bToggle.addEventListener('click', function() {
+        biniouEnabled = !biniouEnabled;
+        saveLiveState();
+        syncBiniouControls();
+        setStatus(biniouEnabled ? 'BINIOU ÉLECTRONIQUE ARMÉ' : 'BINIOU ÉLECTRONIQUE OFF', biniouEnabled ? 'mg' : '');
+    });
+    $id('biniou-drone').addEventListener('click', function() {
+        initAudio();
+        setBiniouDrone(!biniouDroneNodes);
+    });
+    ['drive','tone','echo','space'].forEach(function(key) {
+        $id('biniou-' + key).addEventListener('input', function(e) {
+            biniouParams[key] = parseFloat(e.target.value);
+            $id('biniou-' + key + '-v').textContent = Math.round(biniouParams[key] * 100) + '%';
+            updateBiniouFX();
+            saveLiveState();
+        });
+    });
+    syncBiniouControls();
+
     let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false; 
     function updateP() { if(!ctx)return; if(window.sp1200Crusher) sp1200Crusher.curve = makeBitCrushCurve(Math.max(2, 16 - (padY*14))); if(window.phaserLFO) phaserLFO.frequency.setTargetAtTime(0.05 + (padX*14.95), ctx.currentTime, 0.05); }
     function mv(e) { if(!isTouch)return; let r=pad.getBoundingClientRect(), cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY; padX=Math.max(0,Math.min(1,(cx-r.left)/r.width)); padY=Math.max(0,Math.min(1,1-((cy-r.top)/r.height))); puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); }
@@ -856,8 +1076,11 @@ function buildKeyboard() {
             initAudio();
             if (!ctx) return;
             const t = ctx.currentTime + 0.01;
-            triggerFM(note, t);
-            if (note.includes('#')) triggerMetal(t);
+            if (biniouEnabled) triggerBiniou(note, t, 0.92, morphAmount);
+            else {
+                triggerFM(note, t);
+                if (note.includes('#')) triggerMetal(t);
+            }
         });
         root.appendChild(key);
     });
@@ -865,7 +1088,7 @@ function buildKeyboard() {
 
 function syncProjectUI() {
     matrix = patterns[curPat];
-    buildSeq(); buildMixer(); buildDNA();
+    buildSeq(); buildMixer(); buildDNA(); buildFX();
     $id('bpm-input').value = bpm;
     $id('morph-slider').value = morphAmount;
     $id('swing-slider').value = swing.toFixed(2);
@@ -880,7 +1103,7 @@ function syncProjectUI() {
     updateHistoryUI();
 }
 
-buildFX(); buildKeyboard(); syncProjectUI();
+buildKeyboard(); syncProjectUI();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 function doUnlock() { initAudio(); }
