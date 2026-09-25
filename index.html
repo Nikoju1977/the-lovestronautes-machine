@@ -527,7 +527,7 @@ function makeImpulse(seconds, decay) {
 
 function updateBiniouFX() {
     if (!ctx || !biniouDrive) return;
-    biniouDrive.curve = makeDistCurve(20 + biniouParams.drive * 360);
+    biniouDrive.curve = makeDistCurve((biniouParams.cyber ? 90 : 20) + biniouParams.drive * (biniouParams.cyber ? 520 : 360));
     biniouDrive.oversample = '2x';
     biniouTone.frequency.setTargetAtTime(2800 + biniouParams.tone * 6200, ctx.currentTime, 0.03);
     biniouDelay.delayTime.setTargetAtTime(0.10 + biniouParams.echo * 0.31, ctx.currentTime, 0.03);
@@ -540,7 +540,8 @@ function updateBiniouFX() {
 function initBiniouFX() {
     if (!ctx || biniouInput) return;
     biniouInput = ctx.createGain();
-    biniouInput.gain.value = 0.72;
+    biniouInput.gain.value = chanVol.biniou;
+    chanGain.biniou = biniouInput;
 
     biniouDrive = ctx.createWaveShaper();
     biniouTone = ctx.createBiquadFilter();
@@ -703,6 +704,13 @@ function initMIDI() {
 // Map MIDI IN (Generic CCs) -> Lovestronautes
 function handleMIDIIn(e) {
     let cmd = e.data[0] >> 4, channel = e.data[0] & 0xf, type = e.data[1], val = e.data[2] / 127.0;
+    if (cmd === 14) { // Pitch Bend -> biniou ±12 semitones
+        const bend14 = (e.data[2] << 7) | e.data[1];
+        biniouParams.pitch = Math.round((((bend14 - 8192) / 8192) * 12) * 10) / 10;
+        const pitch = $id('biniou-pitch'), out = $id('biniou-pitch-v');
+        if (pitch) pitch.value = biniouParams.pitch;
+        if (out) out.textContent = (biniouParams.pitch > 0 ? '+' : '') + biniouParams.pitch.toFixed(1);
+    }
     if (cmd === 11) { // CC Message
         if(type === 20 && chanGain['kick']) chanGain['kick'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
         if(type === 21 && chanGain['acid']) chanGain['acid'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
@@ -747,8 +755,9 @@ function triggerFM(note, time, pLockMorph) {
 
 function triggerBiniou(note, time, vel=0.85, pLockMorph) {
     if (!ctx || !biniouInput) return;
-    const f = hz(note) * 2; // registre brillant proche du biniou kozh
-    const dur = Math.max(0.22, (60 / (bpm * 4)) * 1.65);
+    const pitchRatio = Math.pow(2, biniouParams.pitch / 12);
+    const f = hz(note) * 2 * pitchRatio;
+    const dur = Math.max(0.22, (60 / (bpm * 4)) * (biniouParams.cyber ? 1.95 : 1.65));
     const level = Math.max(0.12, Math.min(1.15, vel));
     const localMorph = Number.isFinite(pLockMorph) ? pLockMorph : morphAmount;
 
@@ -765,31 +774,40 @@ function triggerBiniou(note, time, vel=0.85, pLockMorph) {
     const bite = ctx.createBiquadFilter();
     bite.type = 'peaking'; bite.frequency.value = 3500 + localMorph * 1200; bite.Q.value = 3.2; bite.gain.value = 6;
 
-    const reed = ctx.createOscillator();
-    reed.type = 'sawtooth';
-    reed.frequency.setValueAtTime(f, time);
-    const buzz = ctx.createOscillator();
-    buzz.type = 'square';
-    buzz.frequency.setValueAtTime(f * 1.003, time);
+    const oscillators = [];
+    function addOsc(type, freq, gainValue, detune) {
+        const o = ctx.createOscillator();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, time);
+        o.detune.value = detune || 0;
+        const g = ctx.createGain();
+        g.gain.value = gainValue;
+        o.connect(g); g.connect(hp);
+        oscillators.push(o);
+        return o;
+    }
 
-    const reedGain = ctx.createGain(); reedGain.gain.value = 0.72;
-    const buzzGain = ctx.createGain(); buzzGain.gain.value = 0.18 + localMorph * 0.08;
+    addOsc('sawtooth', f, 0.70, 0);
+    addOsc('square', f * 1.003, 0.16 + localMorph * 0.08, 0);
+    if (biniouParams.cyber && biniouParams.harmony > 0.01) {
+        addOsc('sawtooth', f * 0.5, 0.26 * biniouParams.harmony, -5);
+        addOsc('square', f * 2, 0.15 * biniouParams.harmony, 7);
+    }
 
     const vibrato = ctx.createOscillator();
-    vibrato.frequency.value = 5.3 + localMorph * 0.9;
+    vibrato.frequency.value = (biniouParams.cyber ? 6.1 : 5.3) + localMorph * 0.9;
     const vibratoDepth = ctx.createGain();
-    vibratoDepth.gain.value = 9 + localMorph * 10;
+    vibratoDepth.gain.value = (biniouParams.cyber ? 16 : 9) + localMorph * 10;
     vibrato.connect(vibratoDepth);
-    vibratoDepth.connect(reed.detune);
-    vibratoDepth.connect(buzz.detune);
+    oscillators.forEach(function(o){ vibratoDepth.connect(o.detune); });
 
-    reed.connect(reedGain); buzz.connect(buzzGain);
-    reedGain.connect(hp); buzzGain.connect(hp);
     hp.connect(nasal); nasal.connect(bite); bite.connect(voice); voice.connect(biniouInput);
 
-    reed.start(time); buzz.start(time); vibrato.start(time);
+    oscillators.forEach(function(o){ o.start(time); });
+    vibrato.start(time);
     const stopAt = time + dur + 0.24;
-    reed.stop(stopAt); buzz.stop(stopAt); vibrato.stop(stopAt);
+    oscillators.forEach(function(o){ o.stop(stopAt); });
+    vibrato.stop(stopAt);
 }
 
 function startBiniouDrone() {
@@ -852,12 +870,22 @@ function scheduleStep(time) {
     else if (Math.random() < gRate) { m.acid[trackSteps.acid] = { note: ['G2','C3','F2','Eb2'][Math.floor(Math.random()*4)], vel: 0.7 }; buildSeq(); saveLiveState(); }
 
     let fm = m.fm[trackSteps.fm]; let tfRate = trackChaos.fm + (morphAmount * 0.1);
-    if (fm) { let fNote = fm.note || fm; if (biniouEnabled) triggerBiniou(fNote, time, fm.vel || 0.82, fm.morph); else triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
+    if (fm) { let fNote = fm.note || fm; triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
+
+    let bi = m.biniou && m.biniou[trackSteps.biniou];
+    let tbRate = trackChaos.biniou + (morphAmount * 0.08);
+    if (biniouEnabled && bi) {
+        triggerBiniou(bi.note || bi || 'A4', time, bi.vel || 0.82, bi.morph);
+        if (typeof bi === 'object' && Math.random() < tbRate) {
+            bi.note = ['A4','B4','D5','E5','G4'][Math.floor(Math.random()*5)];
+            saveLiveState();
+        }
+    }
 
     let met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) triggerMetal(time); }
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
 
-    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
+    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
     
     sendMIDIVJ('tension', tension); // VJ Sync à chaque step
 }
@@ -892,7 +920,7 @@ function schedulerTick() {
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, metal: 0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
+function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
 function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); }
 
 function applyMorph(m, persist=true) {
@@ -946,25 +974,36 @@ function rafLoop() {
         let nStep = trackSteps.kick === 0 ? 15 : trackSteps.kick - 1; // Approx
         if (nStep !== displayStep) {
             displayStep = nStep;
-            ['kick','acid','fm','metal'].forEach(function(t) { if(stepEls[t]) stepEls[t].forEach(function(el,idx){ el.classList.toggle('playing', idx===nStep); }); });
+            ['kick','acid','fm','biniou','metal'].forEach(function(t) { if(stepEls[t]) stepEls[t].forEach(function(el,idx){ el.classList.toggle('playing', idx===nStep); }); });
         }
     } else if (!SEQ.playing && displayStep>=0) {
-        displayStep=-1; ['kick','acid','fm','metal'].forEach(function(t){ if(stepEls[t]) stepEls[t].forEach(function(el){ el.classList.remove('playing'); }); });
+        displayStep=-1; ['kick','acid','fm','biniou','metal'].forEach(function(t){ if(stepEls[t]) stepEls[t].forEach(function(el){ el.classList.remove('playing'); }); });
     }
 }
 
 // ── UI BUILDERS ──────────────────────────────────────────────────
-let TRACKS = ['kick','acid','fm','metal'];
+let TRACKS = ['kick','acid','fm','biniou','metal'];
 function buildSeq() {
     let p=$id('panel-seq'); p.innerHTML=''; stepEls={};
     TRACKS.forEach(function(name) {
-        let isMetal=(name==='metal'); let card=mkEl('div','tcard'+(isMetal?' mc':''));
-        card.innerHTML = '<div class="thead'+(isMetal?' mm':'')+'"><span class="ttitle'+(isMetal?' mm':'')+'">'+name.toUpperCase()+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
+        let isMetal=(name==='metal'), isBiniou=(name==='biniou'); let card=mkEl('div','tcard'+(isMetal?' mc':(isBiniou?' ac':'')));
+        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':name.toUpperCase())+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
         let grid=mkEl('div','sgrid'); stepEls[name]=[];
         for (let i=0;i<16;i++) {
             let s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
             let val=matrix[name][i]; if ((name==='kick'||name==='metal')?!!val:(val!=null)) s.classList.add('on');
-            (function(trk,idx,el2) { el2.addEventListener('click', function() { pushUndo(); let active=!!matrix[trk][idx]; matrix[trk][idx]=active?null:(trk==='kick'||trk==='metal'?1:{note:['C2','G2','C4'][TRACKS.indexOf(trk)],vel:.8}); el2.classList.toggle('on',!active); saveLiveState(); }); })(name,i,s);
+            (function(trk,idx,el2) { el2.addEventListener('click', function() {
+                pushUndo();
+                let active=!!matrix[trk][idx], next=null;
+                if (!active) {
+                    if (trk==='kick'||trk==='metal') next=1;
+                    else if (trk==='biniou') next={note:'A4',vel:.84};
+                    else next={note:trk==='acid'?'G2':'C4',vel:.8};
+                }
+                matrix[trk][idx]=active?null:next;
+                el2.classList.toggle('on',!active);
+                saveLiveState();
+            }); })(name,i,s);
             stepEls[name].push(s); grid.appendChild(s);
         }
         card.appendChild(grid); p.appendChild(card);
