@@ -73,6 +73,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 .mb.on{background:rgba(57,255,20,.15);border-color:var(--p);color:var(--p);box-shadow:0 0 8px rgba(57,255,20,.2)}
 @keyframes blink{50%{opacity:.3}}
 .ext-grid{flex-shrink:0;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:0 10px 6px;background:rgba(0,2,0,.98);border-bottom:1px solid var(--bo)}
+.groove-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding-top:2px}
+.groove-lbl,.groove-val{font-size:.42rem;letter-spacing:1.5px;color:var(--am);white-space:nowrap}
+#swing-slider{width:100%;accent-color:var(--am);cursor:pointer}
+#rec-btn.on{background:rgba(255,34,68,.14);border-color:var(--al);color:#fff;box-shadow:0 0 10px rgba(255,34,68,.28)}
+#undo-btn:disabled,#redo-btn:disabled{opacity:.28;cursor:not-allowed}
 
 /* PATTERN TABS & NAV */
 .pat-tabs{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:6px 10px;background:rgba(0,0,0,.5);border-bottom:1px solid var(--bo)}
@@ -222,6 +227,7 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
     <div class="morph-strip">
         <div class="mrw"><span class="ml g">◈ PURE_DNA</span><span class="ml c">GLOBAL DISTORTION MOD</span><span class="ml m">TOTAL_CHAOS ◈</span></div>
         <input type="range" id="morph-slider" min="0" max="1" step=".001" value="0">
+        <div class="groove-row"><span class="groove-lbl">SWING</span><input type="range" id="swing-slider" min="0.50" max="0.75" step="0.01" value="0.50" aria-label="Swing"><span class="groove-val" id="swing-val">50%</span></div>
     </div>
 
     <div class="tbar">
@@ -237,6 +243,9 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
         <button class="mb m" id="midi-btn">🔌 MIDI I/O</button>
         <button class="mb a" id="routing-btn">🎛️ MULTI-OUT: OFF</button>
         <button class="mb r" id="config-btn">⚡ CONFIG IA</button>
+        <button class="mb" id="undo-btn" disabled>↶ UNDO</button>
+        <button class="mb" id="redo-btn" disabled>↷ REDO</button>
+        <button class="mb r" id="rec-btn">● REC MASTER</button>
     </div>
 
     <div class="pat-tabs" id="pat-tabs">
@@ -340,7 +349,7 @@ let trackLengths = { kick: 16, acid: 16, fm: 16, metal: 16, auto: 16 };
 let trackSteps = { kick: 0, acid: 0, fm: 0, metal: 0, auto: 0 };
 let trackChaos = { kick: 0, acid: 0, fm: 0, metal: 0 };
 let aiTimeline = [], agentAdvice = [];
-let bpm = 128;
+let bpm = 128, swing = 0.50;
 let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
 let curPat = 'A', matrix;
@@ -355,18 +364,94 @@ function initPats() {
 }
 let patterns = initPats();
 
-function saveLiveState() {
-    let state = { pat: patterns, lengths: trackLengths, chaos: trackChaos, bpm: bpm, cur: curPat, multiOut: isMultiOut, morph: morphAmount };
-    safeStorage.setItem('lovestronautes_state', JSON.stringify(state));
+function projectState() {
+    return {
+        version: 2,
+        pat: patterns,
+        lengths: trackLengths,
+        chaos: trackChaos,
+        volumes: chanVol,
+        bpm: bpm,
+        swing: swing,
+        cur: curPat,
+        multiOut: isMultiOut,
+        morph: morphAmount
+    };
 }
+
+function validPatternBank(bank) {
+    if (!bank || typeof bank !== 'object') return false;
+    return ['A','B','C','D'].every(function(name) {
+        const p = bank[name];
+        return p && ['kick','acid','fm','metal','auto'].every(function(track) {
+            return Array.isArray(p[track]) && p[track].length === 16;
+        });
+    });
+}
+
+function applyProjectState(state, persist) {
+    if (!state || !validPatternBank(state.pat)) throw new Error('Projet incompatible ou corrompu');
+    patterns = JSON.parse(JSON.stringify(state.pat));
+    trackLengths = Object.assign({kick:16,acid:16,fm:16,metal:16,auto:16}, state.lengths || {});
+    trackChaos = Object.assign({kick:0,acid:0,fm:0,metal:0}, state.chaos || {});
+    chanVol = Object.assign({kick:1,acid:.7,fm:.52,metal:.45}, state.volumes || {});
+    bpm = Number.isFinite(state.bpm) ? Math.max(40, Math.min(220, state.bpm)) : 128;
+    swing = Number.isFinite(state.swing) ? Math.max(0.50, Math.min(0.75, state.swing)) : 0.50;
+    curPat = ['A','B','C','D'].includes(state.cur) ? state.cur : 'A';
+    isMultiOut = !!state.multiOut;
+    morphAmount = Number.isFinite(state.morph) ? Math.max(0, Math.min(1, state.morph)) : 0;
+    matrix = patterns[curPat];
+    if (persist !== false) saveLiveState();
+}
+
+function saveLiveState() {
+    safeStorage.setItem('lovestronautes_state', JSON.stringify(projectState()));
+}
+
 function loadLiveState() {
     try {
-        let s = JSON.parse(safeStorage.getItem('lovestronautes_state'));
-        if (s && s.pat) { patterns = s.pat; trackLengths = s.lengths || trackLengths; trackChaos = s.chaos || trackChaos; bpm = Number.isFinite(s.bpm) ? Math.max(40, Math.min(220, s.bpm)) : 128; curPat = s.cur || 'A'; isMultiOut = !!s.multiOut; if (Number.isFinite(s.morph)) morphAmount = Math.max(0, Math.min(1, s.morph)); }
-    } catch(e){}
-    matrix = patterns[curPat];
+        const raw = safeStorage.getItem('lovestronautes_state');
+        if (raw) applyProjectState(JSON.parse(raw), false);
+        else matrix = patterns[curPat];
+    } catch(e) {
+        patterns = initPats();
+        matrix = patterns[curPat];
+    }
 }
 loadLiveState();
+
+const HISTORY_LIMIT = 32;
+let undoStack = [], redoStack = [];
+function snapshotProject() { return JSON.stringify(projectState()); }
+function updateHistoryUI() {
+    const u = document.getElementById('undo-btn'), r = document.getElementById('redo-btn');
+    if (u) u.disabled = undoStack.length === 0;
+    if (r) r.disabled = redoStack.length === 0;
+}
+function pushUndo() {
+    undoStack.push(snapshotProject());
+    if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+    redoStack.length = 0;
+    updateHistoryUI();
+}
+function restoreSnapshot(serialized) {
+    applyProjectState(JSON.parse(serialized), true);
+    syncProjectUI();
+}
+function undoProject() {
+    if (!undoStack.length) return;
+    redoStack.push(snapshotProject());
+    restoreSnapshot(undoStack.pop());
+    updateHistoryUI();
+    setStatus('UNDO', 'ok');
+}
+function redoProject() {
+    if (!redoStack.length) return;
+    undoStack.push(snapshotProject());
+    restoreSnapshot(redoStack.pop());
+    updateHistoryUI();
+    setStatus('REDO', 'ok');
+}
 
 function $id(id) { return document.getElementById(id); }
 function mkEl(tag, cls) { let e = document.createElement(tag); if (cls) e.className = cls; return e; }
@@ -385,7 +470,8 @@ let ctx = null, audioReady = false;
 let masterFilter, distShaper, analyserNode;
 let scopeCanvas = null, scopeCtx = null, scopeBuffer = new Float32Array(256);
 let chanGain = {}, chanVol = {kick:1,acid:.7,fm:.52,metal:.45};
-let duckingGain = null, channelMerger = null;
+let duckingGain = null, channelMerger = null, recordingDest = null;
+let mediaRecorder = null, recordChunks = [];
 
 function hz(note) { let notes = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11}; let m = String(note||'').match(/^([A-G][b#]?)(\d)$/); if(!m) return 440; return 440 * Math.pow(2, (notes[m[1]] - 9 + (parseInt(m[2]) - 4) * 12) / 12); }
 function makeDistCurve(k) { k = Math.max(0.001, k); let n = 256, c = new Float32Array(n); for (let i=0; i<n; i++) { let x = (i * 2 / n) - 1; c[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x)); } return c; }
@@ -402,9 +488,13 @@ function initAudio() {
         ctx.destination.channelCount = 4;
         channelMerger = ctx.createChannelMerger(4);
         channelMerger.connect(ctx.destination);
-        comp.connect(channelMerger, 0, 0); // Default Ch 1
+        comp.connect(channelMerger, 0, 0); // Preview / FX return on Ch 1
     } else {
         comp.connect(ctx.destination);
+        if (typeof ctx.createMediaStreamDestination === 'function') {
+            recordingDest = ctx.createMediaStreamDestination();
+            comp.connect(recordingDest);
+        }
     }
 
     analyserNode = ctx.createAnalyser(); analyserNode.fftSize = 256; analyserNode.smoothingTimeConstant = 0.75; analyserNode.connect(comp);
@@ -450,6 +540,52 @@ $id('routing-btn').addEventListener('click', function() {
         setStatus('ROUTING PRÊT POUR LE PROCHAIN ARMEMENT', 'ok');
     }
 });
+
+function bestRecordingMime() {
+    if (!window.MediaRecorder) return '';
+    const types = ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/webm','audio/ogg'];
+    return types.find(function(t){ return !MediaRecorder.isTypeSupported || MediaRecorder.isTypeSupported(t); }) || '';
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+}
+
+function toggleMasterRecording() {
+    const btn = $id('rec-btn');
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+    }
+    if (isMultiOut) { setStatus('REC MASTER: DÉSACTIVÉ EN MULTI-OUT', 'al'); return; }
+    if (!audioReady) {
+        initAudio();
+        setTimeout(function(){ if (audioReady) toggleMasterRecording(); }, 300);
+        return;
+    }
+    if (!window.MediaRecorder || !recordingDest) { setStatus('REC MASTER NON SUPPORTÉ', 'al'); return; }
+    const mime = bestRecordingMime();
+    try {
+        recordChunks = [];
+        mediaRecorder = mime ? new MediaRecorder(recordingDest.stream, {mimeType:mime}) : new MediaRecorder(recordingDest.stream);
+        mediaRecorder.ondataavailable = function(e){ if (e.data && e.data.size) recordChunks.push(e.data); };
+        mediaRecorder.onstop = function() {
+            const type = mediaRecorder.mimeType || mime || 'audio/webm';
+            const ext = type.includes('ogg') ? 'ogg' : 'webm';
+            const blob = new Blob(recordChunks, {type:type});
+            if (blob.size) downloadBlob(blob, 'lovestronautes-master-' + new Date().toISOString().replace(/[:.]/g,'-') + '.' + ext);
+            btn.classList.remove('on'); btn.textContent = '● REC MASTER';
+            setStatus('MASTER ENREGISTRÉ', 'ok');
+        };
+        mediaRecorder.start(250);
+        btn.classList.add('on'); btn.textContent = '■ STOP REC';
+        setStatus('REC MASTER...', 'al');
+    } catch(e) { setStatus('ERREUR REC MASTER', 'al'); }
+}
 
 // ── WEB MIDI (IN/OUT & VJ SYNC) ──────────────────────────────────
 let midiOut = null, midiIn = null;
@@ -539,9 +675,16 @@ function scheduleStep(time) {
     sendMIDIVJ('tension', tension); // VJ Sync à chaque step
 }
 
+function stepInterval(stepIndex) {
+    const base = 60.0 / (bpm * 4);
+    return (stepIndex % 2 === 0) ? base * 2 * swing : base * 2 * (1 - swing);
+}
+
 function schedulerTick() {
     while (ctx && SEQ.playing && SEQ.nextTime < ctx.currentTime + 0.14) {
-        scheduleStep(SEQ.nextTime); SEQ.nextTime += (60.0 / (bpm * 4)); SEQ.masterStep = (SEQ.masterStep + 1) % 16;
+        scheduleStep(SEQ.nextTime);
+        SEQ.nextTime += stepInterval(SEQ.masterStep);
+        SEQ.masterStep = (SEQ.masterStep + 1) % 16;
         if (SEQ.masterStep === 0) {
             SEQ.barCount++;
             if (isPilot && aiTimeline.length > 0) {
@@ -634,7 +777,7 @@ function buildSeq() {
         for (let i=0;i<16;i++) {
             let s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
             let val=matrix[name][i]; if ((name==='kick'||name==='metal')?!!val:(val!=null)) s.classList.add('on');
-            (function(trk,idx,el2) { el2.addEventListener('click', function() { let active=!!matrix[trk][idx]; matrix[trk][idx]=active?null:(trk==='kick'||trk==='metal'?1:{note:['C2','G2','C4'][TRACKS.indexOf(trk)],vel:.8}); el2.classList.toggle('on',!active); saveLiveState(); }); })(name,i,s);
+            (function(trk,idx,el2) { el2.addEventListener('click', function() { pushUndo(); let active=!!matrix[trk][idx]; matrix[trk][idx]=active?null:(trk==='kick'||trk==='metal'?1:{note:['C2','G2','C4'][TRACKS.indexOf(trk)],vel:.8}); el2.classList.toggle('on',!active); saveLiveState(); }); })(name,i,s);
             stepEls[name].push(s); grid.appendChild(s);
         }
         card.appendChild(grid); p.appendChild(card);
@@ -653,7 +796,8 @@ function buildMixer() {
         vGrp.appendChild(vCol); vGrp.appendChild(cCol); ch.appendChild(vGrp);
         let len=document.createElement('input'); len.type='range'; len.className='pfader'; len.min=1; len.max=16; len.step=1; len.value=trackLengths[name];
         ch.appendChild(len); row.appendChild(ch);
-        vol.addEventListener('input',function(e){ chanVol[name]=parseFloat(e.target.value); if(chanGain[name]) chanGain[name].gain.setTargetAtTime(chanVol[name],ctx?ctx.currentTime:0,.01); });
+        [vol,chaos,len].forEach(function(control){ control.addEventListener('pointerdown', pushUndo); });
+        vol.addEventListener('input',function(e){ chanVol[name]=parseFloat(e.target.value); if(chanGain[name]) chanGain[name].gain.setTargetAtTime(chanVol[name],ctx?ctx.currentTime:0,.01); saveLiveState(); });
         chaos.addEventListener('input',function(e){ trackChaos[name]=parseFloat(e.target.value); saveLiveState(); });
         len.addEventListener('input',function(e){ trackLengths[name]=parseInt(e.target.value); buildSeq(); saveLiveState(); });
     });
@@ -671,8 +815,28 @@ function buildFX() {
 }
 
 function buildDNA() {
-    $id('panel-dna').innerHTML = '<div class="dnacard"><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
+    $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, longueurs, volumes, chaos, BPM, swing et morph.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
     $id('save-dna').addEventListener('click', function(){ saveLiveState(); setStatus('SAUVEGARDE FORCÉE', 'ok'); });
+    $id('export-project').addEventListener('click', function(){
+        const blob = new Blob([JSON.stringify(projectState(), null, 2)], {type:'application/json'});
+        downloadBlob(blob, 'lovestronautes-project-' + new Date().toISOString().slice(0,10) + '.json');
+        setStatus('PROJET EXPORTÉ', 'ok');
+    });
+    $id('import-project').addEventListener('click', function(){ $id('import-file').click(); });
+    $id('import-file').addEventListener('change', async function(e){
+        const file = e.target.files && e.target.files[0]; if (!file) return;
+        try {
+            pushUndo();
+            const data = JSON.parse(await file.text());
+            applyProjectState(data, true);
+            syncProjectUI();
+            setStatus('PROJET IMPORTÉ', 'ok');
+        } catch(err) {
+            if (undoStack.length) undoStack.pop();
+            updateHistoryUI();
+            setStatus('IMPORT JSON INVALIDE', 'al');
+        } finally { e.target.value = ''; }
+    });
     $id('nuke-dna').addEventListener('click', function(){ safeStorage.removeItem('lovestronautes_state'); location.reload(); });
 }
 
@@ -698,11 +862,24 @@ function buildKeyboard() {
     });
 }
 
-buildSeq(); buildMixer(); buildFX(); buildDNA(); buildKeyboard();
-$id('bpm-input').value = bpm;
-$id('morph-slider').value = morphAmount;
-$id('routing-btn').classList.toggle('on', isMultiOut);
-$id('routing-btn').textContent = isMultiOut ? '🎛️ MULTI-OUT: 4CH' : '🎛️ MULTI-OUT: OFF';
+function syncProjectUI() {
+    matrix = patterns[curPat];
+    buildSeq(); buildMixer(); buildDNA();
+    $id('bpm-input').value = bpm;
+    $id('morph-slider').value = morphAmount;
+    $id('swing-slider').value = swing.toFixed(2);
+    $id('swing-val').textContent = Math.round(swing * 100) + '%';
+    $id('routing-btn').classList.toggle('on', isMultiOut);
+    $id('routing-btn').textContent = isMultiOut ? '🎛️ MULTI-OUT: 4CH' : '🎛️ MULTI-OUT: OFF';
+    document.querySelectorAll('.pt').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-pat') === curPat); });
+    if (ctx) {
+        Object.keys(chanVol).forEach(function(name){ if (chanGain[name]) chanGain[name].gain.setTargetAtTime(chanVol[name], ctx.currentTime, .01); });
+        applyMorph(morphAmount, false);
+    }
+    updateHistoryUI();
+}
+
+buildFX(); buildKeyboard(); syncProjectUI();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 function doUnlock() { initAudio(); }
@@ -710,6 +887,7 @@ $id('unlock').addEventListener('touchstart',function(e){e.preventDefault();doUnl
 
 $id('bpm-input').addEventListener('change', function(e) {
     const next = Math.max(40, Math.min(220, Number(e.target.value) || 128));
+    pushUndo();
     bpm = Math.round(next);
     e.target.value = bpm;
     saveLiveState();
@@ -726,6 +904,7 @@ $id('tap-btn').addEventListener('click', function() {
         for (let i = 1; i < tapTimes.length; i++) total += tapTimes[i] - tapTimes[i - 1];
         const tapped = Math.round(60000 / (total / (tapTimes.length - 1)));
         if (tapped >= 40 && tapped <= 220) {
+            pushUndo();
             bpm = tapped;
             $id('bpm-input').value = bpm;
             saveLiveState();
@@ -744,6 +923,7 @@ $id('aiauto-btn').addEventListener('click', function() {
 });
 
 $id('clear-btn').addEventListener('click', function() {
+    pushUndo();
     patterns[curPat] = {
         kick: Array(16).fill(0),
         acid: Array(16).fill(null),
@@ -766,7 +946,18 @@ $id('midi-btn').addEventListener('click', function() { initMIDI(); this.classLis
 $id('config-btn').addEventListener('click',function(){$id('cfg-sheet').classList.add('open');});
 $id('close-cfg').addEventListener('click',function(){$id('cfg-sheet').classList.remove('open');});
 $id('close-cfg2').addEventListener('click',function(){$id('cfg-sheet').classList.remove('open');});
+$id('morph-slider').addEventListener('pointerdown', pushUndo);
 $id('morph-slider').addEventListener('input',function(e){ applyMorph(parseFloat(e.target.value)); });
+
+$id('swing-slider').addEventListener('pointerdown', pushUndo);
+$id('swing-slider').addEventListener('input', function(e) {
+    swing = Math.max(0.50, Math.min(0.75, parseFloat(e.target.value) || 0.50));
+    $id('swing-val').textContent = Math.round(swing * 100) + '%';
+    saveLiveState();
+});
+$id('undo-btn').addEventListener('click', undoProject);
+$id('redo-btn').addEventListener('click', redoProject);
+$id('rec-btn').addEventListener('click', toggleMasterRecording);
 
 document.querySelectorAll('.nt').forEach(function(tab){ tab.addEventListener('click',function(){ document.querySelectorAll('.nt').forEach(function(t){t.classList.remove('active');}); document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');}); tab.classList.add('active'); $id('panel-'+tab.getAttribute('data-panel')).classList.add('active'); }); });
 $id('pat-tabs').addEventListener('click',function(e){ let btn=e.target.closest('.pt'); if(!btn)return; curPat=btn.getAttribute('data-pat'); matrix=patterns[curPat]; document.querySelectorAll('.pt').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-pat')===curPat);}); buildSeq(); saveLiveState(); });
