@@ -59,11 +59,14 @@ assert(!html.includes('navigator.serviceWorker.register(swURL)'), 'ancien Servic
 assert(html.includes('function stepInterval(stepIndex)'), 'scheduler swing présent');
 assert(html.includes('function undoProject()') && html.includes('function redoProject()'), 'Undo/Redo présents');
 assert(html.includes('function toggleMasterRecording()'), 'enregistrement master présent');
+assert(html.includes('function triggerBiniou('), 'moteur biniou électronique présent');
+assert(html.includes('function startBiniouDrone()'), 'drone biniou présent');
+assert(html.includes('function updateBiniouFX()'), 'chaîne FX biniou présente');
 assert(html.includes("id=\"export-project\"") && html.includes("id=\"import-project\""), 'export/import projet présents');
 
 const requiredIds = [
   'play-btn','tap-btn','bpm-input','swing-slider','morph-slider',
-  'undo-btn','redo-btn','rec-btn','midi-btn','routing-btn',
+  'undo-btn','redo-btn','rec-btn','midi-btn','routing-btn','biniou-toggle','biniou-drone','biniou-drive','biniou-tone','biniou-echo','biniou-space',
   'panel-seq','panel-mix','panel-fx','panel-dna','kbd','scope'
 ];
 const missingIds = requiredIds.filter(id => !ids.includes(id));
