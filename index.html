@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
 <title>LOVESTRONAUTES MACHINE // PRO LIVE ACT</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
   --p:#39ff14;--p2:#00c853;--m:#ff00ea;--al:#ff2244;--am:#ffaa00;--ic:#c8eeff;--bg:#000;--ca:#020402;
@@ -194,7 +194,7 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
 <link rel="manifest" href="manifest.json">
 </head>
 <body role="application" aria-label="Lovestronautes Machine — DAW psytrance">
-<main id="app" tabindex="-1">
+<main id="app-root" tabindex="-1">
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">Lovestronautes Machine</h1>
 
 
@@ -272,7 +272,7 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
         <div class="shdr"><h2>⚡ GHOST PILOT CONFIG</h2><div class="sclose" id="close-cfg">✕</div></div>
         <div class="sbody">
             <div class="sinfo">Agents <strong>DP-909</strong> & <strong>GESA-666</strong>. VJ Sync sur MIDI Ch.16 (CC102).</div>
-            <div><div class="flbl">CLÉ API MISTRAL</div><input type="text" class="sinput" id="api-key" placeholder="Votre clé API Mistral..."></div>
+            <div><div class="flbl">CLÉ API MISTRAL</div><input type="password" class="sinput" id="api-key" placeholder="Votre clé API Mistral..." autocomplete="off" spellcheck="false"></div>
             <div><div class="flbl">INSTRUCTIONS DE PERFORMANCE</div><textarea class="sta" id="ai-prompt">Mélange French Touch & EBM Industrielle sombre.</textarea></div>
             <div class="aist" id="ai-st"></div>
             <button class="sbtn rbtn" id="test-btn">INVOKER LES AGENTS (7 MIN)</button>
@@ -341,7 +341,7 @@ let trackSteps = { kick: 0, acid: 0, fm: 0, metal: 0, auto: 0 };
 let trackChaos = { kick: 0, acid: 0, fm: 0, metal: 0 };
 let aiTimeline = [], agentAdvice = [];
 let bpm = 128;
-let isPlaying = false, isPilot = false, isAiAuto = false;
+let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
 let curPat = 'A', matrix;
 
@@ -356,13 +356,13 @@ function initPats() {
 let patterns = initPats();
 
 function saveLiveState() {
-    let state = { pat: patterns, lengths: trackLengths, chaos: trackChaos, bpm: bpm, cur: curPat };
+    let state = { pat: patterns, lengths: trackLengths, chaos: trackChaos, bpm: bpm, cur: curPat, multiOut: isMultiOut, morph: morphAmount };
     safeStorage.setItem('lovestronautes_state', JSON.stringify(state));
 }
 function loadLiveState() {
     try {
         let s = JSON.parse(safeStorage.getItem('lovestronautes_state'));
-        if (s && s.pat) { patterns = s.pat; trackLengths = s.lengths || trackLengths; trackChaos = s.chaos || trackChaos; bpm = s.bpm || 128; curPat = s.cur || 'A'; }
+        if (s && s.pat) { patterns = s.pat; trackLengths = s.lengths || trackLengths; trackChaos = s.chaos || trackChaos; bpm = Number.isFinite(s.bpm) ? Math.max(40, Math.min(220, s.bpm)) : 128; curPat = s.cur || 'A'; isMultiOut = !!s.multiOut; if (Number.isFinite(s.morph)) morphAmount = Math.max(0, Math.min(1, s.morph)); }
     } catch(e){}
     matrix = patterns[curPat];
 }
@@ -377,12 +377,13 @@ let wakeLock = null;
 async function requestWakeLock() {
     try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) {}
 }
-document.addEventListener('visibilitychange', function() { if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock(); });
+document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible' && isPlaying) requestWakeLock(); });
 window.addEventListener('beforeunload', function(e) { if(isPlaying) { e.preventDefault(); e.returnValue = ''; } });
 
 // ── AUDIO ENGINE & MULTI-OUT ──────────────────────────────────────
-let ctx = null, audioReady = false, isMultiOut = false;
+let ctx = null, audioReady = false;
 let masterFilter, distShaper, analyserNode;
+let scopeCanvas = null, scopeCtx = null, scopeBuffer = new Float32Array(256);
 let chanGain = {}, chanVol = {kick:1,acid:.7,fm:.52,metal:.45};
 let duckingGain = null, channelMerger = null;
 
@@ -426,7 +427,8 @@ function initAudio() {
         if (isMultiOut && channelMerger) {
             if (t === 'kick') g.connect(channelMerger, 0, 0); // Kick -> Ch 1
             else if (t === 'acid') g.connect(channelMerger, 0, 1); // Acid -> Ch 2
-            else { g.connect(channelMerger, 0, 2); g.connect(channelMerger, 0, 3); } // FM/Metal -> Ch 3&4
+            else if (t === 'fm') g.connect(channelMerger, 0, 2); // FM -> Ch 3
+            else g.connect(channelMerger, 0, 3); // Metal -> Ch 4
             // On bypass les effets globaux (l'ingé son gère)
         } else {
             if (t === 'kick') g.connect(distShaper); else if (t === 'metal') g.connect(sp1200Crusher); else g.connect(duckingGain);
@@ -440,8 +442,13 @@ function initAudio() {
 $id('routing-btn').addEventListener('click', function() {
     isMultiOut = !isMultiOut; this.classList.toggle('on', isMultiOut);
     this.textContent = isMultiOut ? '🎛️ MULTI-OUT: 4CH' : '🎛️ MULTI-OUT: OFF';
-    setStatus('ROUTING MODIFIÉ (RESTART REQUIS)', 'al');
-    if(audioReady) { setTimeout(function(){ location.reload(); }, 1500); } // Reboot brutal pour rebâtir l'AudioContext
+    saveLiveState();
+    if (audioReady) {
+        setStatus('ROUTING MODIFIÉ — REDÉMARRAGE AUDIO', 'al');
+        setTimeout(function(){ location.reload(); }, 250);
+    } else {
+        setStatus('ROUTING PRÊT POUR LE PROCHAIN ARMEMENT', 'ok');
+    }
 });
 
 // ── WEB MIDI (IN/OUT & VJ SYNC) ──────────────────────────────────
@@ -558,22 +565,51 @@ function schedulerTick() {
 function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, metal: 0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
 function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); }
 
-function applyMorph(m) {
+function applyMorph(m, persist=true) {
     m = Math.max(0, Math.min(1, m)); morphAmount = m;
     if (ctx && distShaper) { try { distShaper.curve = makeDistCurve(m < 0.01 ? 0.001 : m * 280); } catch(e){} }
     if (ctx && !isAiAuto && masterFilter) { try { masterFilter.frequency.setTargetAtTime((1-m)*17700+300, ctx.currentTime, 0.04); } catch(e){} }
-    $id('morph-slider').value = m; saveLiveState();
+    $id('morph-slider').value = m;
+    if (persist) saveLiveState();
+}
+
+function drawScope(buf) {
+    if (!scopeCanvas) {
+        scopeCanvas = $id('scope');
+        if (!scopeCanvas) return;
+        scopeCtx = scopeCanvas.getContext('2d');
+    }
+    if (!scopeCtx) return;
+    const rect = scopeCanvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.floor(rect.width * dpr));
+    const h = Math.max(1, Math.floor(rect.height * dpr));
+    if (scopeCanvas.width !== w || scopeCanvas.height !== h) {
+        scopeCanvas.width = w;
+        scopeCanvas.height = h;
+    }
+    scopeCtx.clearRect(0, 0, w, h);
+    scopeCtx.strokeStyle = '#39ff14';
+    scopeCtx.lineWidth = Math.max(1, dpr);
+    scopeCtx.beginPath();
+    for (let i = 0; i < buf.length; i++) {
+        const x = (i / (buf.length - 1)) * w;
+        const y = (0.5 + buf[i] * 0.42) * h;
+        if (i === 0) scopeCtx.moveTo(x, y); else scopeCtx.lineTo(x, y);
+    }
+    scopeCtx.stroke();
 }
 
 function rafLoop() {
     requestAnimationFrame(rafLoop);
     if (analyserNode) {
-        let buf = new Float32Array(256); analyserNode.getFloatTimeDomainData(buf);
-        let rms = 0; for (let i=0;i<256;i++) rms += buf[i]*buf[i]; rms = Math.sqrt(rms/256);
+        analyserNode.getFloatTimeDomainData(scopeBuffer);
+        let rms = 0; for (let i=0;i<scopeBuffer.length;i++) rms += scopeBuffer[i]*scopeBuffer[i]; rms = Math.sqrt(rms/scopeBuffer.length);
         tension = Math.min(1, rms * 8) * 0.5 + ((Math.sin(Date.now()*0.0004)+1)/2) * 0.5;
+        drawScope(scopeBuffer);
     }
     $id('tension-fill').style.width = (tension*100)+'%'; $id('tension-val').textContent = Math.round(tension*100)+'%';
-    if (isAiAuto) applyMorph(tension);
+    if (isAiAuto) applyMorph(tension, false);
 
     // Visuels Sequenceur
     if (ctx && SEQ.playing) {
@@ -640,12 +676,86 @@ function buildDNA() {
     $id('nuke-dna').addEventListener('click', function(){ safeStorage.removeItem('lovestronautes_state'); location.reload(); });
 }
 
-buildSeq(); buildMixer(); buildFX(); buildDNA();
+function buildKeyboard() {
+    const root = $id('kbd');
+    root.innerHTML = '';
+    const notes = ['C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4','B4','C5'];
+    notes.forEach(function(note) {
+        const key = document.createElement('button');
+        key.type = 'button';
+        key.className = 'key' + (note.includes('#') ? ' black' : '');
+        key.setAttribute('aria-label', 'Jouer ' + note);
+        key.innerHTML = '<span class="keylbl">' + note + '</span>';
+        key.addEventListener('pointerdown', function(e) {
+            e.preventDefault();
+            initAudio();
+            if (!ctx) return;
+            const t = ctx.currentTime + 0.01;
+            triggerFM(note, t);
+            if (note.includes('#')) triggerMetal(t);
+        });
+        root.appendChild(key);
+    });
+}
+
+buildSeq(); buildMixer(); buildFX(); buildDNA(); buildKeyboard();
 $id('bpm-input').value = bpm;
+$id('morph-slider').value = morphAmount;
+$id('routing-btn').classList.toggle('on', isMultiOut);
+$id('routing-btn').textContent = isMultiOut ? '🎛️ MULTI-OUT: 4CH' : '🎛️ MULTI-OUT: OFF';
 
 // ── EVENTS ───────────────────────────────────────────────────────
 function doUnlock() { initAudio(); }
 $id('unlock').addEventListener('touchstart',function(e){e.preventDefault();doUnlock();},{passive:false}); $id('unlock').addEventListener('click',doUnlock);
+
+$id('bpm-input').addEventListener('change', function(e) {
+    const next = Math.max(40, Math.min(220, Number(e.target.value) || 128));
+    bpm = Math.round(next);
+    e.target.value = bpm;
+    saveLiveState();
+    setStatus('TEMPO: ' + bpm + ' BPM', 'ok');
+});
+
+let tapTimes = [];
+$id('tap-btn').addEventListener('click', function() {
+    const now = performance.now();
+    tapTimes = tapTimes.filter(function(t){ return now - t < 2200; });
+    tapTimes.push(now);
+    if (tapTimes.length >= 2) {
+        let total = 0;
+        for (let i = 1; i < tapTimes.length; i++) total += tapTimes[i] - tapTimes[i - 1];
+        const tapped = Math.round(60000 / (total / (tapTimes.length - 1)));
+        if (tapped >= 40 && tapped <= 220) {
+            bpm = tapped;
+            $id('bpm-input').value = bpm;
+            saveLiveState();
+            setStatus('TAP: ' + bpm + ' BPM', 'ok');
+        }
+    }
+    this.classList.add('flash');
+    setTimeout(() => this.classList.remove('flash'), 90);
+});
+
+$id('aiauto-btn').addEventListener('click', function() {
+    isAiAuto = !isAiAuto;
+    this.classList.toggle('on', isAiAuto);
+    this.textContent = isAiAuto ? '🧠 AI AUTO: ON' : '🧠 AI AUTO: OFF';
+    setStatus(isAiAuto ? 'AI AUTO: TENSION → MORPH' : 'AI AUTO: OFF', isAiAuto ? 'mg' : '');
+});
+
+$id('clear-btn').addEventListener('click', function() {
+    patterns[curPat] = {
+        kick: Array(16).fill(0),
+        acid: Array(16).fill(null),
+        fm: Array(16).fill(null),
+        metal: Array(16).fill(0),
+        auto: Array(16).fill(0.85)
+    };
+    matrix = patterns[curPat];
+    buildSeq();
+    saveLiveState();
+    setStatus('PATTERN ' + curPat + ' EFFACÉ', 'al');
+});
 
 $id('play-btn').addEventListener('click',function(){
     if (!audioReady) { initAudio(); setTimeout(function(){ if(audioReady) $id('play-btn').click(); },300); return; }
@@ -667,9 +777,16 @@ $id('test-btn').addEventListener('click', async function() {
     _mutating = true; setStatus('INVOCATION DES AGENTS...', 'mg'); $id('ai-st').textContent = '⚡ Calcul en cours...';
     try {
         let res = await nikoFetch('https://api.mistral.ai/v1/chat/completions', { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key}, body: JSON.stringify({ model: 'mistral-large-latest', response_format: {type: 'json_object'}, messages: [{role: 'system', content: 'Tu es 2 agents: DP-909 (Groove) et GESA-666 (Dark). Réponds JSON: {"timeline":[{"bar":0,"pat":"A","polyrhythm":{"kick":16,"acid":15,"fm":16,"metal":16},"morph_target":0.1}], "live_advice":[{"bar":0,"agent":"DP-909","msg":"Monte le filtre"}]}'}, {role: 'user', content: $id('ai-prompt').value}] }) });
-        let data = await res.json(); let gen = JSON.parse(data.choices[0].message.content.trim());
-        aiTimeline = gen.timeline; agentAdvice = gen.live_advice; $id('ai-st').textContent = '✅ Agents chargés !';
-    } catch(e) { $id('ai-st').textContent = '❌ Erreur'; } finally { _mutating = false; }
+        let data = await res.json();
+        let raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!raw) throw new Error('Réponse IA vide');
+        let gen = typeof raw === 'string' ? JSON.parse(raw.trim()) : raw;
+        aiTimeline = Array.isArray(gen.timeline) ? gen.timeline : [];
+        agentAdvice = Array.isArray(gen.live_advice) ? gen.live_advice : [];
+        if (!aiTimeline.length) throw new Error('Timeline absente');
+        $id('ai-st').textContent = '✅ Agents chargés !';
+        setStatus('GHOST PILOT PRÊT', 'mg');
+    } catch(e) { $id('ai-st').textContent = '❌ ' + (e && e.message ? e.message : 'Erreur IA'); setStatus('ERREUR IA', 'al'); } finally { _mutating = false; }
 });
 $id('pilot-btn').addEventListener('click',function(){ isPilot=!isPilot; this.classList.toggle('on',isPilot); $id('pilot-lbl').textContent=isPilot?'GHOST PILOT: ACTIF':'ACTIVER GHOST PILOT'; if(isPilot){ SEQ.barCount=0; } });
 
@@ -679,18 +796,10 @@ rafLoop();
 </main>
 
 <script>
-if('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    const swCode = `
-const CACHE='niko-v1';
-const ASSETS=['./','/index.html'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
-self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
-    `;
-    const blob = new Blob([swCode],{type:'text/javascript'});
-    const swURL = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swURL).catch(()=>{});
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .catch(function(err) { console.warn('Service Worker indisponible:', err); });
   });
 }
 </script>
