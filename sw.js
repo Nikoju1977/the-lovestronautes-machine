@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v2';
+const CACHE_NAME = 'lovestronautes-v3';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
