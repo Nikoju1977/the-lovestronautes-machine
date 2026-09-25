@@ -1035,11 +1035,23 @@ function syncBiniouUI() {
     if (!bToggle) return;
     bToggle.classList.toggle('on', biniouEnabled);
     bToggle.textContent = biniouEnabled ? 'BINIOU E: ON' : 'BINIOU E: OFF';
-    ['drive','tone','echo','space'].forEach(function(key) {
+
+    ['drive','tone','echo','space','harmony'].forEach(function(key) {
         const input = $id('biniou-' + key), out = $id('biniou-' + key + '-v');
         if (input) input.value = biniouParams[key];
         if (out) out.textContent = Math.round(biniouParams[key] * 100) + '%';
     });
+
+    const cyberBtn = $id('biniou-cyber');
+    if (cyberBtn) {
+        cyberBtn.classList.toggle('on', biniouParams.cyber);
+        cyberBtn.textContent = biniouParams.cyber ? '⚡ CYBER: ON' : '⚡ CYBER: OFF';
+    }
+
+    const pitch = $id('biniou-pitch'), pitchOut = $id('biniou-pitch-v');
+    if (pitch) pitch.value = biniouParams.pitch;
+    if (pitchOut) pitchOut.textContent = (biniouParams.pitch > 0 ? '+' : '') + biniouParams.pitch.toFixed(1);
+
     const droneBtn = $id('biniou-drone');
     if (droneBtn) {
         droneBtn.classList.toggle('on', !!biniouDroneNodes);
@@ -1051,28 +1063,47 @@ function buildFX() {
     let p = $id('panel-fx');
     p.innerHTML =
       '<div class="fxcard biniou-card">' +
-        '<div class="fxtitle biniou-title">☄ BINIOU ÉLECTRONIQUE // BZH REED ENGINE</div>' +
-        '<div class="biniou-hint">Active le biniou pour remplacer la voix FM par une anche électronique aiguë. Le clavier et la piste FM pilotent alors le biniou. Le drone A reste continu.</div>' +
+        '<div class="fxtitle biniou-title">☄ BINIOU ÉLECTRONIQUE // CYBER BRETON</div>' +
+        '<div class="biniou-hint">BINIOU E arme le clavier et la piste BINI dédiée. CYBER ajoute les harmoniseurs ±1 octave, plus de vibrato et un drive renforcé. Le pitch live accepte aussi le Pitch Bend MIDI.</div>' +
         '<div class="biniou-actions"><button class="mb a" id="biniou-toggle"></button><button class="mb m" id="biniou-drone">○ DRONE A: OFF</button></div>' +
+        '<div class="biniou-actions"><button class="mb r" id="biniou-cyber"></button><button class="mb" id="biniou-reset-pitch">PITCH → 0</button></div>' +
         '<div class="biniou-param"><label>DRIVE</label><input type="range" id="biniou-drive" min="0" max="1" step="0.01"><output id="biniou-drive-v"></output></div>' +
         '<div class="biniou-param"><label>TONE</label><input type="range" id="biniou-tone" min="0" max="1" step="0.01"><output id="biniou-tone-v"></output></div>' +
         '<div class="biniou-param"><label>ECHO</label><input type="range" id="biniou-echo" min="0" max="1" step="0.01"><output id="biniou-echo-v"></output></div>' +
         '<div class="biniou-param"><label>SPACE</label><input type="range" id="biniou-space" min="0" max="1" step="0.01"><output id="biniou-space-v"></output></div>' +
+        '<div class="biniou-param"><label>HARM</label><input type="range" id="biniou-harmony" min="0" max="1" step="0.01"><output id="biniou-harmony-v"></output></div>' +
+        '<div class="biniou-param"><label>PITCH</label><input type="range" id="biniou-pitch" min="-12" max="12" step="0.1"><output id="biniou-pitch-v"></output></div>' +
       '</div>' +
       '<div class="fxcard"><div class="fxtitle">🎛️ CHAOS PAD (X:PHASER / Y:CRUSH)</div><div id="chaos-pad" class="cpad-wrap"><div id="chaos-puck" class="cpad-puck"></div><div class="cpad-lbl c-tl">12-BIT DESTRUCTION</div><div class="cpad-lbl c-tr">LASER SWEEP</div><div class="cpad-lbl c-bl">CLEAN</div><div class="cpad-lbl c-br">SLOW SWEEP</div></div></div>';
 
-    const bToggle = $id('biniou-toggle');
-    bToggle.addEventListener('click', function() {
+    $id('biniou-toggle').addEventListener('click', function() {
         biniouEnabled = !biniouEnabled;
         saveLiveState();
         syncBiniouUI();
         setStatus(biniouEnabled ? 'BINIOU ÉLECTRONIQUE ARMÉ' : 'BINIOU ÉLECTRONIQUE OFF', biniouEnabled ? 'mg' : '');
     });
+
     $id('biniou-drone').addEventListener('click', function() {
         initAudio();
         setBiniouDrone(!biniouDroneNodes);
     });
-    ['drive','tone','echo','space'].forEach(function(key) {
+
+    $id('biniou-cyber').addEventListener('click', function() {
+        biniouParams.cyber = !biniouParams.cyber;
+        updateBiniouFX();
+        saveLiveState();
+        syncBiniouUI();
+        setStatus(biniouParams.cyber ? 'CYBER BRETON: ON' : 'CYBER BRETON: OFF', biniouParams.cyber ? 'al' : '');
+    });
+
+    $id('biniou-reset-pitch').addEventListener('click', function() {
+        biniouParams.pitch = 0;
+        saveLiveState();
+        syncBiniouUI();
+        setStatus('BINIOU PITCH: 0', 'ok');
+    });
+
+    ['drive','tone','echo','space','harmony'].forEach(function(key) {
         $id('biniou-' + key).addEventListener('input', function(e) {
             biniouParams[key] = parseFloat(e.target.value);
             $id('biniou-' + key + '-v').textContent = Math.round(biniouParams[key] * 100) + '%';
@@ -1080,18 +1111,30 @@ function buildFX() {
             saveLiveState();
         });
     });
+
+    $id('biniou-pitch').addEventListener('input', function(e) {
+        biniouParams.pitch = Math.max(-12, Math.min(12, parseFloat(e.target.value) || 0));
+        $id('biniou-pitch-v').textContent = (biniouParams.pitch > 0 ? '+' : '') + biniouParams.pitch.toFixed(1);
+        saveLiveState();
+    });
+
     syncBiniouUI();
 
-    let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false; 
+    let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false;
     function updateP() { if(!ctx)return; if(window.sp1200Crusher) sp1200Crusher.curve = makeBitCrushCurve(Math.max(2, 16 - (padY*14))); if(window.phaserLFO) phaserLFO.frequency.setTargetAtTime(0.05 + (padX*14.95), ctx.currentTime, 0.05); }
     function mv(e) { if(!isTouch)return; let r=pad.getBoundingClientRect(), cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY; padX=Math.max(0,Math.min(1,(cx-r.left)/r.width)); padY=Math.max(0,Math.min(1,1-((cy-r.top)/r.height))); puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); }
-    pad.addEventListener('mousedown', function(e){isTouch=true;puck.classList.add('active');mv(e);}); window.addEventListener('mousemove', mv); window.addEventListener('mouseup', function(){isTouch=false;puck.classList.remove('active');});
-    pad.addEventListener('touchstart', function(e){e.preventDefault();isTouch=true;puck.classList.add('active');mv(e);},{passive:false}); window.addEventListener('touchmove', function(e){if(isTouch){e.preventDefault();mv(e);}},{passive:false}); window.addEventListener('touchend', function(){isTouch=false;puck.classList.remove('active');});
-    function spr() { requestAnimationFrame(spr); if(!isTouch) { let dx=0.5-padX, dy=0.0-padY; if(Math.abs(dx)>0.01||Math.abs(dy)>0.01) { padX+=dx*0.1; padY+=dy*0.1; puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); } } } spr();
+    pad.addEventListener('mousedown', function(e){isTouch=true;puck.classList.add('active');mv(e);});
+    window.addEventListener('mousemove', mv);
+    window.addEventListener('mouseup', function(){isTouch=false;puck.classList.remove('active');});
+    pad.addEventListener('touchstart', function(e){e.preventDefault();isTouch=true;puck.classList.add('active');mv(e);},{passive:false});
+    window.addEventListener('touchmove', function(e){if(isTouch){e.preventDefault();mv(e);}},{passive:false});
+    window.addEventListener('touchend', function(){isTouch=false;puck.classList.remove('active');});
+    function spr() { requestAnimationFrame(spr); if(!isTouch) { let dx=0.5-padX, dy=0.0-padY; if(Math.abs(dx)>0.01||Math.abs(dy)>0.01) { padX+=dx*0.1; padY+=dy*0.1; puck.style.left=(padX*100)+'%'; puck.style.top=((1-padY)*100)+'%'; updateP(); } } }
+    spr();
 }
 
 function buildDNA() {
-    $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, longueurs, volumes, chaos, BPM, swing et morph.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
+    $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, piste BINI, volumes, chaos, BPM, swing, morph et réglages Cyber Breton.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
     $id('save-dna').addEventListener('click', function(){ saveLiveState(); setStatus('SAUVEGARDE FORCÉE', 'ok'); });
     $id('export-project').addEventListener('click', function(){
         const blob = new Blob([JSON.stringify(projectState(), null, 2)], {type:'application/json'});
