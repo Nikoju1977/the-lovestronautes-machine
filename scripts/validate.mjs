@@ -65,6 +65,9 @@ assert(html.includes('function updateBiniouFX()'), 'chaîne FX biniou présente'
 assert(html.includes("let TRACKS = ['kick','acid','fm','biniou','metal']"), 'piste BINI dédiée présente');
 assert(html.includes('biniouParams.cyber'), 'mode Cyber Breton présent');
 assert(html.includes('cmd === 14'), 'Pitch Bend MIDI biniou présent');
+assert(html.includes('PRO UX V2 — LIVE PERFORMANCE COCKPIT'), 'UI Pro UX V2 présente');
+assert(html.includes('@media (min-width:1024px)'), 'layout desktop responsive présent');
+assert(html.includes('@media (max-width:679px)'), 'layout mobile performance présent');
 assert(html.includes("id=\"export-project\"") && html.includes("id=\"import-project\""), 'export/import projet présents');
 
 const requiredIds = [
