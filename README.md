@@ -10,10 +10,13 @@
 
 ## Fonctionnalités
 
-- 🥁 Séquenceur pas-à-pas (synthèse Web Audio, zéro sample externe)
-- 🎛️ Contrôles temps réel des paramètres sonores
-- 🎵 Pensé pour le groove psytrance
-- 📱 Jouable au doigt sur mobile
+- 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
+- 🎚️ BPM éditable + Tap Tempo, morphing et automation live
+- 🎛️ Mixeur, chaos pad, clavier tactile et oscilloscope temps réel
+- 🔌 Web MIDI In/Out et routage audio 4 canaux
+- 🧠 Ghost Pilot Mistral optionnel
+- 💾 Sauvegarde locale des patterns et réglages
+- 📱 PWA installable avec mode hors-ligne
 
 ## Stack
 
@@ -21,7 +24,13 @@
 
 ## Lancer en local
 
-Ouvrir `index.html` et appuyer sur Play. C'est tout.
+Pour tester aussi la PWA et le Service Worker, servez le dossier en HTTP local :
+
+```bash
+python3 -m http.server 8080
+```
+
+Puis ouvrez `http://localhost:8080` et appuyez sur **ARMEMENT SYSTÈME LIVE**.
 
 ## Licence
 
