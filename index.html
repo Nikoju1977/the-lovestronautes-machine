@@ -906,7 +906,7 @@ function schedulerTick() {
                 let kf = aiTimeline.find(function(k) { return k.bar === SEQ.barCount; });
                 if (kf) {
                     if (kf.pat) { curPat = kf.pat; matrix = patterns[curPat]; document.querySelectorAll('.pt').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-pat')===curPat);}); if (kf.pat === "C") sendMIDIVJ('drop'); }
-                    if (kf.polyrhythm) { trackLengths = kf.polyrhythm; }
+                    if (kf.polyrhythm) { trackLengths = Object.assign({}, trackLengths, kf.polyrhythm); }
                     if (typeof kf.morph_target === 'number') { applyMorph(kf.morph_target); }
                     buildSeq(); setStatus('GHOST PILOT: BAR ' + SEQ.barCount, 'mg');
                 }
@@ -1251,6 +1251,7 @@ $id('clear-btn').addEventListener('click', function() {
         kick: Array(16).fill(0),
         acid: Array(16).fill(null),
         fm: Array(16).fill(null),
+        biniou: Array(16).fill(null),
         metal: Array(16).fill(0),
         auto: Array(16).fill(0.85)
     };
