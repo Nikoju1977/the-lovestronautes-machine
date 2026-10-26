@@ -1,10 +1,11 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v5';
+const CACHE_NAME = 'lovestronautes-v6';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
   new URL('./index.html', scope).href,
+  new URL('./audio-extensions.js', scope).href,
   new URL('./manifest.json', scope).href,
   new URL('./icon.svg', scope).href,
   new URL('./banner.svg', scope).href

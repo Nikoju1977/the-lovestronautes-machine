@@ -17,6 +17,7 @@ function assert(condition, message) {
 const html = fs.readFileSync('index.html', 'utf8');
 const manifestText = fs.readFileSync('manifest.json', 'utf8');
 const sw = fs.readFileSync('sw.js', 'utf8');
+const ext = fs.readFileSync('audio-extensions.js', 'utf8');
 
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
 const duplicates = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
@@ -32,6 +33,8 @@ scripts.forEach((code, index) => {
   }
 });
 if (inlineSyntax) ok('Syntaxe des ' + scripts.length + ' scripts inline');
+try { new Function(ext); ok('Syntaxe audio-extensions.js'); }
+catch (error) { fail('Syntaxe audio-extensions.js: ' + error.message); }
 
 try {
   new Function(sw);
@@ -62,7 +65,12 @@ assert(html.includes('function toggleMasterRecording()'), 'enregistrement master
 assert(html.includes('function triggerBiniou('), 'moteur biniou électronique présent');
 assert(html.includes('function startBiniouDrone()'), 'drone biniou présent');
 assert(html.includes('function updateBiniouFX()'), 'chaîne FX biniou présente');
-assert(html.includes("let TRACKS = ['kick','acid','fm','biniou','metal']"), 'piste BINI dédiée présente');
+assert(html.includes("let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal']"), '8 pistes, dont BINI et 3 nouvelles machines');
+assert(html.includes('initMasterEQ(masterFilter, analyserNode)'), 'EQ 5 bandes connecté au bus master');
+assert(html.includes('buildExtendedFX()') && html.includes('syncExtendedFX()'), 'contrôles FX nouvelles machines et EQ');
+assert(ext.includes('function triggerSnare(time)') && ext.includes('function triggerHat(time)') && ext.includes('function triggerSub('), 'moteurs Snare, Hat et Sub');
+assert(ext.includes("name:'AIR'") && ext.includes("name:'SUB'"), 'EQ 5 bandes présent');
+assert(sw.includes("new URL('./audio-extensions.js', scope).href"), 'nouveau moteur disponible hors ligne');
 assert(html.includes('biniouParams.cyber'), 'mode Cyber Breton présent');
 assert(html.includes('cmd === 14'), 'Pitch Bend MIDI biniou présent');
 assert(html.includes('PRO UX V2 — LIVE PERFORMANCE COCKPIT'), 'UI Pro UX V2 présente');
@@ -78,7 +86,7 @@ const requiredIds = [
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['index.html','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['index.html','audio-extensions.js','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);
