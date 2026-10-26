@@ -145,6 +145,36 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
 .cpad-lbl { position: absolute; font-family: var(--hd); font-weight: 900; font-size: 0.5rem; color: rgba(255, 0, 234, 0.4); letter-spacing: 2px; pointer-events: none; }
 .c-tl { top: 6px; left: 8px; } .c-tr { top: 6px; right: 8px; } .c-bl { bottom: 6px; left: 8px; } .c-br { bottom: 6px; right: 8px; }
 
+/* MASTER EQ & NEW MACHINES */
+.eq-card{border-color:rgba(101,255,154,.25)}
+.extension-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.extension-actions{display:flex;gap:6px}
+.extension-actions .mb{width:auto;min-width:100px;padding:0 10px}
+.eq-hint{font-size:.54rem;line-height:1.5;color:var(--muted)}
+.eq-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.eq-band{min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 4px;background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:8px}
+.eq-band span{font-family:var(--hd);font-size:.62rem;font-weight:900;letter-spacing:1px;color:var(--p)}
+.eq-band small{font-size:.48rem;color:var(--muted)}
+.eq-band input{width:95%;height:26px;accent-color:var(--p)}
+.eq-band output{font-size:.52rem;color:#e8f5fc;font-variant-numeric:tabular-nums}
+.machine-card{border-color:rgba(232,121,249,.22)}
+.machine-row{display:grid;grid-template-columns:100px minmax(0,1fr) 38px 60px;gap:8px;align-items:center}
+.machine-row label,.machine-row output{font-size:.53rem;color:var(--am)}
+.machine-row output{text-align:right;font-variant-numeric:tabular-nums}
+.machine-row input{width:100%;accent-color:var(--m)}
+.machine-row .mb{height:35px;font-size:.5rem}
+.mxrow{overflow-x:auto;padding-bottom:8px}
+.mxch{flex:0 0 clamp(78px,10vw,110px)}
+@media(max-width:600px){
+ .eq-grid{gap:4px}
+ .eq-band{padding:9px 2px;gap:6px}
+ .eq-band small{font-size:.42rem}
+ .eq-band span{font-size:.52rem}
+ .eq-band output{font-size:.44rem}
+ .machine-row{grid-template-columns:72px minmax(0,1fr) 32px 46px;gap:4px}
+ .machine-row label{font-size:.45rem}
+ .extension-actions .mb{min-width:78px}
+}
 /* DNA & BOTTOM SHEET */
 .dnacard{background:rgba(0,0,0,.55);border:1px solid rgba(57,255,20,.12);border-radius:7px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .dnatitle{font-family:var(--hd);font-size:.78rem;font-weight:900;letter-spacing:3px;color:var(--p)} .dnainfo{font-size:.6rem;line-height:1.6;color:rgba(255,255,255,.28)} .dnainfo strong{color:var(--p2)}
@@ -839,6 +869,7 @@ function nikoRetryBtn(container, fn) {
 }
 
 </script>
+<script src="./audio-extensions.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -847,31 +878,33 @@ function nikoRetryBtn(container, fn) {
 'use strict';
 
 // ── VARIABLES GLOBALES & AUTO-SAVE ────────────────────────────────
-let trackLengths = { kick: 16, acid: 16, fm: 16, biniou: 16, metal: 16, auto: 16 };
-let trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, auto: 0 };
-let trackChaos = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0 };
+let trackLengths = { kick: 16, acid: 16, fm: 16, biniou: 16, metal: 16, snare: 16, hat: 16, sub: 16, auto: 16 };
+let trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, auto: 0 };
+let trackChaos = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0 };
 let aiTimeline = [], agentAdvice = [];
 let bpm = 128, swing = 0.50;
 let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
-let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45};
+let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58};
 let biniouEnabled = false;
 let biniouParams = { drive:0.42, echo:0.28, space:0.24, tone:0.62, cyber:false, harmony:0.34, pitch:0 };
 let curPat = 'A', matrix;
 
 function initPats() {
-    return {
+    const bank = {
         A:{ kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], acid:Array(16).fill(null), fm:['F4',null,null,null,'Ab4',null,null,null,'C4',null,null,null,'G4',null,null,null], biniou:[{note:'A4',vel:.82},null,null,null,null,null,{note:'B4',vel:.74},null,{note:'A4',vel:.88},null,null,{note:'G4',vel:.72},null,null,{note:'E4',vel:.78},null], metal:Array(16).fill(0), auto:Array(16).fill(0.85) },
         B:{ kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], acid:[null,null,{note:'C3',vel:.8},null,null,null,{note:'C3',vel:.75},null,null,{note:'C3',vel:.8},null,{note:'Eb3',vel:.7},{note:'C3',vel:.85},null,{note:'F3',vel:.8},null], fm:['F4',null,'F4',null,'Ab4',null,'Ab4',null,'C4',null,'C4',null,'G4',null,'G4',null], biniou:[{note:'A4',vel:.88},null,{note:'B4',vel:.76},null,{note:'D5',vel:.9},null,{note:'B4',vel:.78},null,{note:'A4',vel:.92},null,{note:'G4',vel:.76},null,{note:'E4',vel:.84},null,{note:'G4',vel:.8},null], metal:[0,0,0,0,1,0,0,0,0,1,0,0,1,1,1,1], auto:[.9,.7,.8,.6,.9,.5,.7,.8,.9,.6,.8,.5,.9,.7,.8,.6] },
         C:{ kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], acid:[{note:'C3',vel:.9},null,{note:'C3',vel:.8},null,{note:'C3',vel:.85},null,{note:'C3',vel:.8},null,{note:'C3',vel:.9},null,{note:'Eb3',vel:.8},null,{note:'F3',vel:.85},null,null,null], fm:[null,null,'F4',null,null,'Ab4',null,null,'F4',null,null,'C4',null,'Ab4','G4',null], biniou:[{note:'A4',vel:1},null,{note:'D5',vel:.88},null,{note:'B4',vel:.94},{note:'A4',vel:.72},null,{note:'G4',vel:.8},{note:'A4',vel:1},null,{note:'B4',vel:.88},null,{note:'D5',vel:.96},null,{note:'E5',vel:.82},{note:'D5',vel:.9}], metal:[1,0,1,0,1,0,1,0,1,1,1,0,1,1,1,1], auto:[1,.3,.8,.2,1,.4,.9,.1,1,.3,.7,.2,1,.5,.8,.1] },
         D:{ kick:Array(16).fill(0), acid:[{note:'F2',vel:.65},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null], fm:['F4',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null], biniou:[{note:'A4',vel:.62},null,null,null,null,null,null,null,{note:'E4',vel:.56},null,null,null,null,null,null,null], metal:Array(16).fill(0), auto:Array(16).fill(0.3) }
     };
+    ensureExtendedPatterns(bank, true);
+    return bank;
 }
 let patterns = initPats();
 
 function projectState() {
     return {
-        version: 3,
+        version: 4,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -890,7 +923,9 @@ function projectState() {
             cyber: biniouParams.cyber,
             harmony: biniouParams.harmony,
             pitch: biniouParams.pitch
-        }
+        },
+        eq: {enabled:eqState.enabled,gains:eqState.gains.slice()},
+        machines: Object.assign({},machineParams)
     };
 }
 
@@ -907,12 +942,13 @@ function validPatternBank(bank) {
 function applyProjectState(state, persist) {
     if (!state || !validPatternBank(state.pat)) throw new Error('Projet incompatible ou corrompu');
     patterns = JSON.parse(JSON.stringify(state.pat));
+    ensureExtendedPatterns(patterns, false);
     ['A','B','C','D'].forEach(function(name) {
         if (!Array.isArray(patterns[name].biniou) || patterns[name].biniou.length !== 16) patterns[name].biniou = Array(16).fill(null);
     });
-    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,auto:16}, state.lengths || {});
-    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0}, state.chaos || {});
-    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45}, state.volumes || {});
+    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,auto:16}, state.lengths || {});
+    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0}, state.chaos || {});
+    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58}, state.volumes || {});
     bpm = Number.isFinite(state.bpm) ? Math.max(40, Math.min(220, state.bpm)) : 128;
     swing = Number.isFinite(state.swing) ? Math.max(0.50, Math.min(0.75, state.swing)) : 0.50;
     curPat = ['A','B','C','D'].includes(state.cur) ? state.cur : 'A';
@@ -926,6 +962,7 @@ function applyProjectState(state, persist) {
         biniouParams.cyber = !!state.biniou.cyber;
         if (Number.isFinite(state.biniou.pitch)) biniouParams.pitch = Math.max(-12, Math.min(12, state.biniou.pitch));
     }
+    restoreExtendedState(state);
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
 }
@@ -1089,7 +1126,7 @@ function initAudio() {
     }
 
     analyserNode = ctx.createAnalyser(); analyserNode.fftSize = 256; analyserNode.smoothingTimeConstant = 0.75; analyserNode.connect(comp);
-    masterFilter = ctx.createBiquadFilter(); masterFilter.type = 'lowpass'; masterFilter.frequency.value = 18000; masterFilter.connect(analyserNode);
+    masterFilter = ctx.createBiquadFilter(); masterFilter.type = 'lowpass'; masterFilter.frequency.value = 18000; initMasterEQ(masterFilter, analyserNode);
 
     window.phaserStages = []; let lastNode = ctx.createGain(); lastNode.gain.value = 1; let entryPhaser = lastNode;
     for (let i=0; i<4; i++) { let ap = ctx.createBiquadFilter(); ap.type = 'allpass'; ap.frequency.value = 1000; ap.Q.value = 2; lastNode.connect(ap); lastNode = ap; phaserStages.push(ap); }
@@ -1102,18 +1139,18 @@ function initAudio() {
     window.sp1200Crusher = ctx.createWaveShaper(); sp1200Crusher.curve = makeBitCrushCurve(16); sp1200Crusher.connect(duckingGain);
     initBiniouFX();
 
-    ['kick','acid','fm','metal'].forEach(function(t) {
+    ['kick','acid','fm','metal','snare','hat','sub'].forEach(function(t) {
         let g = ctx.createGain(); g.gain.value = chanVol[t];
         
         // Routage physique si Multi-Out actif
         if (isMultiOut && channelMerger) {
             if (t === 'kick') g.connect(channelMerger, 0, 0); // Kick -> Ch 1
             else if (t === 'acid') g.connect(channelMerger, 0, 1); // Acid -> Ch 2
-            else if (t === 'fm') g.connect(channelMerger, 0, 2); // FM -> Ch 3
-            else g.connect(channelMerger, 0, 3); // Metal -> Ch 4
+            else if (t === 'fm' || t === 'sub') g.connect(channelMerger, 0, 2); // FM + SUB -> Ch 3
+            else g.connect(channelMerger, 0, 3); // Metal + SNARE + HAT -> Ch 4
             // On bypass les effets globaux (l'ingé son gère)
         } else {
-            if (t === 'kick') g.connect(distShaper); else if (t === 'metal') g.connect(sp1200Crusher); else g.connect(duckingGain);
+            if (t === 'kick') g.connect(distShaper); else if (t === 'metal' || t === 'snare' || t === 'hat') g.connect(sp1200Crusher); else g.connect(duckingGain);
         }
         chanGain[t] = g;
     });
@@ -1377,9 +1414,13 @@ function scheduleStep(time) {
     }
 
     let met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) triggerMetal(time); }
+    if (m.snare[trackSteps.snare]) triggerSnare(time);
+    if (m.hat[trackSteps.hat]) triggerHat(time);
+    const subStep = m.sub[trackSteps.sub];
+    if (subStep) triggerSub(typeof subStep === 'string' ? subStep : (subStep.note || 'C2'),time,typeof subStep === 'object' ? (subStep.vel || 0.8) : 0.8);
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
 
-    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
+    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.snare = (trackSteps.snare + 1) % trackLengths.snare; trackSteps.hat = (trackSteps.hat + 1) % trackLengths.hat; trackSteps.sub = (trackSteps.sub + 1) % trackLengths.sub; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
     
     sendMIDIVJ('tension', tension); // VJ Sync à chaque step
 }
@@ -1414,7 +1455,7 @@ function schedulerTick() {
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
+function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
 function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); }
 
 function applyMorph(m, persist=true) {
@@ -1476,21 +1517,22 @@ function rafLoop() {
 }
 
 // ── UI BUILDERS ──────────────────────────────────────────────────
-let TRACKS = ['kick','acid','fm','biniou','metal'];
+let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal'];
 function buildSeq() {
     let p=$id('panel-seq'); p.innerHTML=''; stepEls={};
     TRACKS.forEach(function(name) {
         let isMetal=(name==='metal'), isBiniou=(name==='biniou'); let card=mkEl('div','tcard'+(isMetal?' mc':(isBiniou?' ac':'')));
-        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':name.toUpperCase())+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
+        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'909 SNARE',hat:'808 HAT',sub:'SUB BASS'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
         let grid=mkEl('div','sgrid'); stepEls[name]=[];
         for (let i=0;i<16;i++) {
             let s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
-            let val=matrix[name][i]; if ((name==='kick'||name==='metal')?!!val:(val!=null)) s.classList.add('on');
+            let val=matrix[name][i]; if ((['kick','metal','snare','hat'].includes(name))?!!val:(val!=null)) s.classList.add('on');
             (function(trk,idx,el2) { el2.addEventListener('click', function() {
                 pushUndo();
                 let active=!!matrix[trk][idx], next=null;
                 if (!active) {
-                    if (trk==='kick'||trk==='metal') next=1;
+                    if (['kick','metal','snare','hat'].includes(trk)) next=1;
+                    else if (trk==='sub') next={note:'C2',vel:.8};
                     else if (trk==='biniou') next={note:'A4',vel:.84};
                     else next={note:trk==='acid'?'G2':'C4',vel:.8};
                 }
@@ -1613,6 +1655,7 @@ function buildFX() {
     });
 
     syncBiniouUI();
+    buildExtendedFX();
 
     let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false;
     function updateP() { if(!ctx)return; if(window.sp1200Crusher) sp1200Crusher.curve = makeBitCrushCurve(Math.max(2, 16 - (padY*14))); if(window.phaserLFO) phaserLFO.frequency.setTargetAtTime(0.05 + (padX*14.95), ctx.currentTime, 0.05); }
@@ -1628,7 +1671,7 @@ function buildFX() {
 }
 
 function buildDNA() {
-    $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, piste BINI, volumes, chaos, BPM, swing, morph et réglages Cyber Breton.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
+    $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, piste BINI, SNARE, HAT, SUB, égaliseur 5 bandes, volumes, chaos, BPM, swing, morph et réglages Cyber Breton.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
     $id('save-dna').addEventListener('click', function(){ saveLiveState(); setStatus('SAUVEGARDE FORCÉE', 'ok'); });
     $id('export-project').addEventListener('click', function(){
         const blob = new Blob([JSON.stringify(projectState(), null, 2)], {type:'application/json'});
@@ -1693,6 +1736,8 @@ function syncProjectUI() {
         applyMorph(morphAmount, false);
     }
     syncBiniouUI();
+    syncExtendedFX();
+    updateMasterEQ();
     updateHistoryUI();
 }
 
@@ -1747,6 +1792,9 @@ $id('clear-btn').addEventListener('click', function() {
         fm: Array(16).fill(null),
         biniou: Array(16).fill(null),
         metal: Array(16).fill(0),
+        snare: Array(16).fill(0),
+        hat: Array(16).fill(0),
+        sub: Array(16).fill(null),
         auto: Array(16).fill(0.85)
     };
     matrix = patterns[curPat];

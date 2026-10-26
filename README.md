@@ -15,7 +15,9 @@
 
 - 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
 - 🎚️ BPM éditable + Tap Tempo, **swing 50–75 %**, morphing et automation live
-- 🎛️ Mixeur, chaos pad, clavier tactile et oscilloscope temps réel
+- 🎛️ Mixeur 8 pistes, chaos pad, clavier tactile et oscilloscope temps réel
+- 🎚️ **Égaliseur master 5 bandes** (80, 250, 1 000, 4 000, 10 000 Hz), ±12 dB, bypass, reset et mémorisation
+- 🥁 **Trois nouvelles machines** : 909 Snare, 808 Hi-Hat et Sub Bass, séquenceurs 16 pas et paramètres de synthèse réglables
 - ☄ **Biniou électronique / Cyber Breton** : piste BINI dédiée, anche synthétique, drone A, harmoniseurs ±1 octave, pitch bend MIDI, drive, tone, echo et espace/reverb
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
@@ -24,6 +26,14 @@
 - 🧠 Ghost Pilot Mistral optionnel
 - 💾 Sauvegarde locale des patterns et réglages
 - 📱 PWA installable avec mode hors-ligne
+
+## Égaliseur et nouvelles machines
+
+Dans **FX**, l'égaliseur à 5 bandes agit sur le bus master stéréo avant l'analyseur et le compresseur. **EQ: BYPASS** met les cinq gains à 0 dB sans modifier leurs valeurs; **FLAT 0 dB** remet les réglages à plat. Le bus master conserve une marge de niveau de 0,72 pour limiter la saturation lors des boosts. En mode **MULTI-OUT 4CH**, les canaux physiques restent séparés et contournent cet égaliseur : ce dernier traite uniquement le bus FX/preview.
+
+Les pistes **909 SNARE**, **808 HAT** et **SUB BASS** sont disponibles dans **SEQ**, disposent chacune de son volume, mutation et longueur dans **MIX**, et de paramètres de timbre + boutons **TEST** dans **FX**. Elles utilisent exclusivement la synthèse Web Audio. Les nouveaux patterns d'usine contiennent quelques rythmes de démonstration; les anciens projets JSON restent compatibles et chargent ces pistes vides pour préserver leur arrangement.
+
+Les paramètres et les nouvelles pistes sont conservés par la sauvegarde locale, l'export/import JSON et l'historique Undo/Redo. Après mise à jour du site, actualiser l'application installée si nécessaire afin de charger le nouveau cache PWA.
 
 ## Biniou électronique
 
