@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
-<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V8</title>
+<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V9</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -767,6 +767,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
   body{background:radial-gradient(circle at 18% 0%,rgba(101,255,154,.07),transparent 30%),radial-gradient(circle at 82% 0%,rgba(232,121,249,.06),transparent 34%),var(--bg);color:var(--text)}
 }
 </style>
+<link rel="stylesheet" href="./ui-v9.css">
   <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
@@ -787,14 +788,12 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">Lovestronautes Machine</h1>
 
 
-<div id="unlock">▶ ARMEMENT SYSTÈME LIVE</div>
-
 <div class="app" id="app">
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V8 · 5 MACHINES</span></div>
-                <div class="wm-sub">LIVE PERFORMANCE SYSTEM // WEB AUDIO // MIDI // GHOST PILOT</div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V9 · MOBILE STUDIO</span></div>
+                <div class="wm-sub">PSYTRANCE · 10 PISTES · WEB AUDIO · MASTER WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
         </div>
@@ -806,6 +805,16 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <div class="tmeter"><span class="tlbl">TENSION</span><div class="tbg"><div id="tension-fill"></div></div><span id="tension-val">0%</span></div>
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
+        <section class="studio-quickbar" aria-label="Commandes de démarrage">
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V9 · 10 PISTES</span></div>
+            <div class="studio-quick-actions">
+                <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
+                <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
+                <button id="studio-test-btn" type="button">♪ TEST SON</button>
+                <button id="studio-fx-btn" type="button">FX / WAV / MP3</button>
+            </div>
+            <div id="studio-audio-guide" role="status" aria-live="polite">1. Activer le son · 2. DÉMO PSY · 3. MIX ou FX pour régler les effets.</div>
+        </section>
     </div>
 
     <div class="morph-strip">
@@ -823,14 +832,17 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         </div>
     </div>
     
-    <div class="ext-grid">
+    <details class="studio-advanced" id="studio-advanced">
+        <summary>OPTIONS AVANCÉES · MIDI / ROUTAGE / ENREGISTREMENT</summary>
+        <div class="ext-grid">
         <button class="mb m" id="midi-btn">🔌 MIDI I/O</button>
         <button class="mb a" id="routing-btn">🎛️ MULTI-OUT: OFF</button>
         <button class="mb r" id="config-btn">⚡ CONFIG IA</button>
         <button class="mb" id="undo-btn" disabled>↶ UNDO</button>
         <button class="mb" id="redo-btn" disabled>↷ REDO</button>
         <button class="mb r" id="rec-btn">● REC MASTER</button>
-    </div>
+        </div>
+    </details>
 
     <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 5 INSTRUMENTS NUMÉRIQUES</button>
 
@@ -844,9 +856,9 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="nav-tabs">
         <button class="nt active" data-panel="seq">SEQ</button>
         <button class="nt" data-panel="mix">MIX</button>
-        <button class="nt" data-panel="fx">FX</button>
-        <button class="nt" data-panel="gear">INSTRUMENTS</button>
-        <button class="nt" data-panel="dna">DNA</button>
+        <button class="nt" data-panel="fx">FX / WAV</button>
+        <button class="nt" data-panel="gear">MACHINES</button>
+        <button class="nt" data-panel="dna">PROJET</button>
     </div>
 
     <div class="panels">
@@ -858,7 +870,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     </div>
 
     <div class="kbd-wrap">
-        <div class="kbd-lbl">LIVE KEYBOARD — FM LEAD / BINI CYBER / 12-BIT METAL</div>
+        <div class="kbd-lbl">CLAVIER LIVE — FM / BINIOU / MÉTAL · LE SON DOIT ÊTRE ACTIVÉ</div>
         <div class="kbd" id="kbd"></div>
     </div>
 </div>
@@ -1169,9 +1181,35 @@ function initBiniouFX() {
     updateBiniouFX();
 }
 
+function markStudioAudioReady() {
+    audioReady = !!ctx && ctx.state === 'running';
+    const button = $id('unlock'), hint = $id('studio-audio-guide');
+    if (button) {
+        button.classList.toggle('on', audioReady);
+        button.setAttribute('aria-pressed', String(audioReady));
+        button.textContent = audioReady ? 'SON ACTIVÉ · OK' : 'ACTIVER LE SON';
+    }
+    if (hint) hint.textContent = audioReady
+        ? 'Audio opérationnel. DÉMO PSY joue le pattern C / DROP ; FX / WAV / MP3 ouvre le mastering.'
+        : 'Audio non activé. Appuie sur ACTIVER LE SON (autorise le navigateur), puis lance DÉMO PSY.';
+    if (audioReady) { setStatus('AUDIO ONLINE', 'ok'); requestWakeLock(); }
+    return audioReady;
+}
+function studioAudioError(error) {
+    audioReady = false;
+    const message = error && error.message ? error.message : 'Audio indisponible';
+    const hint = $id('studio-audio-guide');
+    if (hint) hint.textContent = 'AUDIO BLOQUÉ : ' + message + '. Essaye Chrome et autorise la lecture du son.';
+    setStatus('AUDIO BLOQUÉ', 'al');
+}
 function initAudio() {
-    if (audioReady) { ctx && ctx.resume(); return; }
-    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { setStatus('NO AUDIO API', 'al'); return; }
+    // Important on Android: while resume() is pending we must not create a second AudioContext.
+    if (ctx) {
+        ctx.resume().then(markStudioAudioReady).catch(studioAudioError);
+        return;
+    }
+    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { studioAudioError(e); return; }
 
     let comp = ctx.createDynamicsCompressor(); comp.threshold.value = -8; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.12;
     studioMakeMaster(comp);
@@ -1230,7 +1268,20 @@ function initAudio() {
     });
     studioApplyMix();
 
-    ctx.resume().then(function() { audioReady = true; requestWakeLock(); $id('unlock').classList.add('gone'); setStatus('AUDIO ONLINE', 'ok'); });
+    ctx.resume().then(markStudioAudioReady).catch(studioAudioError);
+}
+async function activateStudioAudio() {
+    try {
+        // AudioContext initialization starts synchronously in the click gesture.
+        initAudio();
+        if (!ctx) throw new Error('Ce navigateur ne prend pas en charge Web Audio');
+        if (ctx.state !== 'running') await ctx.resume();
+        if (!markStudioAudioReady()) throw new Error('Audio suspendu par le navigateur');
+        return true;
+    } catch (error) {
+        studioAudioError(error);
+        return false;
+    }
 }
 
 $id('routing-btn').addEventListener('click', function() {
@@ -1827,8 +1878,36 @@ function syncProjectUI() {
 buildFX(); buildPsyRack(); buildKeyboard(); syncProjectUI();
 
 // ── EVENTS ───────────────────────────────────────────────────────
-function doUnlock() { initAudio(); }
-$id('unlock').addEventListener('touchstart',function(e){e.preventDefault();doUnlock();},{passive:false}); $id('unlock').addEventListener('click',doUnlock);
+$id('unlock').addEventListener('click', function() { activateStudioAudio(); });
+$id('studio-demo-btn').addEventListener('click', async function() {
+    if (!await activateStudioAudio()) return;
+    if (isPlaying) { stopSeq(); isPlaying = false; }
+    curPat = 'C'; matrix = patterns.C;
+    document.querySelectorAll('.pt').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-pat') === 'C'); });
+    buildSeq(); saveLiveState();
+    startSeq(); isPlaying = true;
+    $id('play-btn').textContent = '⏸ PAUSE';
+    $id('studio-audio-guide').textContent = 'DÉMO PSY en lecture : pattern C / DROP. Modifie les sons dans MACHINES et FX / WAV.';
+    setStatus('DÉMO PSY : C DROP', 'ok');
+});
+$id('studio-test-btn').addEventListener('click', async function() {
+    if (!await activateStudioAudio()) return;
+    try {
+        const t = ctx.currentTime + 0.035;
+        psyTriggerT8Kick(t);
+        psyTriggerFM2('C4', t + 0.12, 0.8);
+        $id('studio-audio-guide').textContent = 'TEST SON : kick T-8 puis synthé FM2. Si tu n’entends rien, vérifie le volume du téléphone.';
+        setStatus('TEST AUDIO : KICK + FM', 'ok');
+    } catch (error) { studioAudioError(error); }
+});
+$id('studio-fx-btn').addEventListener('click', function() {
+    const tab = document.querySelector('.nt[data-panel="fx"]');
+    if (tab) tab.click();
+    const nav = document.querySelector('.nav-tabs');
+    if (nav) nav.scrollIntoView({behavior:'smooth',block:'start'});
+});
+const studioAdvanced = $id('studio-advanced');
+if (studioAdvanced && window.matchMedia('(min-width:1024px)').matches) studioAdvanced.open = true;
 
 $id('bpm-input').addEventListener('change', function(e) {
     const next = Math.max(40, Math.min(220, Number(e.target.value) || 128));
@@ -1888,9 +1967,15 @@ $id('clear-btn').addEventListener('click', function() {
     setStatus('PATTERN ' + curPat + ' EFFACÉ', 'al');
 });
 
-$id('play-btn').addEventListener('click',function(){
-    if (!audioReady) { initAudio(); setTimeout(function(){ if(audioReady) $id('play-btn').click(); },300); return; }
-    ctx && ctx.resume(); if (!isPlaying) { startSeq(); isPlaying=true; this.textContent='⏸ PAUSE'; setStatus('ENGINE: RUNNING','ok'); } else { stopSeq(); isPlaying=false; this.textContent='▶ PLAY'; setStatus('ENGINE: PAUSED',''); }
+$id('play-btn').addEventListener('click',async function(){
+    if (!await activateStudioAudio()) return;
+    if (!isPlaying) {
+        startSeq(); isPlaying=true; this.textContent='⏸ PAUSE';
+        setStatus('ENGINE: RUNNING','ok');
+    } else {
+        stopSeq(); isPlaying=false; this.textContent='▶ PLAY';
+        setStatus('ENGINE: PAUSED','');
+    }
 });
 
 $id('midi-btn').addEventListener('click', function() { initMIDI(); this.classList.add('on'); });
