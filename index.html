@@ -175,6 +175,29 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
  .machine-row label{font-size:.45rem}
  .extension-actions .mb{min-width:78px}
 }
+/* STUDIO PRO */
+.mxrow{gap:12px;overflow-x:auto;padding:4px 0 14px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.mxch{flex:0 0 162px;max-width:176px;min-width:155px}
+.studio-mute-solo{display:flex;width:100%;gap:5px}
+.studio-mute-solo .mb{height:30px;flex:1;font-weight:900}
+.studio-mute-solo .mb:first-child.on{background:rgba(255,90,110,.28);border-color:#ff7181;color:#fff}
+.studio-mute-solo .mb:last-child.on{background:rgba(255,195,90,.24);border-color:var(--am);color:var(--am)}
+.studio-channel-controls{width:100%;display:flex;flex-direction:column;gap:7px;margin-top:6px;padding-top:8px;border-top:1px solid var(--line)}
+.studio-channel-param{display:grid;grid-template-columns:32px minmax(0,1fr) 32px;gap:3px;align-items:center}
+.studio-channel-param span,.studio-channel-param output{font-size:.48rem;color:var(--muted)}
+.studio-channel-param output{font-variant-numeric:tabular-nums;text-align:right;color:#d8eaf2}
+.studio-channel-param input{width:100%;height:22px;accent-color:var(--p)}
+.studio-export-card{border-color:rgba(101,255,154,.33)}
+.studio-export-opts{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.studio-export-opts label{font-size:.56rem;color:var(--p);font-weight:900}
+.studio-export-opts select{background:#101b23;border:1px solid var(--line);border-radius:5px;padding:9px 12px;color:#edf9ff;min-width:75px}
+.studio-export-opts span{font-size:.55rem;color:var(--muted)}
+.studio-export-actions{display:grid;grid-template-columns:1fr 1fr .8fr;gap:8px}
+.studio-export-actions .dbtn{font-size:.66rem;letter-spacing:.4px}
+.studio-export-actions .dbtn:disabled{opacity:.35;cursor:not-allowed}
+.studio-export-message{font-size:.57rem;color:var(--p);min-height:1.3em}
+#studio-export-progress{width:100%;height:9px;accent-color:var(--p)}
+@media(max-width:600px){.studio-export-actions{grid-template-columns:1fr 1fr}.studio-export-actions #studio-export-stop{grid-column:1/-1}}
 /* DNA & BOTTOM SHEET */
 .dnacard{background:rgba(0,0,0,.55);border:1px solid rgba(57,255,20,.12);border-radius:7px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .dnatitle{font-family:var(--hd);font-size:.78rem;font-weight:900;letter-spacing:3px;color:var(--p)} .dnainfo{font-size:.6rem;line-height:1.6;color:rgba(255,255,255,.28)} .dnainfo strong{color:var(--p2)}
@@ -870,6 +893,7 @@ function nikoRetryBtn(container, fn) {
 
 </script>
 <script src="./audio-extensions.js"></script>
+<script src="./studio-features.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -904,7 +928,7 @@ let patterns = initPats();
 
 function projectState() {
     return {
-        version: 4,
+        version: 5,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -925,7 +949,8 @@ function projectState() {
             pitch: biniouParams.pitch
         },
         eq: {enabled:eqState.enabled,gains:eqState.gains.slice()},
-        machines: Object.assign({},machineParams)
+        machines: Object.assign({},machineParams),
+        studio: studioProjectState()
     };
 }
 
@@ -963,6 +988,7 @@ function applyProjectState(state, persist) {
         if (Number.isFinite(state.biniou.pitch)) biniouParams.pitch = Math.max(-12, Math.min(12, state.biniou.pitch));
     }
     restoreExtendedState(state);
+    restoreStudioState(state);
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
 }
@@ -1087,7 +1113,7 @@ function initBiniouFX() {
     biniouReverb.buffer = makeImpulse(1.65, 2.6);
     biniouReverbWet = ctx.createGain();
 
-    biniouInput.connect(biniouDrive);
+    studioInitChannel("biniou",biniouInput,biniouDrive);
     biniouDrive.connect(biniouTone);
     biniouTone.connect(biniouDry);
     biniouDry.connect(duckingGain);
@@ -1110,18 +1136,19 @@ function initAudio() {
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { setStatus('NO AUDIO API', 'al'); return; }
 
     let comp = ctx.createDynamicsCompressor(); comp.threshold.value = -8; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.12;
+    studioMakeMaster(comp);
     
     // Multi-Out Routing (Si Interface > 2 canaux)
     if (isMultiOut && ctx.destination.maxChannelCount >= 4) {
         ctx.destination.channelCount = 4;
         channelMerger = ctx.createChannelMerger(4);
         channelMerger.connect(ctx.destination);
-        comp.connect(channelMerger, 0, 0); // Preview / FX return on Ch 1
+        masterOutput.connect(channelMerger, 0, 0); // Preview / FX return on Ch 1
     } else {
-        comp.connect(ctx.destination);
+        masterOutput.connect(ctx.destination);
         if (typeof ctx.createMediaStreamDestination === 'function') {
             recordingDest = ctx.createMediaStreamDestination();
-            comp.connect(recordingDest);
+            masterOutput.connect(recordingDest);
         }
     }
 
@@ -1141,19 +1168,22 @@ function initAudio() {
 
     ['kick','acid','fm','metal','snare','hat','sub'].forEach(function(t) {
         let g = ctx.createGain(); g.gain.value = chanVol[t];
+        chanGain[t] = g;
+        let output = ctx.createGain();
+        studioInitChannel(t,g,output);
         
         // Routage physique si Multi-Out actif
         if (isMultiOut && channelMerger) {
-            if (t === 'kick') g.connect(channelMerger, 0, 0); // Kick -> Ch 1
-            else if (t === 'acid') g.connect(channelMerger, 0, 1); // Acid -> Ch 2
-            else if (t === 'fm' || t === 'sub') g.connect(channelMerger, 0, 2); // FM + SUB -> Ch 3
-            else g.connect(channelMerger, 0, 3); // Metal + SNARE + HAT -> Ch 4
+            if (t === 'kick') output.connect(channelMerger, 0, 0); // Kick -> Ch 1
+            else if (t === 'acid') output.connect(channelMerger, 0, 1); // Acid -> Ch 2
+            else if (t === 'fm' || t === 'sub') output.connect(channelMerger, 0, 2); // FM + SUB -> Ch 3
+            else output.connect(channelMerger, 0, 3); // Metal + SNARE + HAT -> Ch 4
             // On bypass les effets globaux (l'ingé son gère)
         } else {
-            if (t === 'kick') g.connect(distShaper); else if (t === 'metal' || t === 'snare' || t === 'hat') g.connect(sp1200Crusher); else g.connect(duckingGain);
+            if (t === 'kick') output.connect(distShaper); else if (t === 'metal' || t === 'snare' || t === 'hat') output.connect(sp1200Crusher); else output.connect(duckingGain);
         }
-        chanGain[t] = g;
     });
+    studioApplyMix();
 
     ctx.resume().then(function() { audioReady = true; requestWakeLock(); $id('unlock').classList.add('gone'); setStatus('AUDIO ONLINE', 'ok'); });
 }
@@ -1509,10 +1539,10 @@ function rafLoop() {
         let nStep = trackSteps.kick === 0 ? 15 : trackSteps.kick - 1; // Approx
         if (nStep !== displayStep) {
             displayStep = nStep;
-            ['kick','acid','fm','biniou','metal'].forEach(function(t) { if(stepEls[t]) stepEls[t].forEach(function(el,idx){ el.classList.toggle('playing', idx===nStep); }); });
+            TRACKS.forEach(function(t) { if(stepEls[t]) stepEls[t].forEach(function(el,idx){ el.classList.toggle('playing', idx===nStep); }); });
         }
     } else if (!SEQ.playing && displayStep>=0) {
-        displayStep=-1; ['kick','acid','fm','biniou','metal'].forEach(function(t){ if(stepEls[t]) stepEls[t].forEach(function(el){ el.classList.remove('playing'); }); });
+        displayStep=-1; TRACKS.forEach(function(t){ if(stepEls[t]) stepEls[t].forEach(function(el){ el.classList.remove('playing'); }); });
     }
 }
 
@@ -1549,7 +1579,7 @@ function buildSeq() {
 function buildMixer() {
     let p=$id('panel-mix'); p.innerHTML=''; let row=mkEl('div','mxrow');
     TRACKS.forEach(function(name) {
-        let ch=mkEl('div','mxch'); ch.innerHTML = '<div class="chdot" style="background:var(--p)"></div><div class="chname">'+name+'</div>';
+        let ch=mkEl('div','mxch'); ch.dataset.studioTrack=name; ch.innerHTML = '<div class="chdot" style="background:var(--p)"></div><div class="chname">'+name+'</div>';
         let vGrp=mkEl('div'); vGrp.style.cssText='display:flex; gap:10px; margin-top:5px;';
         let vol=document.createElement('input'); vol.type='range'; vol.className='vfader'; vol.min=0; vol.max=1; vol.step=0.01; vol.value=chanVol[name];
         let chaos=document.createElement('input'); chaos.type='range'; chaos.className='vfader'; chaos.min=0; chaos.max=1; chaos.step=0.01; chaos.value=trackChaos[name]; chaos.style.accentColor='var(--m)';
@@ -1559,11 +1589,13 @@ function buildMixer() {
         let len=document.createElement('input'); len.type='range'; len.className='pfader'; len.min=1; len.max=16; len.step=1; len.value=trackLengths[name];
         ch.appendChild(len); row.appendChild(ch);
         [vol,chaos,len].forEach(function(control){ control.addEventListener('pointerdown', pushUndo); });
-        vol.addEventListener('input',function(e){ chanVol[name]=parseFloat(e.target.value); if(chanGain[name]) chanGain[name].gain.setTargetAtTime(chanVol[name],ctx?ctx.currentTime:0,.01); saveLiveState(); });
+        vol.addEventListener('input',function(e){ chanVol[name]=parseFloat(e.target.value); studioApplyMix(); saveLiveState(); });
         chaos.addEventListener('input',function(e){ trackChaos[name]=parseFloat(e.target.value); saveLiveState(); });
         len.addEventListener('input',function(e){ trackLengths[name]=parseInt(e.target.value); buildSeq(); saveLiveState(); });
+        studioExtendChannel(name,ch);
     });
     p.appendChild(row);
+    studioSyncMixer();
 }
 
 function syncBiniouUI() {
@@ -1656,6 +1688,7 @@ function buildFX() {
 
     syncBiniouUI();
     buildExtendedFX();
+    studioExportCard();
 
     let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false;
     function updateP() { if(!ctx)return; if(window.sp1200Crusher) sp1200Crusher.curve = makeBitCrushCurve(Math.max(2, 16 - (padY*14))); if(window.phaserLFO) phaserLFO.frequency.setTargetAtTime(0.05 + (padX*14.95), ctx.currentTime, 0.05); }
@@ -1732,11 +1765,12 @@ function syncProjectUI() {
     $id('routing-btn').textContent = isMultiOut ? '🎛️ MULTI-OUT: 4CH' : '🎛️ MULTI-OUT: OFF';
     document.querySelectorAll('.pt').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-pat') === curPat); });
     if (ctx) {
-        Object.keys(chanVol).forEach(function(name){ if (chanGain[name]) chanGain[name].gain.setTargetAtTime(chanVol[name], ctx.currentTime, .01); });
+        studioApplyMix();
         applyMorph(morphAmount, false);
     }
     syncBiniouUI();
     syncExtendedFX();
+    studioSyncMixer();
     updateMasterEQ();
     updateHistoryUI();
 }
