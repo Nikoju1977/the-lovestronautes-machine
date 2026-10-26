@@ -20,6 +20,7 @@
 - 🥁 **Trois nouvelles machines** : 909 Snare, 808 Hi-Hat et Sub Bass, séquenceurs 16 pas et paramètres de synthèse réglables
 - ⚡ **PSY V8 : cinq instruments jouables** TD-3, Volca FM2, Roland T-8, Theremin et PO-35 Speak dans un nouveau rack, deux pistes supplémentaires
 - 📱 **PSY V9** : interface mobile revue, activation sonore non bloquante, DÉMO PSY immédiate, TEST SON et accès direct FX / WAV / MP3
+- 🎼 **PSY V10** : Song Mode et timeline 192 mesures, Kick & Bass Lab rolling K-B-B-B, Melody Lab tonal 64 pas, export complet WAV/MP3
 - ☄ **Biniou électronique / Cyber Breton** : piste BINI dédiée, anche synthétique, drone A, harmoniseurs ±1 octave, pitch bend MIDI, drive, tone, echo et espace/reverb
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
@@ -39,6 +40,36 @@ Dans **FX**, l'égaliseur à 5 bandes agit sur le bus master stéréo avant l'an
 Les pistes **909 SNARE**, **808 HAT** et **SUB BASS** sont disponibles dans **SEQ**, disposent chacune de son volume, mutation et longueur dans **MIX**, et de paramètres de timbre + boutons **TEST** dans **FX**. Elles utilisent exclusivement la synthèse Web Audio. Les nouveaux patterns d'usine contiennent quelques rythmes de démonstration; les anciens projets JSON restent compatibles et chargent ces pistes vides pour préserver leur arrangement.
 
 Les paramètres et les nouvelles pistes sont conservés par la sauvegarde locale, l'export/import JSON et l'historique Undo/Redo. Après mise à jour du site, actualiser l'application installée si nécessaire afin de charger le nouveau cache PWA.
+
+## PSY V10 — Song Mode, Kick & Bass Lab et Melody Lab
+
+**Un nouvel onglet MORCEAU** permet de passer de quatre boucles à une vraie composition continue.
+
+### 01 · PSY TRACK CREATOR
+Choisir style (**Full-On, Dark Psy, Progressive, Forest Psy**), BPM 125–165, tonique, gamme (mineur, phrygien, mineur harmonique) et énergie 0–100 %. **GÉNÉRER LES 4 PATTERNS / 64 PAS** remplace les motifs des quatre patterns après sauvegarde Undo. Génération déterministe à partir de la même graine pour conserver la cohérence musicale. Elle crée un groove de kick/basse rolling K-B-B-B, des lignes acid, des leads FM et des notes de theremin. La basse suit les fondamentales de la progression tonale. Le contrôle *chaos* est neutralisé lors de la génération pour éviter les réécritures aléatoires du morceau pendant la lecture.
+
+### 02 · KICK & BASS LAB
+Kick quatre temps et basse sur les **douze autres doubles croches** de la mesure. Nouvelle enveloppe basse à gate court et deux oscillateurs (sinusoïde + dent de scie) pour limiter les chevauchements des graves. Réglages **TIGHT, CUTOFF, DRIVE, LEVEL** avec test instantané d'une mesure. La basse utilise le bus mixer SUB existant, donc fonctionne avec mute/solo, EQ et export.
+
+### 03 · SONG MODE
+Arrangement modifiable par section : nom, pattern A/B/C/D et durée 4–64 mesures ; ajout/suppression de sections (maximum 24). Une timeline affiche le morceau et surligne la section active pendant la lecture. Au **changement de mesure**, la lecture passe réellement au nouveau pattern tout en continuant le séquenceur. L'arrangement standard est :
+
+| Section | Pattern | Mesures |
+|---|---|---:|
+| Intro | A | 16 |
+| Build | B | 32 |
+| Drop | C | 48 |
+| Break | D | 16 |
+| Rise | B | 24 |
+| Final Drop | C | 40 |
+| Outro | A | 16 |
+
+**192 mesures = environ 5 min 18 s à 145 BPM.** Le bouton **LIRE LE MORCEAU** joue toute la timeline ; le bouton **EXPORT MORCEAU WAV / MP3** ouvre le panneau FX avec la nouvelle option **MORCEAU ENTIER**, pour capturer le master complet en temps réel. Gardez l'onglet actif ; un rendu de cinq minutes occupe beaucoup de mémoire, notamment sur Android. Préférez des sections plus courtes pour un premier essai sur un mobile modeste.
+
+### 04 · MELODY LAB
+Éditeur tactile de **quatre patterns de 16 pas**, soit 64 pas par piste pour FM2, acid et theremin. Choisir une gamme et une note ; toucher les pas pour les écrire. Les données restent les vraies notes du projet, enregistrées via les sauvegardes JSON et Undo/Redo. La génération conserve les harmonies d'une tonalité et d'une progression.
+
+Les anciens projets sont compatibles : les réglages créateur absents sont initialisés avec des valeurs par défaut sans effacer les patterns existants. Le moteur ne requiert aucun serveur externe. Les quatre patterns existants restent la source de vérité de l'arrangement et peuvent être modifiés dans SEQ, MIX ou MACHINES.
 
 ## PSY V9 — Nouvelle interface téléphone et dépannage audio
 
@@ -109,6 +140,7 @@ Le dépôt inclut un contrôle statique sans dépendances :
 node scripts/validate.mjs
 node scripts/test-audio-exports.mjs
 node scripts/test-psy-machines.mjs
+node scripts/test-track-creator.mjs
 ```
 
 La même validation est exécutée automatiquement par GitHub Actions sur les pushes et pull requests.
