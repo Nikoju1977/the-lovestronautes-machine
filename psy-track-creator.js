@@ -396,6 +396,10 @@ function creatorBuildUI(){
       pushUndo();
       creatorState[key]=key==='tempo'?Math.round(creatorClamp(Number(input.value),125,165,145))
         :key==='energy'?Math.round(creatorClamp(Number(input.value),0,100,75)):input.value;
+      if(key==='tempo'){
+        bpm=creatorState.tempo;
+        const bpmInput=document.getElementById('bpm-input');if(bpmInput)bpmInput.value=bpm;
+      }
       if(key==='energy')document.getElementById('creator-energy-value').textContent=creatorState.energy+'%';
       if(key==='root'||key==='scale')creatorRenderPiano();
       creatorRefreshSong();saveLiveState();
