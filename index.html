@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
-<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V9</title>
+<title>LOVESTRONAUTES MACHINE // PSY TRACK CREATOR V10</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -768,6 +768,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 }
 </style>
 <link rel="stylesheet" href="./ui-v9.css">
+<link rel="stylesheet" href="./psy-track-creator.css">
   <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
@@ -792,7 +793,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V9 · MOBILE STUDIO</span></div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V10 · TRACK CREATOR</span></div>
                 <div class="wm-sub">PSYTRANCE · 10 PISTES · WEB AUDIO · MASTER WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
@@ -806,7 +807,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
-            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V9 · 10 PISTES</span></div>
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V10 · SONG MODE</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
                 <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
@@ -858,6 +859,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         <button class="nt" data-panel="mix">MIX</button>
         <button class="nt" data-panel="fx">FX / WAV</button>
         <button class="nt" data-panel="gear">MACHINES</button>
+        <button class="nt" data-panel="song">MORCEAU</button>
         <button class="nt" data-panel="dna">PROJET</button>
     </div>
 
@@ -866,6 +868,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         <div class="panel" id="panel-mix"></div>
         <div class="panel" id="panel-fx"></div>
         <div class="panel" id="panel-gear"></div>
+        <div class="panel" id="panel-song"></div>
         <div class="panel" id="panel-dna"></div>
     </div>
 
@@ -940,6 +943,7 @@ function nikoRetryBtn(container, fn) {
 <script src="./audio-extensions.js"></script>
 <script src="./studio-features.js"></script>
 <script src="./psy-machines.js"></script>
+<script src="./psy-track-creator.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -975,7 +979,7 @@ let patterns = initPats();
 
 function projectState() {
     return {
-        version: 6,
+        version: 7,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -998,7 +1002,8 @@ function projectState() {
         eq: {enabled:eqState.enabled,gains:eqState.gains.slice()},
         machines: Object.assign({},machineParams),
         studio: studioProjectState(),
-        psy: psyProjectState()
+        psy: psyProjectState(),
+        creator: creatorProjectState()
     };
 }
 
@@ -1039,6 +1044,7 @@ function applyProjectState(state, persist) {
     restoreExtendedState(state);
     restoreStudioState(state);
     psyRestoreState(state);
+    creatorRestoreState(state);
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
 }
@@ -1543,7 +1549,7 @@ function scheduleStep(time) {
     if (m.snare[trackSteps.snare]) (psyState.t8.enabled ? psyTriggerT8Snare(time) : triggerSnare(time));
     if (m.hat[trackSteps.hat]) (psyState.t8.enabled ? psyTriggerT8Hat(time) : triggerHat(time));
     const subStep = m.sub[trackSteps.sub];
-    if (subStep) triggerSub(typeof subStep === 'string' ? subStep : (subStep.note || 'C2'),time,typeof subStep === 'object' ? (subStep.vel || 0.8) : 0.8);
+    if (subStep) creatorRollingBass(typeof subStep === 'string' ? subStep : (subStep.note || 'C2'),time,typeof subStep === 'object' ? (subStep.vel || 0.8) : 0.8);
     const th=m.theremin[trackSteps.theremin]; if(th)psyTriggerTheremin(typeof th==='string'?th:(th.note||'C4'),time,typeof th==='object'?(th.vel||.75):.75);
     if(m.speak[trackSteps.speak])psyTriggerSpeak(time,.86);
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
@@ -1565,6 +1571,7 @@ function schedulerTick() {
         SEQ.masterStep = (SEQ.masterStep + 1) % 16;
         if (SEQ.masterStep === 0) {
             SEQ.barCount++;
+            if (!creatorSongBoundary(SEQ.barCount)) break;
             if (isPilot && aiTimeline.length > 0) {
                 let kf = aiTimeline.find(function(k) { return k.bar === SEQ.barCount; });
                 if (kf) {
@@ -1583,8 +1590,8 @@ function schedulerTick() {
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
-function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); }
+function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
+function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); if(creatorState.running)creatorStopSong(); }
 
 function applyMorph(m, persist=true) {
     m = Math.max(0, Math.min(1, m)); morphAmount = m;
@@ -1871,17 +1878,19 @@ function syncProjectUI() {
     syncExtendedFX();
     studioSyncMixer();
     psySyncRack();
+    creatorSyncUI();
     updateMasterEQ();
     updateHistoryUI();
 }
 
-buildFX(); buildPsyRack(); buildKeyboard(); syncProjectUI();
+buildFX(); buildPsyRack(); creatorBuildUI(); buildKeyboard(); syncProjectUI();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
 $id('studio-demo-btn').addEventListener('click', async function() {
     if (!await activateStudioAudio()) return;
     if (isPlaying) { stopSeq(); isPlaying = false; }
+    creatorState.running=false;
     curPat = 'C'; matrix = patterns.C;
     document.querySelectorAll('.pt').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-pat') === 'C'); });
     buildSeq(); saveLiveState();
@@ -1970,6 +1979,7 @@ $id('clear-btn').addEventListener('click', function() {
 $id('play-btn').addEventListener('click',async function(){
     if (!await activateStudioAudio()) return;
     if (!isPlaying) {
+        creatorState.running=false;
         startSeq(); isPlaying=true; this.textContent='⏸ PAUSE';
         setStatus('ENGINE: RUNNING','ok');
     } else {

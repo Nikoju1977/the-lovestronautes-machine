@@ -33,3 +33,6 @@ jobs:
 
       - name: Psy instruments tests
         run: node scripts/test-psy-machines.mjs
+
+      - name: Song creator musical tests
+        run: node scripts/test-track-creator.mjs

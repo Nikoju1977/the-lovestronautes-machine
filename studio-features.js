@@ -22,7 +22,7 @@ function restoreStudioState(state){
     ch.pan=studioSafe(src.pan,-1,1,0);
     STUDIO_EQ.forEach(function(b){ch[b[0]]=studioSafe(src[b[0]],-9,9,0);});
   });
-  studioExportBars=[4,8,16,32].includes(saved.bars)?saved.bars:8;
+  studioExportBars=[-1,4,8,16,32].includes(saved.bars)?saved.bars:8;
 }
 function studioInitChannel(name,input,destination){
   const filters=STUDIO_EQ.map(function(b){
@@ -104,8 +104,8 @@ function studioExportCard(){
   const card=document.createElement('section');card.className='fxcard studio-export-card';
   card.id='studio-export-card';
   card.innerHTML='<div class="fxtitle">STUDIO EXPORT // WAV + MP3</div>'+
-  '<p class="biniou-hint">Capture en temps réel du master stéréo traité (EQ, mix, compresseur, limiteur et effets). Gardez cette page active. Le séquenceur démarre au premier pas du pattern.</p>'+
-  '<div class="studio-export-opts"><label for="studio-bars">MESURES</label><select id="studio-bars"><option>4</option><option>8</option><option>16</option><option>32</option></select><span>WAV PCM 16 bits · MP3 320 kb/s</span></div>'+
+  '<p class="biniou-hint">Capture en temps réel du master stéréo traité (EQ, mix, compresseur, limiteur et effets). Gardez cette page active. Le séquenceur démarre au premier pas du pattern, ou suit toute la timeline en mode MORCEAU ENTIER.</p>'+
+  '<div class="studio-export-opts"><label for="studio-bars">MESURES</label><select id="studio-bars"><option>4</option><option>8</option><option>16</option><option>32</option><option value="-1">MORCEAU ENTIER</option></select><span>WAV PCM 16 bits · MP3 320 kb/s</span></div>'+
   '<div class="studio-export-actions"><button type="button" class="dbtn g" id="studio-export-wav">EXPORT WAV</button>'+
   '<button type="button" class="dbtn m" id="studio-export-mp3">EXPORT MP3</button>'+
   '<button type="button" class="dbtn a" id="studio-export-stop" disabled>ARRÊTER</button></div>'+
@@ -206,7 +206,7 @@ function studioMp3(chunks,sampleRate){
   return new Promise(function(resolve,reject){
     if(typeof Worker==='undefined'){reject(Error('Web Worker MP3 non disponible'));return;}
     const encoder=new Worker('./mp3-encoder-worker.js');
-    const timeout=setTimeout(function(){encoder.terminate();reject(Error('MP3 : délai expiré'));},120000);
+    const timeout=setTimeout(function(){encoder.terminate();reject(Error('MP3 : délai expiré'));},300000);
     encoder.onmessage=function(e){
       clearTimeout(timeout);encoder.terminate();
       if(e.data.error)reject(Error(e.data.error));
@@ -228,19 +228,24 @@ async function studioExport(format){
   if(mediaRecorder && mediaRecorder.state==='recording'){studioProgress('Arrêtez REC MASTER avant export.',0);return;}
   studioExportBusy=true;studioExportCancel=false;studioButtons(true);
   let tap=null,started=false;
+  const exportSong=studioExportBars===-1;
+  const previous={pat:curPat,morph:morphAmount};
   const play=document.getElementById('play-btn');
   try{
     studioProgress('Armement audio…',0);await studioReady();
     tap=await studioCaptureStart();
     if(studioExportCancel)throw Error('Export annulé');
-    const duration=studioExportBars*240/bpm,at=ctx.currentTime;
+    const barCount=exportSong?creatorTotalBars():studioExportBars;
+    if(barCount<1||barCount>1024)throw Error('Durée du morceau invalide');
+    const duration=barCount*240/bpm,at=ctx.currentTime;
+    if(exportSong){creatorState.running=true;creatorLastSongSection=-1;}
     startSeq();isPlaying=true;started=true;
     if(play){play.textContent='⏸ EXPORT';play.disabled=true;}
     while(ctx.currentTime-at<duration){
       if(studioExportCancel)throw Error('Export annulé');
       if(ctx.state!=='running')throw Error('Audio interrompu');
       const amount=Math.min(1,(ctx.currentTime-at)/duration);
-      studioProgress('Enregistrement '+format.toUpperCase()+' · '+Math.floor(amount*studioExportBars)+' / '+studioExportBars+' mesures',amount*92);
+      studioProgress('Enregistrement '+format.toUpperCase()+' · '+Math.floor(amount*barCount)+' / '+barCount+' mesures',amount*92);
       await studioSleep(80);
     }
     stopSeq();isPlaying=false;started=false;
@@ -253,7 +258,7 @@ async function studioExport(format){
     studioProgress('Encodage '+format.toUpperCase()+'…',97);
     const output=format==='wav'?studioWav(pcm,ctx.sampleRate):await studioMp3(pcm,ctx.sampleRate);
     if(output.size<128)throw Error('Fichier audio vide');
-    downloadBlob(output,'lovestronautes-'+curPat+'-'+studioExportBars+'bars-'+new Date().toISOString().slice(0,10)+'.'+format);
+    downloadBlob(output,'lovestronautes-'+(exportSong?'song-'+barCount+'bars':curPat+'-'+barCount+'bars')+'-'+new Date().toISOString().slice(0,10)+'.'+format);
     studioProgress('Fichier '+format.toUpperCase()+' créé · '+(output.size/1048576).toFixed(1)+' Mo',100);
     setStatus('STUDIO '+format.toUpperCase()+' EXPORT OK','ok');
   }catch(error){
@@ -262,6 +267,12 @@ async function studioExport(format){
     if(started){stopSeq();isPlaying=false;}
     if(play){play.textContent='▶ PLAY';play.disabled=false;}
     if(tap)tap.close();
+    if(exportSong){
+      creatorStopSong();
+      curPat=previous.pat;matrix=patterns[curPat];applyMorph(previous.morph,false);
+      buildSeq();
+      document.querySelectorAll('.pt').forEach(b=>b.classList.toggle('active',b.dataset.pat===curPat));
+    }
     studioExportBusy=false;studioButtons(false);
   }
 }

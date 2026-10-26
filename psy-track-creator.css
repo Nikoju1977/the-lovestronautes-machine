@@ -1,0 +1,64 @@
+/* PSY TRACK CREATOR V10 — responsive arrangement / tonal editor */
+.creator-head{background:linear-gradient(115deg,rgba(57,255,20,.13),rgba(255,0,234,.10) 70%,rgba(40,222,255,.08));padding:19px 18px;border:1px solid rgba(101,255,154,.38);border-radius:14px}
+.creator-eyebrow{font-size:.58rem;letter-spacing:2px;color:#aefcc7}
+.creator-head h2{font-family:var(--hd);font-size:clamp(1.6rem,4vw,2.4rem);color:#e5ffe7;letter-spacing:1px;margin:2px 0 8px}
+.creator-head p,.creator-help{color:#a6bbc1;font-size:.65rem;line-height:1.55}
+.creator-card{max-width:1200px!important;width:100%;display:flex;flex-direction:column;gap:13px;padding:17px}
+.creator-card h3{font-family:var(--hd);font-size:1rem;color:#a7ffc2;letter-spacing:1px}
+.creator-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.creator-form label,.creator-piano-tools label{display:flex;flex-direction:column;gap:7px;color:#c1e3e2;font-size:.58rem;letter-spacing:1px;font-weight:700}
+.creator-form select,.creator-form input[type=number],.creator-piano-tools select,.creator-section select{width:100%;min-width:0;border:1px solid rgba(101,255,154,.3);background:#101b20;color:#dffdf9;border-radius:7px;padding:10px 8px;font:600 .75rem var(--hd)}
+.creator-form input[type=range],.creator-bass-param input{width:100%;accent-color:#65ff9a;min-width:0}
+.creator-form .creator-range{display:flex;gap:8px;align-items:center}
+.creator-form .creator-range output{min-width:36px;text-align:right;color:#e3ffe5}
+.creator-primary{background:linear-gradient(98deg,#58ff81,#44e6c2);border:0;border-radius:8px;color:#04140c;font:900 .8rem var(--hd);letter-spacing:.8px;padding:12px 14px;min-height:44px;cursor:pointer}
+.creator-primary:active{filter:brightness(.8)}
+.creator-notice{background:rgba(101,255,154,.06);color:#ace4c3;border-left:3px solid #65ff9a;font-size:.61rem;line-height:1.5;padding:10px}
+.creator-kbbb{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px}
+.creator-kbbb span{text-align:center;padding:11px 0;color:#c9fff1;border:1px solid rgba(101,255,154,.26);border-radius:5px;background:#123228;font:900 .62rem var(--hd)}
+.creator-kbbb span:nth-child(4n+1){color:#000;background:#7cffa3;border-color:#7cffa3}
+.creator-bass-param{display:grid;grid-template-columns:115px minmax(0,1fr) 45px;align-items:center;gap:9px;color:#c5dbe0;font-size:.59rem}
+.creator-bass-param output{font-variant-numeric:tabular-nums;color:#abffd0;text-align:right}
+.creator-audition{max-width:270px}
+.creator-duration{font-size:.7rem;font-weight:800;color:#e0fff0;letter-spacing:.5px}
+.creator-playing{font-size:.63rem;color:#ffcdf7;border:1px solid rgba(255,0,234,.25);padding:10px;border-radius:7px}
+.creator-sections{display:flex;flex-direction:column;gap:7px}
+.creator-section{padding:10px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.02);transition:background .2s}
+.creator-section.playing{background:rgba(101,255,154,.1);border-color:#65ff9a;box-shadow:0 0 8px rgba(101,255,154,.12)}
+.creator-section-row{display:grid;grid-template-columns:minmax(80px,1fr) auto auto 36px;gap:10px;align-items:center}
+.creator-sect-name{font:800 .76rem var(--hd);color:var(--section-color)}
+.creator-section label{display:flex;gap:5px;align-items:center;font-size:.54rem;color:#aac6bd}
+.creator-section select{font-size:.63rem;width:58px;padding:6px 4px}
+.creator-section-row .mb{height:29px;width:33px;font-weight:900}
+.creator-timeline-bar{height:16px;max-width:100%;min-width:13%;background:linear-gradient(90deg,var(--section-color),rgba(255,255,255,.08));margin-top:8px;border-radius:3px;padding:1px 5px;color:#07120f;font:800 .48rem var(--hd);white-space:nowrap;overflow:hidden}
+.creator-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.creator-actions #creator-song-export{grid-column:1/-1;min-height:43px;font-size:.7rem;color:#acefc7;border-color:rgba(101,255,154,.3)}
+.creator-piano-tools{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.creator-piano{display:flex;flex-direction:column;gap:14px}
+.creator-piano-title{font:800 .72rem var(--hd);color:#a8ffcd;margin-bottom:5px}
+.creator-piano-grid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:4px}
+.creator-note{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:43px;background:#071314;color:#6a8985;border:1px solid #234137;border-radius:5px;cursor:pointer;padding:4px 1px;overflow:hidden}
+.creator-note small{font-size:.42rem;opacity:.8}
+.creator-note strong{font-size:.48rem;line-height:1.2;white-space:nowrap}
+.creator-note.on{color:#c8ffeb;background:linear-gradient(145deg,#145238,#18313c);border-color:#5de3a6}
+.creator-note:nth-child(4n+1){border-left-width:2px}
+.creator-note:focus-visible{outline:2px solid #fff;outline-offset:1px}
+@media(max-width:679px){
+  .creator-head{padding:12px}
+  .creator-head h2{font-size:1.56rem}
+  .creator-card{padding:11px;gap:10px}
+  .creator-form{gap:8px}
+  .creator-form select,.creator-form input[type=number],.creator-piano-tools select{padding:8px 6px}
+  .creator-kbbb{gap:2px}
+  .creator-kbbb span{padding:8px 0;font-size:.52rem}
+  .creator-bass-param{grid-template-columns:95px minmax(0,1fr) 40px;gap:5px}
+  .creator-section-row{grid-template-columns:minmax(65px,1fr) 72px 67px 32px;gap:4px}
+  .creator-sect-name{font-size:.61rem}
+  .creator-section label{font-size:.45rem;display:block}
+  .creator-section select{width:100%;font-size:.6rem}
+  .creator-piano-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:5px}
+  .creator-note{min-height:43px}
+  .creator-note strong{font-size:.55rem}
+  .creator-actions{grid-template-columns:1fr}
+  .creator-actions #creator-song-export{grid-column:auto}
+}
