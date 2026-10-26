@@ -30,3 +30,6 @@ jobs:
 
       - name: Audio encoder tests
         run: node scripts/test-audio-exports.mjs
+
+      - name: Psy instruments tests
+        run: node scripts/test-psy-machines.mjs

@@ -1,12 +1,13 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v7';
+const CACHE_NAME = 'lovestronautes-v8';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
   new URL('./index.html', scope).href,
   new URL('./audio-extensions.js', scope).href,
   new URL('./studio-features.js', scope).href,
+  new URL('./psy-machines.js', scope).href,
   new URL('./pcm-capture-processor.js', scope).href,
   new URL('./mp3-encoder-worker.js', scope).href,
   new URL('./vendor/lame.min.js', scope).href,
@@ -54,6 +55,18 @@ self.addEventListener('fetch', function(event) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // JavaScript is network-first so returning users see a published update,
+  // with cached content preserved when the network is unavailable.
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html')) {
+    event.respondWith(fetch(request).then(function(response){
+      if(response && response.ok) {
+        const copy=response.clone();
+        caches.open(CACHE_NAME).then(function(cache){cache.put(request,copy);});
+      }
+      return response;
+    }).catch(function(){return caches.match(request);}));
+    return;
+  }
   event.respondWith(
     caches.match(request).then(function(hit) {
       if (hit) return hit;
