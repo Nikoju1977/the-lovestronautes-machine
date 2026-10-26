@@ -129,6 +129,7 @@ function triggerHat(time) {
   });
 }
 function triggerSub(note,time,velocity) {
+  if (psyState.enabled) return psyTriggerBass(note,time,velocity);
   if (!ctx || !chanGain.sub) return;
   const base=hz(note||'C2'),dur=0.18+machineParams.subDecay*0.65;
   const lowpass=ctx.createBiquadFilter();

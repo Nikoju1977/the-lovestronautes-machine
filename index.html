@@ -175,6 +175,24 @@ input[type=range]::-webkit-slider-runnable-track{background:#1a1a1a;height:3px;b
  .machine-row label{font-size:.45rem}
  .extension-actions .mb{min-width:78px}
 }
+/* PSYTRANCE PRODUCTION SUITE */
+.psy-suite{border-color:rgba(255,0,234,.45);background:linear-gradient(145deg,rgba(255,0,234,.055),transparent 65%)}
+.psy-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.psy-presets .mb{font-size:.58rem;white-space:normal;min-height:45px}
+.psy-presets .mb.on{border-color:var(--m);color:var(--m);background:rgba(255,0,234,.16)}
+.psy-inline{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.psy-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.psy-param{display:grid;grid-template-columns:1fr auto;gap:5px;align-items:center;border-bottom:1px solid var(--bm);padding-bottom:8px}
+.psy-param span{font-size:.58rem;color:#e4b8e8}
+.psy-param output{font-size:.58rem;color:var(--m);font-variant-numeric:tabular-nums}
+.psy-param input{grid-column:1/-1;accent-color:var(--m);width:100%;height:20px;touch-action:pan-y}
+.psy-tempo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.psy-tempo-grid label{font-size:.56rem;color:var(--m)}
+.psy-tempo-grid select,.psy-arrange input,.psy-arrange select{display:block;width:100%;margin-top:5px;min-height:36px;background:#101621;color:#e9fff2;border:1px solid var(--bm);border-radius:5px;padding:7px;font-family:var(--mn);font-size:.75rem}
+.psy-arrange{border:1px solid var(--bm);border-radius:7px;padding:12px;display:grid;gap:11px}
+.psy-arrange label{font-size:.56rem;color:var(--p)}
+#psy-song-status{font-size:.64rem;color:var(--m)}
+@media(min-width:750px){.psy-presets{grid-template-columns:repeat(4,minmax(0,1fr))}.psy-control-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* STUDIO PRO */
 .mxrow{gap:12px;overflow-x:auto;padding:4px 0 14px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .mxch{flex:0 0 162px;max-width:176px;min-width:155px}
@@ -894,6 +912,7 @@ function nikoRetryBtn(container, fn) {
 </script>
 <script src="./audio-extensions.js"></script>
 <script src="./studio-features.js"></script>
+<script src="./psytrance-lab.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -928,7 +947,7 @@ let patterns = initPats();
 
 function projectState() {
     return {
-        version: 5,
+        version: 6,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -950,7 +969,8 @@ function projectState() {
         },
         eq: {enabled:eqState.enabled,gains:eqState.gains.slice()},
         machines: Object.assign({},machineParams),
-        studio: studioProjectState()
+        studio: studioProjectState(),
+        psy: psyStateSnapshot()
     };
 }
 
@@ -989,6 +1009,7 @@ function applyProjectState(state, persist) {
     }
     restoreExtendedState(state);
     restoreStudioState(state);
+    psyRestoreState(state);
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
 }
@@ -1115,6 +1136,7 @@ function initBiniouFX() {
 
     studioInitChannel("biniou",biniouInput,biniouDrive);
     biniouDrive.connect(biniouTone);
+    psyAttachSend("biniou",biniouTone);
     biniouTone.connect(biniouDry);
     biniouDry.connect(duckingGain);
 
@@ -1163,6 +1185,7 @@ function initAudio() {
 
     distShaper = ctx.createWaveShaper(); distShaper.curve = makeDistCurve(0.001); distShaper.connect(entryPhaser);
     duckingGain = ctx.createGain(); duckingGain.connect(distShaper);
+    psyInitFX();
     window.sp1200Crusher = ctx.createWaveShaper(); sp1200Crusher.curve = makeBitCrushCurve(16); sp1200Crusher.connect(duckingGain);
     initBiniouFX();
 
@@ -1171,6 +1194,7 @@ function initAudio() {
         chanGain[t] = g;
         let output = ctx.createGain();
         studioInitChannel(t,g,output);
+        psyAttachSend(t,output);
         
         // Routage physique si Multi-Out actif
         if (isMultiOut && channelMerger) {
@@ -1184,6 +1208,7 @@ function initAudio() {
         }
     });
     studioApplyMix();
+    psyApplyFX();
 
     ctx.resume().then(function() { audioReady = true; requestWakeLock(); $id('unlock').classList.add('gone'); setStatus('AUDIO ONLINE', 'ok'); });
 }
@@ -1293,12 +1318,14 @@ function sendMIDIVJ(type, val) {
 function _gate(dest, time, sus, rel, peak) { let g = ctx.createGain(); g.gain.setValueAtTime(0.001, time); g.gain.linearRampToValueAtTime(peak, time + 0.004); g.gain.setValueAtTime(peak, time + sus); g.gain.exponentialRampToValueAtTime(0.001, time + sus + rel); g.connect(dest); return g; }
 
 function triggerKick(time) {
+    if (psyState.enabled) return psyTriggerKick(time);
     if (!ctx) return; let dur = 0.45; let o = ctx.createOscillator(); o.frequency.setValueAtTime(250, time); o.frequency.exponentialRampToValueAtTime(45, time + 0.08); o.frequency.linearRampToValueAtTime(30, time + dur);
     let g = _gate(chanGain.kick, time, 0.001, dur, 1.2); o.connect(g); o.start(time); o.stop(time + dur + 0.1);
     if (!isMultiOut && duckingGain) { duckingGain.gain.cancelScheduledValues(time); duckingGain.gain.setValueAtTime(duckingGain.gain.value, time); duckingGain.gain.linearRampToValueAtTime(tension > 0.5 ? 0.05 : 0.15, time + 0.005); duckingGain.gain.exponentialRampToValueAtTime(1.0, time + 0.35); }
 }
 
-function triggerAcid(note, vel, time, pLockMorph) {
+function triggerAcid(note, vel, time, pLockMorph, step) {
+    if (psyState.enabled) return psyTriggerAcid(note,vel,time,pLockMorph,step);
     if (!ctx) return; let f = hz(note), dur = (60 / (bpm * 4)) * 0.7;
     let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
     let filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 18; 
@@ -1309,6 +1336,7 @@ function triggerAcid(note, vel, time, pLockMorph) {
 }
 
 function triggerFM(note, time, pLockMorph) {
+    if (psyState.enabled) return psyTriggerFM(note,time,pLockMorph);
     if (!ctx) return; let f = hz(note), dur = (60 / (bpm * 4)) * 1.5; let g = _gate(chanGain.fm, time, dur * 0.3, dur * 0.7, 0.4); let detunes = [-12, 0, 15]; 
     let localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount;
     detunes.forEach(function(det) { let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det + (localMorph * 50); o.connect(g); o.start(time); o.stop(time + dur + 0.1); });
@@ -1424,17 +1452,18 @@ let SEQ = { playing:false, masterStep:0, nextTime:0, timer:null, barCount:0 };
 let stepEls={}, displayStep=-1;
 
 function scheduleStep(time) {
+    psyOnStep(time);
     let m = matrix; if (m.kick[trackSteps.kick]) triggerKick(time);
     
-    let ac = m.acid[trackSteps.acid]; let tRate = trackChaos.acid + (morphAmount * 0.15); let gRate = trackChaos.acid * 0.4;
-    if (ac) { triggerAcid((ac.note || 'G2'), ac.vel || 0.8, time, ac.morph); if (Math.random() < tRate) { m.acid[trackSteps.acid].note = ['G2','C3','F2','Eb2','Ab2'][Math.floor(Math.random()*5)]; saveLiveState(); } } 
+    let ac = m.acid[trackSteps.acid]; let tRate = studioExportBusy ? 0 : trackChaos.acid + (morphAmount * 0.15); let gRate = studioExportBusy ? 0 : trackChaos.acid * 0.4;
+    if (ac) { triggerAcid((ac.note || 'G2'), ac.vel || 0.8, time, ac.morph, ac); if (Math.random() < tRate) { m.acid[trackSteps.acid].note = ['G2','C3','F2','Eb2','Ab2'][Math.floor(Math.random()*5)]; saveLiveState(); } } 
     else if (Math.random() < gRate) { m.acid[trackSteps.acid] = { note: ['G2','C3','F2','Eb2'][Math.floor(Math.random()*4)], vel: 0.7 }; buildSeq(); saveLiveState(); }
 
-    let fm = m.fm[trackSteps.fm]; let tfRate = trackChaos.fm + (morphAmount * 0.1);
+    let fm = m.fm[trackSteps.fm]; let tfRate = studioExportBusy ? 0 : trackChaos.fm + (morphAmount * 0.1);
     if (fm) { let fNote = fm.note || fm; triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
 
     let bi = m.biniou && m.biniou[trackSteps.biniou];
-    let tbRate = trackChaos.biniou + (morphAmount * 0.08);
+    let tbRate = studioExportBusy ? 0 : trackChaos.biniou + (morphAmount * 0.08);
     if (biniouEnabled && bi) {
         triggerBiniou(bi.note || bi || 'A4', time, bi.vel || 0.82, bi.morph);
         if (typeof bi === 'object' && Math.random() < tbRate) {
@@ -1467,7 +1496,7 @@ function schedulerTick() {
         SEQ.masterStep = (SEQ.masterStep + 1) % 16;
         if (SEQ.masterStep === 0) {
             SEQ.barCount++;
-            if (isPilot && aiTimeline.length > 0) {
+            if (isPilot && !psyState.song.enabled && aiTimeline.length > 0) {
                 let kf = aiTimeline.find(function(k) { return k.bar === SEQ.barCount; });
                 if (kf) {
                     if (kf.pat) { curPat = kf.pat; matrix = patterns[curPat]; document.querySelectorAll('.pt').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-pat')===curPat);}); if (kf.pat === "C") sendMIDIVJ('drop'); }
@@ -1480,12 +1509,13 @@ function schedulerTick() {
                     if (adv) { $id('agent-name').textContent='['+adv.agent+']'; $id('agent-msg').textContent=adv.msg; $id('agent-name').style.color=adv.agent.includes('DP')?'var(--p)':'var(--al)'; }
                 }
             }
+            psyOnBar(SEQ.barCount);
         }
     }
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
+function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; psySongIndex = -1; psyLastAcidFreq = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, auto: 0 }; psyOnBar(0); SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
 function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); }
 
 function applyMorph(m, persist=true) {
@@ -1689,6 +1719,7 @@ function buildFX() {
     syncBiniouUI();
     buildExtendedFX();
     studioExportCard();
+    psyBuildPanel();
 
     let pad = $id('chaos-pad'), puck = $id('chaos-puck'), padX = 0.5, padY = 0.0, isTouch = false;
     function updateP() { if(!ctx)return; if(window.sp1200Crusher) sp1200Crusher.curve = makeBitCrushCurve(Math.max(2, 16 - (padY*14))); if(window.phaserLFO) phaserLFO.frequency.setTargetAtTime(0.05 + (padX*14.95), ctx.currentTime, 0.05); }
@@ -1771,6 +1802,7 @@ function syncProjectUI() {
     syncBiniouUI();
     syncExtendedFX();
     studioSyncMixer();
+    psySyncUI();
     updateMasterEQ();
     updateHistoryUI();
 }
@@ -1786,6 +1818,7 @@ $id('bpm-input').addEventListener('change', function(e) {
     pushUndo();
     bpm = Math.round(next);
     e.target.value = bpm;
+    psyApplyFX();
     saveLiveState();
     setStatus('TEMPO: ' + bpm + ' BPM', 'ok');
 });
@@ -1803,6 +1836,7 @@ $id('tap-btn').addEventListener('click', function() {
             pushUndo();
             bpm = tapped;
             $id('bpm-input').value = bpm;
+            psyApplyFX();
             saveLiveState();
             setStatus('TAP: ' + bpm + ' BPM', 'ok');
         }
