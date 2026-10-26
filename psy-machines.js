@@ -373,7 +373,7 @@ async function psyRecordVoice(){
   psyRecording=true;
   const record=document.getElementById('psy-record-voice');
   if(record){record.disabled=true;record.textContent='● ENREGISTREMENT…';}
-  let stream=null;
+  let stream=null,recordingOK=false;
   try{
     // Le déverrouillage sonore doit partir du clic utilisateur.
     if(!await activateStudioAudio())throw Error('Le moteur audio n’est pas autorisé.');
@@ -383,6 +383,7 @@ async function psyRecordVoice(){
     });
     const audio=await psyCaptureMicroPCM(stream,3000);
     psyVoiceLoaded(audio,'MICRO 3 S');
+    recordingOK=true;
     if(studioChannels && studioChannels.speak && studioChannels.speak.mute){
       psyVoiceStatus('Voix enregistrée. Attention : la piste SPEAK est en mode MUTE dans MIX.');
     }
@@ -394,6 +395,10 @@ async function psyRecordVoice(){
     if(stream)stream.getTracks().forEach(track=>track.stop());
     psyRecording=false;
     if(record){record.disabled=false;record.textContent='● MICRO 3 S';}
+    if(recordingOK && ctx && ctx.state==='running' && !(studioChannels&&studioChannels.speak&&studioChannels.speak.mute)){
+      psyTriggerSpeak(ctx.currentTime+.07,.9); // Réécouter automatiquement sa voix.
+      psyVoiceStatus('MICRO OK : voici ta voix enregistrée. Relance TEST VOIX ou utilise la piste SPEAK.');
+    }
   }
 }
 function psyParamMarkup(machine,key,label,min,max,step){
@@ -521,6 +526,7 @@ function buildPsyRack(){
   });
   pad.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter')psyStopLiveTheremin();});
   psySyncRack();
+  if(psyVoiceBuffer)psyVoiceStatus('VOIX PRÊTE : '+psyVoiceName+' ('+psyVoiceBuffer.duration.toFixed(1)+' s). TEST VOIX pour écouter.');
 }
 function psyMovePuck(x,y){
   const puck=document.querySelector('#psy-theremin-pad .psy-crosshair');
