@@ -52,7 +52,7 @@ function restoreExtendedState(state) {
   machineParams.snareSnap = extClamp(oldMachines.snareSnap,0,1,0.65);
   machineParams.hatDecay = extClamp(oldMachines.hatDecay,0,1,0.38);
   machineParams.subDecay = extClamp(oldMachines.subDecay,0,1,0.52);
-  updateMasterEQ();
+  // Defer master update until AudioContext initialization (localStorage restore runs early).
 }
 function updateMasterEQ() {
   if (!ctx || !eqNodes.length) return;
