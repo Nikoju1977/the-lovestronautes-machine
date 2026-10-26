@@ -21,6 +21,7 @@
 - ⚡ **PSY V8 : cinq instruments jouables** TD-3, Volca FM2, Roland T-8, Theremin et PO-35 Speak dans un nouveau rack, deux pistes supplémentaires
 - 📱 **PSY V9** : interface mobile revue, activation sonore non bloquante, DÉMO PSY immédiate, TEST SON et accès direct FX / WAV / MP3
 - 🎼 **PSY V10** : Song Mode et timeline 192 mesures, Kick & Bass Lab rolling K-B-B-B, Melody Lab tonal 64 pas, export complet WAV/MP3
+- 🔧 **PSY V11** : stabilisation audio mobile (anti-surcharge, anti-craquements) et PO-35 vocal micro PCM avec réécoute d'échantillons complets
 - ☄ **Biniou électronique / Cyber Breton** : piste BINI dédiée, anche synthétique, drone A, harmoniseurs ±1 octave, pitch bend MIDI, drive, tone, echo et espace/reverb
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
@@ -40,6 +41,27 @@ Dans **FX**, l'égaliseur à 5 bandes agit sur le bus master stéréo avant l'an
 Les pistes **909 SNARE**, **808 HAT** et **SUB BASS** sont disponibles dans **SEQ**, disposent chacune de son volume, mutation et longueur dans **MIX**, et de paramètres de timbre + boutons **TEST** dans **FX**. Elles utilisent exclusivement la synthèse Web Audio. Les nouveaux patterns d'usine contiennent quelques rythmes de démonstration; les anciens projets JSON restent compatibles et chargent ces pistes vides pour préserver leur arrangement.
 
 Les paramètres et les nouvelles pistes sont conservés par la sauvegarde locale, l'export/import JSON et l'historique Undo/Redo. Après mise à jour du site, actualiser l'application installée si nécessaire afin de charger le nouveau cache PWA.
+
+## PSY V11 — Corrections des coupures de son et du sampler vocal
+
+Cette version cible deux défauts remontés sur téléphone Android : des interruptions / crépitements sonores et le sampler vocal **PO-35 Speak** qui ne restitue pas correctement une vraie prise micro.
+
+**Stabilité du moteur** :
+- Les 6 oscillateurs FM de chaque note restent disponibles, mais la polyphonie du moteur FM est désormais limitée à **3 voix simultanées** avec coupure progressive de la voix la plus ancienne. Le sampler SPEAK conserve 2 voix maximum.
+- Lorsque le téléphone met l'onglet en arrière-plan puis le réactive, le scheduler **se resynchronise** au temps audio courant et limite le nombre de pas préparés par cycle, évitant un rattrapage massif de notes.
+- Le morphing graphique / FX réalloue moins souvent sa courbe waveshaper (≈ 9 fois/s au maximum en automation, au lieu de 60). Le HUD analyse à environ 20 FPS et le drive Biniou désactive l'oversampling 2x sur mobile.
+- L'application indique explicitement quand le contexte audio est suspendu / interrompu, avec la commande **REPRENDRE LE SON**.
+
+**PO-35 Speak** :
+- Enregistrement du micro en **PCM Web Audio** (AudioWorklet, repli ScriptProcessor) pendant trois secondes. Cette capture directe contourne des incompatibilités WebM / Opus / MediaRecorder rencontrées dans certains navigateurs mobiles.
+- Plus de coupure à 0,2–0,7 seconde : un échantillon importé ou enregistré peut être lu jusqu'à **4 secondes** (ou jusqu'à la durée totale du fichier si plus court), avec un fondu d'entrée / sortie.
+- Le timbre robotique conserve un signal vocal intelligible en parallèle de la modulation. Une prise valide se réécoute automatiquement après l'enregistrement ; **TEST VOIX** permet de la rejouer.
+- Messages de statut et compteur 3–2–1, prévention du double enregistrement, arrêt automatique des pistes micro, bouton **EFFACER MA VOIX**. Aucun envoi de voix à un serveur.
+- Le nouvel encodeur PCM AudioWorklet est enregistré au maximum une fois par contexte, partagé entre le micro et l'export WAV/MP3.
+
+**Pour tester** : dans Chrome Android, ouvrir le site → **ACTIVER LE SON** → **MACHINES** → **PO-35 SPEAK** → **MICRO 3 S** → accorder la permission micro → parler pendant le décompte → écouter la réécoute automatique ou appuyer sur **TEST VOIX**. Vérifier que la piste SPEAK n'est pas mutée dans **MIX**. Pour éviter de réenregistrer, importer un fichier WAV ou MP3. L'échantillon est gardé en mémoire tant que la page reste ouverte, mais **pas** dans l'export JSON du projet.
+
+Les tests automatisés vérifient la durée de la voix, la capture PCM simulée, la fermeture du flux micro et la polyphonie. L'écoute humaine et la vraie autorisation du micro sur Android doivent encore être confirmées sur l'appareil final.
 
 ## PSY V10 — Song Mode, Kick & Bass Lab et Melody Lab
 
@@ -141,6 +163,7 @@ node scripts/validate.mjs
 node scripts/test-audio-exports.mjs
 node scripts/test-psy-machines.mjs
 node scripts/test-track-creator.mjs
+node scripts/test-voice-reliability.mjs
 ```
 
 La même validation est exécutée automatiquement par GitHub Actions sur les pushes et pull requests.
