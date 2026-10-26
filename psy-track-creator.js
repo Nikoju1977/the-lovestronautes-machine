@@ -12,7 +12,7 @@ const CREATOR_SCALES={
   harmonic:[0,2,3,5,7,8,11]
 };
 const CREATOR_STYLES=['fullon','dark','progressive','forest'];
-const CREATOR_BAR_OPTIONS=[4,8,16,24,32,48,64];
+const CREATOR_BAR_OPTIONS=[4,8,16,24,32,40,48,64];
 const CREATOR_DEFAULT_SECTIONS=[
   {name:'INTRO',pat:'A',bars:16,morph:0.08},
   {name:'BUILD',pat:'B',bars:32,morph:0.22},
@@ -39,7 +39,7 @@ function creatorSections(source){
     const old=row&&typeof row==='object'?row:{};
     const fallback=CREATOR_DEFAULT_SECTIONS[i%CREATOR_DEFAULT_SECTIONS.length];
     return {
-      name:typeof old.name==='string'&&old.name.trim()?old.name.trim().slice(0,28):fallback.name,
+      name:typeof old.name==='string'&&old.name.trim()?old.name.trim().replace(/[<>]/g,'').slice(0,28):fallback.name,
       pat:CREATOR_PATTERNS.includes(old.pat)?old.pat:fallback.pat,
       bars:CREATOR_BAR_OPTIONS.includes(old.bars)?old.bars:16,
       morph:creatorClamp(old.morph,0,1,fallback.morph)
@@ -240,6 +240,9 @@ function creatorSongBoundary(bar){
   return true;
 }
 function creatorStartSong(){
+  // Tempo requested in Track Creator is authoritative for song playback.
+  bpm=creatorState.tempo;
+  const bpmInput=document.getElementById('bpm-input');if(bpmInput)bpmInput.value=bpm;
   if(isPlaying||SEQ.playing){
     stopSeq();isPlaying=false;
     const btn=document.getElementById('play-btn');if(btn)btn.textContent='▶ PLAY';
@@ -322,9 +325,9 @@ function creatorRenderTimeline(){
   creatorHighlightSection(creatorLastSongSection);
 }
 function creatorRefreshSong(){
-  const bars=creatorTotalBars(),duration=creatorDurationSeconds();
+  const bars=creatorTotalBars(),duration=creatorDurationSeconds(bars,creatorState.tempo);
   const durationEl=document.getElementById('creator-duration');
-  if(durationEl)durationEl.textContent=bars+' MESURES · ENVIRON '+creatorTimeLabel(duration)+' MIN · '+bpm+' BPM';
+  if(durationEl)durationEl.textContent=bars+' MESURES · ENVIRON '+creatorTimeLabel(duration)+' MIN · '+creatorState.tempo+' BPM (TEMPO CRÉATEUR)';
   const songInfo=document.getElementById('creator-playing');
   if(songInfo&&!creatorState.running)songInfo.textContent='MORCEAU PRÊT · '+bars+' MESURES';
   creatorRenderTimeline();

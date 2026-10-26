@@ -64,7 +64,7 @@ Arrangement modifiable par section : nom, pattern A/B/C/D et durée 4–64 mesur
 | Final Drop | C | 40 |
 | Outro | A | 16 |
 
-**192 mesures = environ 5 min 18 s à 145 BPM.** Le bouton **LIRE LE MORCEAU** joue toute la timeline ; le bouton **EXPORT MORCEAU WAV / MP3** ouvre le panneau FX avec la nouvelle option **MORCEAU ENTIER**, pour capturer le master complet en temps réel. Gardez l'onglet actif ; un rendu de cinq minutes occupe beaucoup de mémoire, notamment sur Android. Préférez des sections plus courtes pour un premier essai sur un mobile modeste.
+**192 mesures = environ 5 min 18 s à 145 BPM.** La durée de 40 mesures du Final Drop est conservée dans les exports/imports JSON ; le BPM du Song Mode est synchronisé avec le tempo choisi dans Track Creator (même lorsqu'un ancien projet utilisait 128 BPM). Le bouton **LIRE LE MORCEAU** joue toute la timeline ; le bouton **EXPORT MORCEAU WAV / MP3** ouvre le panneau FX avec la nouvelle option **MORCEAU ENTIER**, pour capturer le master complet en temps réel. Gardez l'onglet actif ; un rendu de cinq minutes occupe beaucoup de mémoire, notamment sur Android. Préférez des sections plus courtes pour un premier essai sur un mobile modeste.
 
 ### 04 · MELODY LAB
 Éditeur tactile de **quatre patterns de 16 pas**, soit 64 pas par piste pour FM2, acid et theremin. Choisir une gamme et une note ; toucher les pas pour les écrire. Les données restent les vraies notes du projet, enregistrées via les sauvegardes JSON et Undo/Redo. La génération conserve les harmonies d'une tonalité et d'une progression.
