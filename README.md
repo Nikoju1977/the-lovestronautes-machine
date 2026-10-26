@@ -19,6 +19,7 @@
 - 🎚️ **Égaliseur master 5 bandes** (80, 250, 1 000, 4 000, 10 000 Hz), ±12 dB, bypass, reset et mémorisation
 - 🥁 **Trois nouvelles machines** : 909 Snare, 808 Hi-Hat et Sub Bass, séquenceurs 16 pas et paramètres de synthèse réglables
 - ⚡ **PSY V8 : cinq instruments jouables** TD-3, Volca FM2, Roland T-8, Theremin et PO-35 Speak dans un nouveau rack, deux pistes supplémentaires
+- 📱 **PSY V9** : interface mobile revue, activation sonore non bloquante, DÉMO PSY immédiate, TEST SON et accès direct FX / WAV / MP3
 - ☄ **Biniou électronique / Cyber Breton** : piste BINI dédiée, anche synthétique, drone A, harmoniseurs ±1 octave, pitch bend MIDI, drive, tone, echo et espace/reverb
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
@@ -38,6 +39,21 @@ Dans **FX**, l'égaliseur à 5 bandes agit sur le bus master stéréo avant l'an
 Les pistes **909 SNARE**, **808 HAT** et **SUB BASS** sont disponibles dans **SEQ**, disposent chacune de son volume, mutation et longueur dans **MIX**, et de paramètres de timbre + boutons **TEST** dans **FX**. Elles utilisent exclusivement la synthèse Web Audio. Les nouveaux patterns d'usine contiennent quelques rythmes de démonstration; les anciens projets JSON restent compatibles et chargent ces pistes vides pour préserver leur arrangement.
 
 Les paramètres et les nouvelles pistes sont conservés par la sauvegarde locale, l'export/import JSON et l'historique Undo/Redo. Après mise à jour du site, actualiser l'application installée si nécessaire afin de charger le nouveau cache PWA.
+
+## PSY V9 — Nouvelle interface téléphone et dépannage audio
+
+Cette version corrige un problème d'ergonomie Android signalé après PSY V8 : un bouton audio au centre masquait la machine, le pattern BREAK presque silencieux pouvait rester sélectionné et les panneaux étaient comprimés en bas du téléphone.
+
+- **ACTIVER LE SON** est maintenant **dans l'en-tête** : l'interface reste utilisable avant l'activation et indique clairement si l'AudioContext est activé, suspendu ou bloqué.
+- **DÉMO PSY** sélectionne **C / DROP** et démarre le séquenceur sans effacer les patterns du projet. Les motifs BREAK restent accessibles sans être présentés comme une démo complète.
+- **TEST SON** joue un kick et un son FM dans le vrai bus master, indépendamment du pattern sélectionné, pour diagnostiquer rapidement le volume du téléphone.
+- **FX / WAV / MP3** ouvre directement le panneau des effets, de l'égaliseur master et des exports audio.
+- **Mobile** : défilement vertical naturel de l'application au lieu d'un panneau bloqué à quelques dizaines de pixels ; onglets collants, grille de séquenceur en deux rangées de huit pas (cibles tactiles plus grandes), rack d'instruments en colonne.
+- **Options avancées** (MIDI, multi-out, configuration IA, Undo/Redo, enregistrement rapide) sont repliées sur mobile mais restent accessibles. Sur ordinateur, le panneau avancé est développé automatiquement.
+- **Stabilité audio** : pendant la reprise asynchrone de l'AudioContext, plusieurs pressions ne créent plus plusieurs moteurs Web Audio. Les échecs d'activation sont affichés dans l'interface.
+- **PWA v9** : actualisation prioritaire des fichiers JavaScript et CSS quand le réseau est disponible ; les assets essentiels sont sauvegardés hors ligne.
+
+**Mode d'emploi sur Android** : ouvrir le site dans Chrome → **ACTIVER LE SON** → **TEST SON** (kick + synthé FM) → **DÉMO PSY** → **MACHINES** ou **FX / WAV**. Si les commandes ne changent pas après une mise à jour, actualiser la page ou ouvrir le site dans un nouvel onglet Chrome.
 
 ## PSY V8 — Cinq instruments numériques jouables
 

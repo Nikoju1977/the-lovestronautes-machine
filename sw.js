@@ -1,10 +1,11 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v8';
+const CACHE_NAME = 'lovestronautes-v9';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
   new URL('./index.html', scope).href,
+  new URL('./ui-v9.css', scope).href,
   new URL('./audio-extensions.js', scope).href,
   new URL('./studio-features.js', scope).href,
   new URL('./psy-machines.js', scope).href,
@@ -57,7 +58,7 @@ self.addEventListener('fetch', function(event) {
 
   // JavaScript is network-first so returning users see a published update,
   // with cached content preserved when the network is unavailable.
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html')) {
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.endsWith('.css')) {
     event.respondWith(fetch(request).then(function(response){
       if(response && response.ok) {
         const copy=response.clone();

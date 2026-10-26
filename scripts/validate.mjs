@@ -20,6 +20,7 @@ const sw = fs.readFileSync('sw.js', 'utf8');
 const ext = fs.readFileSync('audio-extensions.js', 'utf8');
 const studio = fs.readFileSync('studio-features.js', 'utf8');
 const psy = fs.readFileSync('psy-machines.js', 'utf8');
+const cssV9 = fs.readFileSync('ui-v9.css','utf8');
 const capture = fs.readFileSync('pcm-capture-processor.js', 'utf8');
 const mp3 = fs.readFileSync('mp3-encoder-worker.js', 'utf8');
 
@@ -84,7 +85,14 @@ assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') &&
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v8') && sw.includes("new URL('./psy-machines.js', scope).href"), 'moteurs PSY v8 disponibles hors ligne');
+assert(sw.includes('lovestronautes-v9') && sw.includes("new URL('./psy-machines.js', scope).href") && sw.includes("new URL('./ui-v9.css', scope).href"), 'cache PSY V9 hors ligne');
+assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
+assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
+assert(html.includes('function activateStudioAudio()') && html.includes('function markStudioAudioReady()'), 'gestion robuste activation audio');
+assert(html.includes('if (ctx) {\n        ctx.resume().then(markStudioAudioReady)'), 'un seul AudioContext pendant le démarrage');
+assert(html.includes('id="studio-demo-btn"') && html.includes('id="studio-test-btn"') && html.includes('id="studio-fx-btn"'), 'barre accès son, démo et FX');
+assert(html.includes('<details class="studio-advanced"'), 'commandes avancées repliables sur mobile');
+assert(!html.includes('<div id="unlock">'), 'ancienne fenêtre audio bloquante supprimée');
 assert(html.includes('studio: studioProjectState()') && html.includes('restoreStudioState(state)'), 'persistance mix studio');
 assert(studio.includes('function studioWav(chunks,sampleRate)') && studio.includes("tag(0,'RIFF')"), 'WAV PCM stéréo');
 assert(mp3.includes('new lamejs.Mp3Encoder(2,sampleRate,bitRate)'), 'MP3 stéréo');
@@ -100,14 +108,14 @@ assert(html.includes('@media (max-width:679px)'), 'layout mobile performance pr�
 assert(html.includes("id=\"export-project\"") && html.includes("id=\"import-project\""), 'export/import projet présents');
 
 const requiredIds = [
-  'play-btn','tap-btn','bpm-input','swing-slider','morph-slider',
+  'play-btn','tap-btn','bpm-input','swing-slider','morph-slider','unlock','studio-demo-btn','studio-test-btn','studio-fx-btn','studio-audio-guide','studio-advanced',
   'undo-btn','redo-btn','rec-btn','midi-btn','routing-btn','biniou-toggle','biniou-drone','biniou-cyber','biniou-reset-pitch','biniou-drive','biniou-tone','biniou-echo','biniou-space','biniou-harmony','biniou-pitch',
   'panel-seq','panel-mix','panel-fx','panel-gear','psy-open-rack','panel-dna','kbd','scope'
 ];
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['index.html','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['index.html','ui-v9.css','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);
