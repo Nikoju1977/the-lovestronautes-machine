@@ -64,7 +64,7 @@ assert.equal(lab.psySongPattern(20).pattern,'A');
 lab.psyRestoreState({});
 assert.equal(lab.psyStateSnapshot().enabled,false,'legacy projects preserve previous synths');
 console.log('✓ JSON migration, sanitization and bar-synced song mode');
-lab.psyRestoreState({psy:{enabled:true,delayDivision:'3/16',delayFeedback:0.36}});
+lab.psyRestoreState({psy:{enabled:true,delayDivision:'3/16',delayFeedback:0.36,transitionFX:true}});
 lab.psyInitFX();
 const fx=vm.runInContext('psyFX',world);
 assert.ok(fx);
