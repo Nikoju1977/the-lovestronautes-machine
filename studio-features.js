@@ -127,6 +127,23 @@ function studioButtons(busy){
   const stop=document.getElementById('studio-export-stop');if(stop)stop.disabled=!busy;
 }
 function studioSleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+// Chaque AudioContext n'enregistre le processor qu'une fois. Une seconde
+// importation de module peut sinon provoquer une erreur NotSupportedError.
+const studioPCMWorkletLoads=new WeakMap();
+async function studioEnsurePCMWorklet(){
+  if(!ctx||!ctx.audioWorklet||typeof AudioWorkletNode==='undefined')return false;
+  let loading=studioPCMWorkletLoads.get(ctx);
+  if(!loading){
+    loading=ctx.audioWorklet.addModule('./pcm-capture-processor.js');
+    studioPCMWorkletLoads.set(ctx,loading);
+  }
+  try{await loading;return true;}
+  catch(error){
+    studioPCMWorkletLoads.delete(ctx);
+    console.warn('Capture PCM : repli ScriptProcessor',error);
+    return false;
+  }
+}
 async function studioReady(){
   if(!audioReady)initAudio();
   for(let i=0;i<80 && !audioReady;i++)await studioSleep(50);
@@ -137,8 +154,7 @@ async function studioReady(){
 async function studioCaptureStart(){
   const chunks=[];
   let node,silent,worklet=false;
-  if(ctx.audioWorklet && typeof AudioWorkletNode!=='undefined'){
-    await ctx.audioWorklet.addModule('./pcm-capture-processor.js');
+  if(await studioEnsurePCMWorklet()){
     node=new AudioWorkletNode(ctx,'lovestronautes-pcm-capture',{
       numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],
       channelCount:2,channelCountMode:'explicit'
