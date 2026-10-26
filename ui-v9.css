@@ -1,0 +1,85 @@
+/* PSYTRANCE STUDIO V9 — phone-first production interface.
+   Loads after the legacy theme; keeps every existing control operable. */
+.studio-quickbar{display:flex;flex-direction:column;gap:8px;padding:7px 0 3px}
+.studio-quick-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.studio-quick-title strong{font-family:var(--hd);font-weight:900;color:#e6fff2;letter-spacing:1.4px;font-size:.95rem}
+.studio-build{font-size:.56rem;letter-spacing:1px;color:#81dfb4;border:1px solid rgba(101,255,154,.35);border-radius:18px;padding:4px 8px}
+.studio-quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.studio-quick-actions button{border-radius:8px;padding:11px 7px;min-height:47px;cursor:pointer;touch-action:manipulation;font:800 .72rem var(--hd);letter-spacing:.6px;white-space:normal;line-height:1.15;transition:background .18s;min-width:0}
+#unlock.studio-activate{position:static;transform:none;animation:none;visibility:visible;opacity:1;z-index:auto;width:auto;text-shadow:none;box-shadow:none;font:800 .74rem var(--hd);letter-spacing:.5px;color:#05220d;background:linear-gradient(95deg,#39ff14,#70ffc5);border:1px solid #63ffa0}
+#unlock.studio-activate.on{color:#75ffc0;background:#123a27;border-color:#40b879}
+#studio-demo-btn{background:linear-gradient(95deg,#ef61eb,#8f6fff);color:#16051b;border:1px solid #e180e6}
+#studio-test-btn{background:#101f25;border:1px solid #32847d;color:#b4ffff}
+#studio-fx-btn{background:#142923;border:1px solid #40896c;color:#c4ffe2}
+#studio-audio-guide{font-size:.61rem;line-height:1.45;color:#b1cfbf;border-left:3px solid #65ff9a;padding:6px 9px;background:rgba(101,255,154,.04);min-height:27px}
+.studio-advanced{background:rgba(12,22,24,.72);border-bottom:1px solid rgba(101,255,154,.12)}
+.studio-advanced summary{cursor:pointer;list-style:none;padding:9px 13px;color:#9fbdad;font-family:var(--hd);font-weight:700;letter-spacing:1.3px;font-size:.68rem;display:flex;align-items:center;justify-content:space-between}
+.studio-advanced summary::-webkit-details-marker{display:none}
+.studio-advanced summary::after{content:'▾';color:#81f4ae;font-size:.8rem}
+.studio-advanced[open] summary::after{content:'▴'}
+.studio-advanced .ext-grid{background:transparent}
+.nt:focus-visible,.pt:focus-visible,.psy-open-rack:focus-visible,.studio-quick-actions button:focus-visible{outline:3px solid #fbc7ff;outline-offset:2px}
+@media(max-width:1023px){
+  html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:auto!important}
+  body{padding-bottom:env(safe-area-inset-bottom)!important}
+  #app-root{min-height:100dvh}
+  .app{height:auto!important;min-height:100dvh!important;display:flex!important;flex-direction:column!important;overflow:visible!important;margin:0 auto}
+  .hud{position:relative!important;z-index:2;padding:8px 10px 7px}
+  .hud-r1{align-items:center;min-height:35px}
+  .hud-r1>div:first-child{min-width:0}
+  .wm-main{font-size:.95rem;letter-spacing:1.1px}
+  .live-badge{animation:none;font-size:.4rem}
+  .wm-sub{font-size:.37rem;letter-spacing:.6px;margin-top:3px}
+  .scope-wrap{flex:0 0 30%;height:34px;min-width:68px}
+  #agent-hud{display:none}
+  .hud-r2{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px}
+  .bpm-grp{grid-column:1}.tmeter{grid-column:2}
+  #status{grid-column:3;width:auto;max-width:100px;min-width:0;font-size:.5rem;text-align:right;padding:0;overflow:hidden}
+  .studio-quickbar{padding:6px 0 0;gap:6px}
+  .studio-quick-title strong{font-size:.79rem}
+  .studio-build{font-size:.48rem;padding:3px 5px}
+  .studio-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .studio-quick-actions button{min-height:44px;font-size:.71rem;padding:8px 5px}
+  #unlock.studio-activate{font-size:.72rem}
+  #studio-audio-guide{font-size:.57rem;line-height:1.3;padding:4px 8px}
+  .morph-strip{padding:5px 10px 3px}
+  .morph-strip .mrw{margin-bottom:0}
+  #morph-slider{height:22px}
+  .groove-row{padding:0}
+  .tbar{padding:5px 10px}
+  .pilot-btn{height:32px!important;font-size:.7rem!important;letter-spacing:.7px}
+  #pilot-lbl{font-size:.64rem}
+  .ctrl-grid{gap:7px}
+  .ctrl-grid .mb{height:40px;font-size:.58rem}
+  .studio-advanced summary{padding:8px 12px}
+  .studio-advanced .ext-grid{padding:6px 10px 10px}
+  .studio-advanced .ext-grid .mb{height:42px;font-size:.54rem}
+  .psy-open-rack{position:relative;z-index:1;min-height:43px;font-size:.67rem;display:flex;align-items:center;justify-content:center}
+  .pat-tabs{padding:7px 9px;gap:6px}
+  .pt{height:44px}
+  .nav-tabs{position:sticky!important;top:0!important;z-index:50!important;background:#0b1215;min-height:51px;border-bottom:2px solid rgba(101,255,154,.25);box-shadow:0 4px 18px rgba(0,0,0,.6)}
+  .nt{height:49px;min-width:0;padding:3px 1px;font-size:clamp(.49rem,1.7vw,.67rem);letter-spacing:0;font-weight:700}
+  .nt.active{color:#a8ffcc}
+  .panels{flex:0 0 auto!important;height:auto!important;min-height:420px!important;overflow:visible!important;position:relative!important}
+  .panel{position:relative!important;inset:auto!important;min-height:420px!important;height:auto!important;overflow:visible!important;padding:11px 9px 30px}
+  .panel.active{display:flex!important;flex-direction:column!important;gap:11px!important}
+  .panel:not(.active){display:none!important}
+  .sgrid{grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:6px!important;padding:9px!important}
+  .step{min-height:42px!important;height:42px!important;border-radius:7px!important}
+  .thead{min-height:34px}
+  .ttitle{font-size:.65rem}
+  .mxrow{overflow-x:auto;gap:9px;min-height:360px;scrollbar-width:thin}
+  .mxch{min-width:166px;max-width:176px;flex:0 0 166px}
+  .studio-mute-solo .mb{height:33px}
+  .psy-rack-grid{grid-template-columns:1fr!important}
+  .psy-card{gap:12px;padding:13px}
+  .fxcard{max-width:100%;margin-left:0;margin-right:0}
+  .kbd-wrap{flex-shrink:0;position:relative!important;z-index:1;margin-top:0;padding-bottom:12px}
+  .kbd{height:68px}
+}
+@media(min-width:1024px){
+  .studio-quickbar{padding:4px 0 6px}
+  .studio-advanced{grid-column:1;grid-row:4;border-right:1px solid var(--line)}
+  .studio-advanced .ext-grid{grid-column:auto;grid-row:auto;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .studio-advanced summary{padding:5px 8px}
+}
