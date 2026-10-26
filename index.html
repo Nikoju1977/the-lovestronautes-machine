@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
-<title>LOVESTRONAUTES MACHINE // PRO LIVE ACT</title>
+<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V8</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -728,6 +728,35 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
   .kbd{height:52px}
 }
 
+/* PSY V8 · Clearly discoverable instrument rack */
+.psy-open-rack{flex-shrink:0;display:block;width:100%;padding:11px 12px;color:#071008;font-size:.76rem;font-family:var(--hd);font-weight:900;letter-spacing:1.2px;text-transform:uppercase;background:linear-gradient(95deg,#39ff14,#6ee9e6 55%,#f77cea);border:0;cursor:pointer;box-shadow:0 0 16px rgba(57,255,20,.12)}
+.psy-open-rack:active{transform:scale(.995)}
+.psy-rack-head{display:flex;justify-content:space-between;gap:10px;padding:13px 14px;background:linear-gradient(95deg,rgba(57,255,20,.12),rgba(255,0,234,.07));border:1px solid rgba(57,255,20,.35);border-radius:12px}
+.psy-rack-head strong{font-family:var(--hd);font-size:1.15rem;color:var(--p);letter-spacing:1px}
+.psy-rack-head p{margin-top:4px;color:#a9bdba;font-size:.56rem}
+.psy-rack-head>span{font-size:.52rem;white-space:nowrap;color:#e5c4ff}
+.psy-rack-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;padding-bottom:35px}
+.psy-card{max-width:none!important;width:100%!important;display:flex;flex-direction:column;gap:11px;border-color:rgba(57,255,20,.22);padding:15px}
+.psy-card:nth-child(2n){border-color:rgba(255,0,234,.26)}
+.psy-model{font-family:var(--hd);font-weight:900;color:var(--p);font-size:1.3rem;letter-spacing:1px}
+.psy-description{font-size:.56rem;line-height:1.5;color:#aebcc4;max-width:34em}
+.psy-param{display:grid;grid-template-columns:88px minmax(0,1fr) 48px;gap:8px;align-items:center;width:100%;min-height:31px}
+.psy-param>span{font-size:.58rem;color:#d3e5f0;font-weight:700}
+.psy-param>input{accent-color:var(--p);width:100%;touch-action:pan-x}
+.psy-param output{font-size:.54rem;color:var(--p);text-align:right;font-variant-numeric:tabular-nums}
+.psy-param select{grid-column:2/4;background:#101b23;color:#fff;border:1px solid #2a4a37;border-radius:6px;padding:9px 5px;min-width:0}
+.psy-preview,.psy-toggle{min-height:38px!important;width:100%}
+.psy-preview{border-color:rgba(0,255,157,.4)!important;color:#aaffcc!important}
+.psy-toggle.on{background:rgba(57,255,20,.16)!important}
+.psy-preview-row,.psy-voice-actions{display:flex;gap:7px}
+.psy-theremin-pad{height:165px;border-radius:8px;border:1px solid #38eeb1;background:repeating-linear-gradient(0deg,transparent 0 39px,rgba(57,255,20,.12) 40px),repeating-linear-gradient(90deg,transparent 0 39px,rgba(255,0,234,.12) 40px),linear-gradient(120deg,#0b3024,#1a092e);position:relative;touch-action:none;cursor:crosshair;user-select:none;overflow:hidden}
+.psy-theremin-pad.on{border-color:#ff88ed;box-shadow:0 0 18px rgba(255,0,234,.24)}
+.psy-crosshair{position:absolute;left:50%;top:50%;width:22px;height:22px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 14px #39ff14;pointer-events:none}
+.psy-pad-y,.psy-pad-x{position:absolute;font-size:.48rem;color:#bfffee;pointer-events:none}.psy-pad-y{top:9px;left:9px}.psy-pad-x{bottom:9px;right:9px}
+.psy-voice-status{font-size:.52rem;color:#9decc4;line-height:1.5;min-height:23px}
+.nav-tabs .nt{min-width:0;font-size:clamp(.41rem,1.5vw,.65rem);letter-spacing:.1px}
+@media(max-width:679px){.psy-open-rack{font-size:.63rem;padding:9px}.psy-rack-head strong{font-size:.93rem}.psy-card{padding:12px}.psy-rack-grid{grid-template-columns:1fr;gap:9px}}
+@media(min-width:1024px){.psy-open-rack{grid-column:1;grid-row:5;align-self:start;z-index:2;margin-top:2px}.pat-tabs{padding-top:53px}.psy-rack-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Keep the live console dark regardless of OS theme. */
 @media (prefers-color-scheme: light){
   :root{
@@ -738,7 +767,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
   body{background:radial-gradient(circle at 18% 0%,rgba(101,255,154,.07),transparent 30%),radial-gradient(circle at 82% 0%,rgba(232,121,249,.06),transparent 34%),var(--bg);color:var(--text)}
 }
 </style>
-  <meta name="description" content="Lovestronautes Machine — DAW psytrance dans le navigateur. Séquenceur TR-808/909, Web Audio API.">
+  <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
   <meta property="og:title" content="Lovestronautes Machine | Studio Niko Design">
@@ -764,7 +793,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">LIVE SAFE</span></div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V8 · 5 MACHINES</span></div>
                 <div class="wm-sub">LIVE PERFORMANCE SYSTEM // WEB AUDIO // MIDI // GHOST PILOT</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
@@ -803,6 +832,8 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         <button class="mb r" id="rec-btn">● REC MASTER</button>
     </div>
 
+    <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 5 INSTRUMENTS NUMÉRIQUES</button>
+
     <div class="pat-tabs" id="pat-tabs">
         <button class="pt active" data-pat="A"><span class="pl">A</span><span class="ps">INTRO</span></button>
         <button class="pt" data-pat="B"><span class="pl">B</span><span class="ps">BUILD</span></button>
@@ -814,6 +845,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         <button class="nt active" data-panel="seq">SEQ</button>
         <button class="nt" data-panel="mix">MIX</button>
         <button class="nt" data-panel="fx">FX</button>
+        <button class="nt" data-panel="gear">INSTRUMENTS</button>
         <button class="nt" data-panel="dna">DNA</button>
     </div>
 
@@ -821,6 +853,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         <div class="panel active" id="panel-seq"></div>
         <div class="panel" id="panel-mix"></div>
         <div class="panel" id="panel-fx"></div>
+        <div class="panel" id="panel-gear"></div>
         <div class="panel" id="panel-dna"></div>
     </div>
 
@@ -894,6 +927,7 @@ function nikoRetryBtn(container, fn) {
 </script>
 <script src="./audio-extensions.js"></script>
 <script src="./studio-features.js"></script>
+<script src="./psy-machines.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -902,14 +936,14 @@ function nikoRetryBtn(container, fn) {
 'use strict';
 
 // ── VARIABLES GLOBALES & AUTO-SAVE ────────────────────────────────
-let trackLengths = { kick: 16, acid: 16, fm: 16, biniou: 16, metal: 16, snare: 16, hat: 16, sub: 16, auto: 16 };
-let trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, auto: 0 };
-let trackChaos = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0 };
+let trackLengths = { kick: 16, acid: 16, fm: 16, biniou: 16, metal: 16, snare: 16, hat: 16, sub: 16, theremin:16, speak:16, auto: 16 };
+let trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, auto: 0 };
+let trackChaos = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0 };
 let aiTimeline = [], agentAdvice = [];
 let bpm = 128, swing = 0.50;
 let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
-let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58};
+let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48};
 let biniouEnabled = false;
 let biniouParams = { drive:0.42, echo:0.28, space:0.24, tone:0.62, cyber:false, harmony:0.34, pitch:0 };
 let curPat = 'A', matrix;
@@ -922,13 +956,14 @@ function initPats() {
         D:{ kick:Array(16).fill(0), acid:[{note:'F2',vel:.65},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null], fm:['F4',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null], biniou:[{note:'A4',vel:.62},null,null,null,null,null,null,null,{note:'E4',vel:.56},null,null,null,null,null,null,null], metal:Array(16).fill(0), auto:Array(16).fill(0.3) }
     };
     ensureExtendedPatterns(bank, true);
+    psyEnsurePatterns(bank, true);
     return bank;
 }
 let patterns = initPats();
 
 function projectState() {
     return {
-        version: 5,
+        version: 6,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -950,7 +985,8 @@ function projectState() {
         },
         eq: {enabled:eqState.enabled,gains:eqState.gains.slice()},
         machines: Object.assign({},machineParams),
-        studio: studioProjectState()
+        studio: studioProjectState(),
+        psy: psyProjectState()
     };
 }
 
@@ -968,12 +1004,13 @@ function applyProjectState(state, persist) {
     if (!state || !validPatternBank(state.pat)) throw new Error('Projet incompatible ou corrompu');
     patterns = JSON.parse(JSON.stringify(state.pat));
     ensureExtendedPatterns(patterns, false);
+    psyEnsurePatterns(patterns, false);
     ['A','B','C','D'].forEach(function(name) {
         if (!Array.isArray(patterns[name].biniou) || patterns[name].biniou.length !== 16) patterns[name].biniou = Array(16).fill(null);
     });
-    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,auto:16}, state.lengths || {});
-    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0}, state.chaos || {});
-    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58}, state.volumes || {});
+    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,auto:16}, state.lengths || {});
+    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0}, state.chaos || {});
+    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48}, state.volumes || {});
     bpm = Number.isFinite(state.bpm) ? Math.max(40, Math.min(220, state.bpm)) : 128;
     swing = Number.isFinite(state.swing) ? Math.max(0.50, Math.min(0.75, state.swing)) : 0.50;
     curPat = ['A','B','C','D'].includes(state.cur) ? state.cur : 'A';
@@ -989,6 +1026,7 @@ function applyProjectState(state, persist) {
     }
     restoreExtendedState(state);
     restoreStudioState(state);
+    psyRestoreState(state);
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
 }
@@ -1182,6 +1220,13 @@ function initAudio() {
         } else {
             if (t === 'kick') output.connect(distShaper); else if (t === 'metal' || t === 'snare' || t === 'hat') output.connect(sp1200Crusher); else output.connect(duckingGain);
         }
+    });
+    // New lead and vocal instruments share the same stereo master and export bus.
+    ['theremin','speak'].forEach(function(t){
+        const g=ctx.createGain(); g.gain.value=chanVol[t]; chanGain[t]=g;
+        const output=ctx.createGain(); studioInitChannel(t,g,output);
+        if(isMultiOut && channelMerger)output.connect(channelMerger,0,3);
+        else output.connect(duckingGain);
     });
     studioApplyMix();
 
@@ -1424,14 +1469,14 @@ let SEQ = { playing:false, masterStep:0, nextTime:0, timer:null, barCount:0 };
 let stepEls={}, displayStep=-1;
 
 function scheduleStep(time) {
-    let m = matrix; if (m.kick[trackSteps.kick]) triggerKick(time);
+    let m = matrix; if (m.kick[trackSteps.kick]) (psyState.t8.enabled ? psyTriggerT8Kick(time) : triggerKick(time));
     
     let ac = m.acid[trackSteps.acid]; let tRate = trackChaos.acid + (morphAmount * 0.15); let gRate = trackChaos.acid * 0.4;
-    if (ac) { triggerAcid((ac.note || 'G2'), ac.vel || 0.8, time, ac.morph); if (Math.random() < tRate) { m.acid[trackSteps.acid].note = ['G2','C3','F2','Eb2','Ab2'][Math.floor(Math.random()*5)]; saveLiveState(); } } 
+    if (ac) { (psyState.td3.enabled ? psyTriggerTD3 : triggerAcid)((ac.note || 'G2'), ac.vel || 0.8, time, ac.morph); if (Math.random() < tRate) { m.acid[trackSteps.acid].note = ['G2','C3','F2','Eb2','Ab2'][Math.floor(Math.random()*5)]; saveLiveState(); } } 
     else if (Math.random() < gRate) { m.acid[trackSteps.acid] = { note: ['G2','C3','F2','Eb2'][Math.floor(Math.random()*4)], vel: 0.7 }; buildSeq(); saveLiveState(); }
 
     let fm = m.fm[trackSteps.fm]; let tfRate = trackChaos.fm + (morphAmount * 0.1);
-    if (fm) { let fNote = fm.note || fm; triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
+    if (fm) { let fNote = fm.note || fm; if(psyState.fm2.enabled)psyTriggerFM2(fNote,time,typeof fm==='object'?(fm.vel||.8):.8); else triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; saveLiveState(); } }
 
     let bi = m.biniou && m.biniou[trackSteps.biniou];
     let tbRate = trackChaos.biniou + (morphAmount * 0.08);
@@ -1444,13 +1489,15 @@ function scheduleStep(time) {
     }
 
     let met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) triggerMetal(time); }
-    if (m.snare[trackSteps.snare]) triggerSnare(time);
-    if (m.hat[trackSteps.hat]) triggerHat(time);
+    if (m.snare[trackSteps.snare]) (psyState.t8.enabled ? psyTriggerT8Snare(time) : triggerSnare(time));
+    if (m.hat[trackSteps.hat]) (psyState.t8.enabled ? psyTriggerT8Hat(time) : triggerHat(time));
     const subStep = m.sub[trackSteps.sub];
     if (subStep) triggerSub(typeof subStep === 'string' ? subStep : (subStep.note || 'C2'),time,typeof subStep === 'object' ? (subStep.vel || 0.8) : 0.8);
+    const th=m.theremin[trackSteps.theremin]; if(th)psyTriggerTheremin(typeof th==='string'?th:(th.note||'C4'),time,typeof th==='object'?(th.vel||.75):.75);
+    if(m.speak[trackSteps.speak])psyTriggerSpeak(time,.86);
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
 
-    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.snare = (trackSteps.snare + 1) % trackLengths.snare; trackSteps.hat = (trackSteps.hat + 1) % trackLengths.hat; trackSteps.sub = (trackSteps.sub + 1) % trackLengths.sub; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
+    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.snare = (trackSteps.snare + 1) % trackLengths.snare; trackSteps.hat = (trackSteps.hat + 1) % trackLengths.hat; trackSteps.sub = (trackSteps.sub + 1) % trackLengths.sub; trackSteps.theremin = (trackSteps.theremin + 1) % trackLengths.theremin; trackSteps.speak = (trackSteps.speak + 1) % trackLengths.speak; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
     
     sendMIDIVJ('tension', tension); // VJ Sync à chaque step
 }
@@ -1485,7 +1532,7 @@ function schedulerTick() {
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
+function startSeq() { if (!ctx) return; SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, auto: 0 }; SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
 function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); }
 
 function applyMorph(m, persist=true) {
@@ -1547,23 +1594,24 @@ function rafLoop() {
 }
 
 // ── UI BUILDERS ──────────────────────────────────────────────────
-let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal'];
+let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak'];
 function buildSeq() {
     let p=$id('panel-seq'); p.innerHTML=''; stepEls={};
     TRACKS.forEach(function(name) {
         let isMetal=(name==='metal'), isBiniou=(name==='biniou'); let card=mkEl('div','tcard'+(isMetal?' mc':(isBiniou?' ac':'')));
-        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'909 SNARE',hat:'808 HAT',sub:'SUB BASS'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
+        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'T-8 SNARE',hat:'T-8 HAT',sub:'SUB BASS',acid:'TD-3 ACID',fm:'VOLCA FM2',kick:'T-8 KICK',theremin:'THEREMIN',speak:'PO-35 SPEAK'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
         let grid=mkEl('div','sgrid'); stepEls[name]=[];
         for (let i=0;i<16;i++) {
             let s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
-            let val=matrix[name][i]; if ((['kick','metal','snare','hat'].includes(name))?!!val:(val!=null)) s.classList.add('on');
+            let val=matrix[name][i]; if ((['kick','metal','snare','hat','speak'].includes(name))?!!val:(val!=null)) s.classList.add('on');
             (function(trk,idx,el2) { el2.addEventListener('click', function() {
                 pushUndo();
                 let active=!!matrix[trk][idx], next=null;
                 if (!active) {
-                    if (['kick','metal','snare','hat'].includes(trk)) next=1;
+                    if (['kick','metal','snare','hat','speak'].includes(trk)) next=1;
                     else if (trk==='sub') next={note:'C2',vel:.8};
                     else if (trk==='biniou') next={note:'A4',vel:.84};
+                    else if (trk==='theremin') next={note:'C4',vel:.75};
                     else next={note:trk==='acid'?'G2':'C4',vel:.8};
                 }
                 matrix[trk][idx]=active?null:next;
@@ -1771,11 +1819,12 @@ function syncProjectUI() {
     syncBiniouUI();
     syncExtendedFX();
     studioSyncMixer();
+    psySyncRack();
     updateMasterEQ();
     updateHistoryUI();
 }
 
-buildFX(); buildKeyboard(); syncProjectUI();
+buildFX(); buildPsyRack(); buildKeyboard(); syncProjectUI();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 function doUnlock() { initAudio(); }
@@ -1829,6 +1878,8 @@ $id('clear-btn').addEventListener('click', function() {
         snare: Array(16).fill(0),
         hat: Array(16).fill(0),
         sub: Array(16).fill(null),
+        theremin: Array(16).fill(null),
+        speak: Array(16).fill(0),
         auto: Array(16).fill(0.85)
     };
     matrix = patterns[curPat];
@@ -1860,6 +1911,7 @@ $id('redo-btn').addEventListener('click', redoProject);
 $id('rec-btn').addEventListener('click', toggleMasterRecording);
 
 document.querySelectorAll('.nt').forEach(function(tab){ tab.addEventListener('click',function(){ document.querySelectorAll('.nt').forEach(function(t){t.classList.remove('active');}); document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');}); tab.classList.add('active'); $id('panel-'+tab.getAttribute('data-panel')).classList.add('active'); }); });
+$id('psy-open-rack').addEventListener('click',function(){document.querySelector('[data-panel="gear"]').click();});
 $id('pat-tabs').addEventListener('click',function(e){ let btn=e.target.closest('.pt'); if(!btn)return; curPat=btn.getAttribute('data-pat'); matrix=patterns[curPat]; document.querySelectorAll('.pt').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-pat')===curPat);}); buildSeq(); saveLiveState(); });
 
 let _mutating=false;
