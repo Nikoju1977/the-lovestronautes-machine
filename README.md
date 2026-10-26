@@ -18,6 +18,7 @@
 - 🎛️ Mixeur 8 pistes, chaos pad, clavier tactile et oscilloscope temps réel
 - 🎚️ **Égaliseur master 5 bandes** (80, 250, 1 000, 4 000, 10 000 Hz), ±12 dB, bypass, reset et mémorisation
 - 🥁 **Trois nouvelles machines** : 909 Snare, 808 Hi-Hat et Sub Bass, séquenceurs 16 pas et paramètres de synthèse réglables
+- ⚡ **PSY V8 : cinq instruments jouables** TD-3, Volca FM2, Roland T-8, Theremin et PO-35 Speak dans un nouveau rack, deux pistes supplémentaires
 - ☄ **Biniou électronique / Cyber Breton** : piste BINI dédiée, anche synthétique, drone A, harmoniseurs ±1 octave, pitch bend MIDI, drive, tone, echo et espace/reverb
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
@@ -37,6 +38,20 @@ Dans **FX**, l'égaliseur à 5 bandes agit sur le bus master stéréo avant l'an
 Les pistes **909 SNARE**, **808 HAT** et **SUB BASS** sont disponibles dans **SEQ**, disposent chacune de son volume, mutation et longueur dans **MIX**, et de paramètres de timbre + boutons **TEST** dans **FX**. Elles utilisent exclusivement la synthèse Web Audio. Les nouveaux patterns d'usine contiennent quelques rythmes de démonstration; les anciens projets JSON restent compatibles et chargent ces pistes vides pour préserver leur arrangement.
 
 Les paramètres et les nouvelles pistes sont conservés par la sauvegarde locale, l'export/import JSON et l'historique Undo/Redo. Après mise à jour du site, actualiser l'application installée si nécessaire afin de charger le nouveau cache PWA.
+
+## PSY V8 — Cinq instruments numériques jouables
+
+**Nouveau : un onglet INSTRUMENTS et un gros bouton d’accès au rack.** Les cinq moteurs sont des interprétations numériques construites en Web Audio ; ils ne sont pas des produits officiels et n'utilisent aucun firmware ni sample propriétaire.
+
+- **Behringer TD-3 / TB-303** : bassline acid avec oscillateurs en dents de scie et carré, filtre résonnant, enveloppe de filtre, accent, glide, cutoff. Connectée à la piste **ACID**.
+- **Korg Volca FM2** : **6 oscillateurs FM**, deux porteuses et quatre modulateurs, trois algorithmes de modulation, index, profondeur de feedback, brillance et release. Connecté à **FM**.
+- **Roland T-8** : boîte à rythmes inspirée des 808 / 909 : kick à pitch descendante et transitoire, snare bruitée, hi-hat métallique, kick tune/punch et hat open. Connectée à **KICK, SNARE et HAT**.
+- **Stylophone Theremin** : un pad tactile XY qui contrôle en continu la hauteur et le volume avec vibrato et portamento. Disponible en direct et sur la nouvelle piste **THEREMIN**.
+- **Teenage Engineering PO-35 Speak** : sampler vocal : enregistrer **3 secondes** au microphone ou charger un fichier audio local, puis jouer la voix avec pitch et coloration robotique sur la piste **SPEAK**. Sans échantillon vocal, un son robotique synthétisé reste disponible.
+
+**Deux nouvelles pistes** portent le séquenceur à **10 pistes**. Les anciens projets sont migrés avec leurs pistes supplémentaires vides pour conserver les arrangements, et le nouveau projet propose des patterns d'exemple. Les réglages des machines sont enregistrés dans le projet et l'Undo/Redo; l'audio micro/importé n'est ni envoyé sur Internet ni sérialisé dans le JSON, donc il faut le recharger lors d'une nouvelle session. Le rendu WAV/MP3 du mix avec échantillon vocal reste possible. La permission du micro est indispensable pour enregistrer et MediaRecorder doit être pris en charge, sinon utiliser un fichier importé.
+
+Une PWA précédemment installée peut conserver des fichiers anciens : ouvrir l'application depuis le navigateur et recharger la page. Le cache v8 et les scripts réseau-prioritaires facilitent les mises à jour.
 
 ## Studio Pro — console, mastering et exports audio
 
@@ -77,6 +92,7 @@ Le dépôt inclut un contrôle statique sans dépendances :
 ```bash
 node scripts/validate.mjs
 node scripts/test-audio-exports.mjs
+node scripts/test-psy-machines.mjs
 ```
 
 La même validation est exécutée automatiquement par GitHub Actions sur les pushes et pull requests.
