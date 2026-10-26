@@ -18,6 +18,9 @@ const html = fs.readFileSync('index.html', 'utf8');
 const manifestText = fs.readFileSync('manifest.json', 'utf8');
 const sw = fs.readFileSync('sw.js', 'utf8');
 const ext = fs.readFileSync('audio-extensions.js', 'utf8');
+const studio = fs.readFileSync('studio-features.js', 'utf8');
+const capture = fs.readFileSync('pcm-capture-processor.js', 'utf8');
+const mp3 = fs.readFileSync('mp3-encoder-worker.js', 'utf8');
 
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
 const duplicates = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
@@ -35,6 +38,11 @@ scripts.forEach((code, index) => {
 if (inlineSyntax) ok('Syntaxe des ' + scripts.length + ' scripts inline');
 try { new Function(ext); ok('Syntaxe audio-extensions.js'); }
 catch (error) { fail('Syntaxe audio-extensions.js: ' + error.message); }
+
+[studio,capture,mp3].forEach((code,i) => {
+  try { new Function(code); ok('Syntaxe studio #' + (i+1)); }
+  catch(error){ fail('Syntaxe studio #' + (i+1) + ': ' + error.message); }
+});
 
 try {
   new Function(sw);
@@ -70,6 +78,13 @@ assert(html.includes('initMasterEQ(masterFilter, analyserNode)'), 'EQ 5 bandes c
 assert(html.includes('buildExtendedFX()') && html.includes('syncExtendedFX()'), 'contrôles FX nouvelles machines et EQ');
 assert(ext.includes('function triggerSnare(time)') && ext.includes('function triggerHat(time)') && ext.includes('function triggerSub('), 'moteurs Snare, Hat et Sub');
 assert(ext.includes("name:'AIR'") && ext.includes("name:'SUB'"), 'EQ 5 bandes présent');
+assert(studio.includes('function studioMakeMaster(input)') && html.includes('studioMakeMaster(comp)'), 'limiteur master');
+assert(html.includes('studio: studioProjectState()') && html.includes('restoreStudioState(state)'), 'persistance mix studio');
+assert(studio.includes('function studioWav(chunks,sampleRate)') && studio.includes("tag(0,'RIFF')"), 'WAV PCM stéréo');
+assert(mp3.includes('new lamejs.Mp3Encoder(2,sampleRate,bitRate)'), 'MP3 stéréo');
+assert(capture.includes('registerProcessor('), 'AudioWorklet PCM');
+assert(html.includes('studioInitChannel(t,g,output)') && html.includes('studioInitChannel("biniou",biniouInput,biniouDrive)'), 'EQ/pan huit pistes');
+assert(sw.includes("new URL('./vendor/lame.min.js', scope).href"), 'MP3 hors connexion');
 assert(sw.includes("new URL('./audio-extensions.js', scope).href"), 'nouveau moteur disponible hors ligne');
 assert(html.includes('biniouParams.cyber'), 'mode Cyber Breton présent');
 assert(html.includes('cmd === 14'), 'Pitch Bend MIDI biniou présent');
@@ -86,7 +101,7 @@ const requiredIds = [
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['index.html','audio-extensions.js','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['index.html','audio-extensions.js','studio-features.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);
