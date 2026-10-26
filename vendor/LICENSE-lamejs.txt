@@ -1,0 +1,11 @@
+lamejs 1.2.1 (Alex Zhukov and LAME contributors)
+License: LGPL-3.0 — https://www.gnu.org/licenses/lgpl-3.0.html
+Source code: https://github.com/zhuker/lamejs/tree/master/src
+Upstream repository: https://github.com/zhuker/lamejs
+Official LAME website: https://lame.sourceforge.net/
+
+This library is redistributed, unmodified, as a separate vendor/lame.min.js file.
+The main Lovestronautes application remains under its MIT license.
+
+To comply with the LGPL, preserve this attribution and provide access to the
+library source code and license. Upstream license terms apply to this file.
