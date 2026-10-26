@@ -1,12 +1,13 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v7';
+const CACHE_NAME = 'lovestronautes-v8';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
   new URL('./index.html', scope).href,
   new URL('./audio-extensions.js', scope).href,
   new URL('./studio-features.js', scope).href,
+  new URL('./psytrance-lab.js', scope).href,
   new URL('./pcm-capture-processor.js', scope).href,
   new URL('./mp3-encoder-worker.js', scope).href,
   new URL('./vendor/lame.min.js', scope).href,

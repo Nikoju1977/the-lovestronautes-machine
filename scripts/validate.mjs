@@ -21,6 +21,7 @@ const ext = fs.readFileSync('audio-extensions.js', 'utf8');
 const studio = fs.readFileSync('studio-features.js', 'utf8');
 const capture = fs.readFileSync('pcm-capture-processor.js', 'utf8');
 const mp3 = fs.readFileSync('mp3-encoder-worker.js', 'utf8');
+const psy = fs.readFileSync('psytrance-lab.js', 'utf8');
 
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
 const duplicates = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
@@ -39,7 +40,7 @@ if (inlineSyntax) ok('Syntaxe des ' + scripts.length + ' scripts inline');
 try { new Function(ext); ok('Syntaxe audio-extensions.js'); }
 catch (error) { fail('Syntaxe audio-extensions.js: ' + error.message); }
 
-[studio,capture,mp3].forEach((code,i) => {
+[studio,capture,mp3,psy].forEach((code,i) => {
   try { new Function(code); ok('Syntaxe studio #' + (i+1)); }
   catch(error){ fail('Syntaxe studio #' + (i+1) + ': ' + error.message); }
 });
@@ -85,6 +86,13 @@ assert(mp3.includes('new lamejs.Mp3Encoder(2,sampleRate,bitRate)'), 'MP3 stéré
 assert(capture.includes('registerProcessor('), 'AudioWorklet PCM');
 assert(html.includes('studioInitChannel(t,g,output)') && html.includes('studioInitChannel("biniou",biniouInput,biniouDrive)'), 'EQ/pan huit pistes');
 assert(sw.includes("new URL('./vendor/lame.min.js', scope).href"), 'MP3 hors connexion');
+assert(psy.includes('function psyPresetBank(style)'), 'générateur des patterns psytrance');
+assert(psy.includes('function psyOnBar(bar)') && html.includes('psyOnBar(SEQ.barCount)'), 'song mode dans le scheduler');
+assert(psy.includes('function psyTriggerKick(time)') && psy.includes('function psyTriggerBass(note,time,velocity)'), 'synthèse kick et bassline');
+assert(psy.includes('function psyTriggerAcid(note,vel,time,morph,step)') && psy.includes('function psyTriggerFM(note,time,morph)'), '303 accent/glide et supersaw');
+assert(psy.includes('function psyInitFX()') && html.includes('psyAttachSend(t,output)'), 'delay stéréo post-mix');
+assert(html.includes('psy: psyStateSnapshot()') && html.includes('psyRestoreState(state)'), 'sauvegarde de la suite psy');
+assert(sw.includes("new URL('./psytrance-lab.js', scope).href"), 'moteur psy hors ligne');
 assert(sw.includes("new URL('./audio-extensions.js', scope).href"), 'nouveau moteur disponible hors ligne');
 assert(html.includes('biniouParams.cyber'), 'mode Cyber Breton présent');
 assert(html.includes('cmd === 14'), 'Pitch Bend MIDI biniou présent');
@@ -101,7 +109,7 @@ const requiredIds = [
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['index.html','audio-extensions.js','studio-features.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['index.html','audio-extensions.js','studio-features.js','psytrance-lab.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);
