@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
-<title>LOVESTRONAUTES MACHINE // PSY TRACK CREATOR V10</title>
+<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V11</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -793,7 +793,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V10 · TRACK CREATOR</span></div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V11 · AUDIO STABLE</span></div>
                 <div class="wm-sub">PSYTRANCE · 10 PISTES · WEB AUDIO · MASTER WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
@@ -979,7 +979,7 @@ let patterns = initPats();
 
 function projectState() {
     return {
-        version: 7,
+        version: 8,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -1141,7 +1141,7 @@ function makeImpulse(seconds, decay) {
 function updateBiniouFX() {
     if (!ctx || !biniouDrive) return;
     biniouDrive.curve = makeDistCurve((biniouParams.cyber ? 90 : 20) + biniouParams.drive * (biniouParams.cyber ? 520 : 360));
-    biniouDrive.oversample = '2x';
+    biniouDrive.oversample = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent||'') ? 'none' : '2x';
     biniouTone.frequency.setTargetAtTime(2800 + biniouParams.tone * 6200, ctx.currentTime, 0.03);
     biniouDelay.delayTime.setTargetAtTime(0.10 + biniouParams.echo * 0.31, ctx.currentTime, 0.03);
     biniouFeedback.gain.setTargetAtTime(0.08 + biniouParams.echo * 0.55, ctx.currentTime, 0.03);
@@ -1274,6 +1274,15 @@ function initAudio() {
     });
     studioApplyMix();
 
+    ctx.addEventListener('statechange',function(){
+        if(ctx.state==='running'){markStudioAudioReady();return;}
+        audioReady=false;
+        const hint=$id('studio-audio-guide');
+        if(hint)hint.textContent='Le navigateur a interrompu le son. Appuie sur ACTIVER LE SON pour reprendre.';
+        const btn=$id('unlock');
+        if(btn){btn.textContent='REPRENDRE LE SON';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
+        if(ctx.state==='closed' && SEQ.playing){stopSeq();isPlaying=false;$id('play-btn').textContent='▶ PLAY';}
+    });
     ctx.resume().then(markStudioAudioReady).catch(studioAudioError);
 }
 async function activateStudioAudio() {
@@ -1565,8 +1574,21 @@ function stepInterval(stepIndex) {
 }
 
 function schedulerTick() {
-    while (ctx && SEQ.playing && SEQ.nextTime < ctx.currentTime + 0.14) {
-        scheduleStep(SEQ.nextTime);
+    if(!ctx||!SEQ.playing)return;
+    if(ctx.state!=='running'){
+        SEQ.timer=setTimeout(schedulerTick,120);
+        return;
+    }
+    // Les timers Android sont ralentis en arrière-plan : empêcher un rattrapage
+    // de milliers de notes (et une saturation instantanée du CPU).
+    if(SEQ.nextTime<ctx.currentTime-.10)SEQ.nextTime=ctx.currentTime+.025;
+    let budget=0;
+    while(ctx && SEQ.playing && SEQ.nextTime<ctx.currentTime+.14 && budget++<8){
+        try{scheduleStep(SEQ.nextTime);}
+        catch(error){
+            console.error('Séquenceur audio :',error);
+            setStatus('NOTE IGNORÉE : AUDIO','al');
+        }
         SEQ.nextTime += stepInterval(SEQ.masterStep);
         SEQ.masterStep = (SEQ.masterStep + 1) % 16;
         if (SEQ.masterStep === 0) {
@@ -1593,12 +1615,23 @@ function schedulerTick() {
 function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
 function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); if(creatorState.running)creatorStopSong(); }
 
+// Réécrire WaveShaper.curve à 60 Hz provoque du garbage collection sur mobile.
+let morphLastCurveAt=-Infinity,morphLastCurveValue=-1;
 function applyMorph(m, persist=true) {
     m = Math.max(0, Math.min(1, m)); morphAmount = m;
-    if (ctx && distShaper) { try { distShaper.curve = makeDistCurve(m < 0.01 ? 0.001 : m * 280); } catch(e){} }
-    if (ctx && !isAiAuto && masterFilter) { try { masterFilter.frequency.setTargetAtTime((1-m)*17700+300, ctx.currentTime, 0.04); } catch(e){} }
-    $id('morph-slider').value = m;
-    if (persist) saveLiveState();
+    const now=performance.now();
+    if(ctx&&distShaper&&(now-morphLastCurveAt>110||persist)&&
+        (Math.abs(m-morphLastCurveValue)>.012||persist)){
+        try{
+            distShaper.curve=makeDistCurve(m<.01?.001:m*280);
+            morphLastCurveAt=now;morphLastCurveValue=m;
+        }catch(error){console.warn('Morph FX :',error);}
+    }
+    if(ctx&&!isAiAuto&&masterFilter){
+        try{masterFilter.frequency.setTargetAtTime((1-m)*17700+300,ctx.currentTime,.04);}catch(e){}
+    }
+    $id('morph-slider').value=m;
+    if(persist)saveLiveState();
 }
 
 function drawScope(buf) {
@@ -1628,8 +1661,14 @@ function drawScope(buf) {
     scopeCtx.stroke();
 }
 
+let lastScopeFrame=0;
 function rafLoop() {
     requestAnimationFrame(rafLoop);
+    // Analyse visuelle à 20 images/seconde : priorité à la synthèse audio.
+    if(document.hidden)return;
+    const frameTime=performance.now();
+    if(frameTime-lastScopeFrame<48)return;
+    lastScopeFrame=frameTime;
     if (analyserNode) {
         analyserNode.getFloatTimeDomainData(scopeBuffer);
         let rms = 0; for (let i=0;i<scopeBuffer.length;i++) rms += scopeBuffer[i]*scopeBuffer[i]; rms = Math.sqrt(rms/scopeBuffer.length);

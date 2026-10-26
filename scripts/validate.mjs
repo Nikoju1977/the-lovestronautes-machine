@@ -87,9 +87,14 @@ assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') &&
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v10') && sw.includes("new URL('./psy-machines.js', scope).href") && sw.includes("new URL('./ui-v9.css', scope).href"), 'cache PSY V10 hors ligne');
+assert(sw.includes('lovestronautes-v11') && sw.includes("new URL('./psy-machines.js', scope).href") && sw.includes("new URL('./ui-v9.css', scope).href"), 'cache PSY V10 hors ligne');
 assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
 assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
+assert(psy.includes('async function psyCaptureMicroPCM(') && psy.includes('psyVoiceLoaded(audio'), 'Capture voix PCM directement depuis microphone');
+assert(psy.includes('psyLimitVoices(\'fm\'') && psy.includes('psyLimitVoices(\'speak\''), 'Polyphonie FM et sampler bornée');
+assert(studio.includes('async function studioEnsurePCMWorklet()'), 'AudioWorklet PCM chargé une fois par contexte');
+assert(html.includes('if(SEQ.nextTime<ctx.currentTime-.10)') && html.includes('budget++<8'), 'Scheduler protégé des rattrapages Android');
+assert(html.includes('morphLastCurveAt') && html.includes('lastScopeFrame'), 'FX et oscilloscope à fréquence limitée');
 assert(html.includes('function activateStudioAudio()') && html.includes('function markStudioAudioReady()'), 'gestion robuste activation audio');
 assert(html.includes('data-panel="song"') && html.includes('id="panel-song"') && html.includes('creatorBuildUI()'), 'Song Mode présent dans la navigation');
 assert(html.includes('creator: creatorProjectState()') && html.includes('creatorRestoreState(state)'), 'Sauvegarde JSON rétrocompatible V10');

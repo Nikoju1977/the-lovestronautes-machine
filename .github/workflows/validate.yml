@@ -36,3 +36,6 @@ jobs:
 
       - name: Song creator musical tests
         run: node scripts/test-track-creator.mjs
+
+      - name: Mobile audio and voice regression
+        run: node scripts/test-voice-reliability.mjs

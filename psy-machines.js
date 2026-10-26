@@ -14,6 +14,24 @@ const PSY_DEFAULTS={
 const psyState=JSON.parse(JSON.stringify(PSY_DEFAULTS));
 let psyVoiceBuffer=null,psyVoiceName='VOIX ROBOT (SYNTH)',psyRecording=false;
 let psyThereminLive=null,psyPreviousAcid=null;
+// Conserve un nombre borné de voix pour éviter les pics CPU sur smartphone.
+const psyPlayingVoices={fm:[],speak:[]};
+function psyLimitVoices(kind,oscillators,envelope,start,end,max){
+  const voices=psyPlayingVoices[kind];
+  for(let i=voices.length-1;i>=0;i--)if(voices[i].end<=start)voices.splice(i,1);
+  while(voices.length>=max){
+    const previous=voices.shift();
+    // Transition courte anti-clic avant de voler la voix la plus ancienne.
+    if(previous.envelope && previous.envelope.gain){
+      previous.envelope.gain.cancelScheduledValues(start);
+      previous.envelope.gain.setTargetAtTime(.0001,start,.008);
+    }
+    previous.oscillators.forEach(function(node){
+      try{node.stop(start+.03);}catch(error){}
+    });
+  }
+  voices.push({oscillators,envelope,end});
+}
 function psyClamp(v,min,max,fallback){return Number.isFinite(v)?Math.max(min,Math.min(max,v)):fallback;}
 function psyProjectState(){return JSON.parse(JSON.stringify(psyState));}
 function psyRestoreState(project){
@@ -109,7 +127,9 @@ function psyTriggerFM2(note,time,vel=.8){
     depth.gain.value=f*(.08+p.index*2.45)*(i===0?1+p.feedback*2:.2+i*.15);
     o.connect(depth);depth.connect(routes[i].frequency);
   });
-  carriers.concat(mod).forEach(function(o){
+  const all=carriers.concat(mod);
+  psyLimitVoices('fm',all,out,time,time+duration+.06,3);
+  all.forEach(function(o){
     o.start(time);o.stop(time+duration+.06);
   });
 }
@@ -201,34 +221,55 @@ function psyMoveLiveTheremin(x,y){
 }
 function psyTriggerSpeak(time,velocity=.86){
   if(!ctx||!chanGain.speak)return;
-  const p=psyState.speak;
-  const dur=.16+p.decay*.55;
-  const amp=psyEnvelope(time,psyClamp(velocity,.1,1,.86)*.6,dur,chanGain.speak);
-  if(psyVoiceBuffer){
-    const source=ctx.createBufferSource();source.buffer=psyVoiceBuffer;
-    source.playbackRate.value=Math.pow(2,p.pitch/12);
-    const filter=ctx.createBiquadFilter();filter.type='bandpass';
-    filter.frequency.value=450+p.robot*2500;filter.Q.value=.45+p.robot*2;
-    source.connect(filter);
-    const dry=ctx.createGain();dry.gain.value=.86-p.robot*.48;filter.connect(dry);dry.connect(amp);
-    const ring=ctx.createGain();ring.gain.value=.3;filter.connect(ring);ring.connect(amp);
-    const mod=ctx.createOscillator();mod.frequency.value=27+p.robot*115;
-    const depth=ctx.createGain();depth.gain.value=p.robot*.22;
-    mod.connect(depth);depth.connect(ring.gain);
-    mod.start(time);mod.stop(time+dur+.03);
-    source.start(time);
-    source.stop(time+Math.min(dur,psyVoiceBuffer.duration/source.playbackRate.value));
+  const p=psyState.speak,level=psyClamp(velocity,.1,1,.86);
+  const loaded=!!psyVoiceBuffer;
+  const rate=Math.pow(2,p.pitch/12);
+  // Une voix enregistrée doit être intelligible : laisser jouer jusqu'à
+  // 4 secondes, au lieu de la couper après 0.2-0.7 s.
+  const duration=loaded
+    ?Math.max(.08,Math.min(4,psyVoiceBuffer.duration/rate))
+    :.22+p.decay*.48;
+  const voiceGain=ctx.createGain();
+  voiceGain.gain.setValueAtTime(.0001,time);
+  voiceGain.gain.linearRampToValueAtTime(level*(loaded?.83:.59),time+.009);
+  voiceGain.gain.setValueAtTime(level*(loaded?.83:.59),time+Math.max(.012,duration-.055));
+  voiceGain.gain.linearRampToValueAtTime(.0001,time+duration);
+  voiceGain.connect(chanGain.speak);
+  if(loaded){
+    const source=ctx.createBufferSource();
+    source.buffer=psyVoiceBuffer;source.playbackRate.value=rate;
+    // Douce coloration vocale sans étouffer les fréquences de la parole.
+    const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=95;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';
+    lp.frequency.value=11000-p.robot*3600;lp.Q.value=.7;
+    source.connect(hp);hp.connect(lp);
+    const dry=ctx.createGain();dry.gain.value=.95-p.robot*.24;
+    lp.connect(dry);dry.connect(voiceGain);
+    if(p.robot>.03){
+      const wet=ctx.createGain();wet.gain.value=.20+p.robot*.13;
+      lp.connect(wet);wet.connect(voiceGain);
+      const mod=ctx.createOscillator();mod.frequency.value=24+p.robot*88;
+      const depth=ctx.createGain();depth.gain.value=p.robot*.13;
+      mod.connect(depth);depth.connect(wet.gain);
+      psyLimitVoices('speak',[source,mod],voiceGain,time,time+duration,2);
+      source.start(time);source.stop(time+duration);
+      mod.start(time);mod.stop(time+duration);
+    }else{
+      psyLimitVoices('speak',[source],voiceGain,time,time+duration,2);
+      source.start(time);source.stop(time+duration);
+    }
   }else{
-    // Offline fallback: two resonant formants make a synthetic robotic syllable.
+    // Démo synthétique distincte : elle n'est pas une prise du microphone.
     const source=ctx.createOscillator();source.type='sawtooth';
-    source.frequency.value=hz('C3')*Math.pow(2,p.pitch/12);
-    [610+p.robot*440,1130+p.robot*850].forEach(function(freq,i){
-      const band=ctx.createBiquadFilter();band.type='bandpass';
-      band.frequency.value=freq;band.Q.value=4.2+p.robot*3;
-      const level=ctx.createGain();level.gain.value=i===0?1:.48;
-      source.connect(band);band.connect(level);level.connect(amp);
+    source.frequency.value=hz('C3')*rate;
+    [560+p.robot*290,1180+p.robot*650].forEach(function(freq,i){
+      const filter=ctx.createBiquadFilter();filter.type='bandpass';
+      filter.frequency.value=freq;filter.Q.value=1.3+p.robot*2.2;
+      const gain=ctx.createGain();gain.gain.value=i===0?1:.53;
+      source.connect(filter);filter.connect(gain);gain.connect(voiceGain);
     });
-    source.start(time);source.stop(time+dur+.02);
+    psyLimitVoices('speak',[source],voiceGain,time,time+duration,2);
+    source.start(time);source.stop(time+duration);
   }
 }
 function psyVoiceStatus(text){
@@ -237,43 +278,127 @@ function psyVoiceStatus(text){
 }
 async function psyLoadVoiceFile(file){
   if(!file)return;
-  if(file.size>12*1024*1024)throw Error('Audio trop volumineux (12 Mo max)');
-  psyAudioReady();
-  const bytes=await file.arrayBuffer();
-  const decoded=await ctx.decodeAudioData(bytes);
-  if(!decoded||decoded.duration<.06)throw Error('Audio trop court');
-  if(decoded.duration>20)throw Error('Audio > 20 secondes');
-  psyVoiceBuffer=decoded;psyVoiceName=file.name||'ÉCHANTILLON';
-  psyVoiceStatus('VOIX CHARGÉE : '+psyVoiceName+' ('+decoded.duration.toFixed(1)+' s)');
+  if(file.size>12*1024*1024)throw Error('Fichier trop volumineux (12 Mo maximum).');
+  if(!await activateStudioAudio())throw Error('Active le son avant de charger ta voix.');
+  try{
+    const decoded=await ctx.decodeAudioData(await file.arrayBuffer());
+    if(!decoded||decoded.duration<.06)throw Error('Fichier trop court.');
+    if(decoded.duration>20)throw Error('Fichier trop long (20 secondes maximum).');
+    psyVoiceBuffer=decoded;psyVoiceName=file.name||'FICHIER AUDIO';
+    psyVoiceStatus('VOIX PRÊTE : '+psyVoiceName+' ('+decoded.duration.toFixed(1)+' s). Appuie sur TEST VOIX.');
+    return decoded;
+  }catch(error){
+    throw Error('Impossible de décoder cet audio. Essaie un fichier WAV ou MP3 : '+error.message);
+  }
+}
+function psyVoiceLoaded(buffer,name){
+  if(!buffer||buffer.duration<.06)throw Error('Le microphone a enregistré un son vide.');
+  psyVoiceBuffer=buffer;psyVoiceName=name;
+  psyVoiceStatus('MICRO OK : '+buffer.duration.toFixed(1)+' s enregistrées · ▶ TEST VOIX pour écouter.');
+}
+// Enregistre le flux micro directement en PCM Web Audio : évite les WebM/Opus
+// parfois impossibles à décoder sur Android. Aucun son n'est envoyé au serveur.
+async function psyCaptureMicroPCM(stream,milliseconds=3000){
+  if(!ctx||!ctx.createMediaStreamSource)throw Error('Audio du microphone indisponible.');
+  const context=ctx,source=context.createMediaStreamSource(stream);
+  let processor=null,sink=null,worklet=false;
+  const chunks=[];
+  let totalFrames=0;
+  try{
+    if(await studioEnsurePCMWorklet()){
+      try{
+        processor=new AudioWorkletNode(context,'lovestronautes-pcm-capture',{
+          numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],
+          channelCount:2,channelCountMode:'explicit'
+        });
+        worklet=true;
+      }catch(err){processor=null;}
+    }
+    if(!processor && context.createScriptProcessor){
+      processor=context.createScriptProcessor(2048,1,1);
+    }
+    if(!processor)throw Error('Capture micro non prise en charge par ce navigateur.');
+    if(worklet){
+      processor.port.onmessage=function(event){
+        if(event.data && event.data.type==='chunk'){
+          const left=event.data.left;chunks.push(left);totalFrames+=left.length;
+        }
+      };
+    }else{
+      processor.onaudioprocess=function(event){
+        const values=new Float32Array(event.inputBuffer.getChannelData(0));
+        chunks.push(values);totalFrames+=values.length;
+      };
+    }
+    sink=context.createGain();sink.gain.value=0; // Jamais de retour micro vers les enceintes.
+    source.connect(processor);processor.connect(sink);sink.connect(context.destination);
+    const seconds=Math.max(1,Math.ceil(milliseconds/1000));
+    for(let i=seconds;i>=1;i--){
+      psyVoiceStatus('● MICRO EN COURS · '+i+' seconde'+(i>1?'s':'')+' restante'+(i>1?'s':'')+'…');
+      await new Promise(resolve=>setTimeout(resolve,1000));
+    }
+    if(worklet){
+      await new Promise(function(resolve,reject){
+        const timeout=setTimeout(()=>reject(Error('Fin de capture micro non reçue')),2500);
+        processor.port.onmessage=function(event){
+          const data=event.data;
+          if(data && data.type==='chunk'){chunks.push(data.left);totalFrames+=data.left.length;}
+          if(data && data.type==='done'){clearTimeout(timeout);resolve();}
+        };
+        processor.port.postMessage({type:'stop'});
+      });
+    }
+    if(totalFrames<context.sampleRate*.15)throw Error('Le micro n’a pas capturé assez de son.');
+    const buffer=context.createBuffer(1,totalFrames,context.sampleRate);
+    const data=buffer.getChannelData(0);
+    let at=0;
+    for(const chunk of chunks){data.set(chunk,at);at+=chunk.length;}
+    return buffer;
+  }finally{
+    try{source.disconnect();}catch(e){}
+    if(processor){
+      try{processor.disconnect();}catch(e){}
+      if(worklet){processor.port.onmessage=null;processor.port.close();}
+      else processor.onaudioprocess=null;
+    }
+    if(sink)try{sink.disconnect();}catch(e){}
+  }
 }
 async function psyRecordVoice(){
   if(psyRecording)return;
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){
-    psyVoiceStatus('Micro / MediaRecorder non disponible — utiliser IMPORT AUDIO');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    psyVoiceStatus('Micro indisponible : utilise Chrome en HTTPS ou IMPORT AUDIO.');
     return;
   }
-  let stream=null,recorder=null;
+  psyRecording=true;
+  const record=document.getElementById('psy-record-voice');
+  if(record){record.disabled=true;record.textContent='● ENREGISTREMENT…';}
+  let stream=null,recordingOK=false;
   try{
-    psyRecording=true;psyVoiceStatus('AUTORISE LE MICRO…');
-    stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    const parts=[];
-    recorder=new MediaRecorder(stream);
-    recorder.ondataavailable=e=>{if(e.data && e.data.size)parts.push(e.data);};
-    const recorded=new Promise(function(resolve,reject){
-      recorder.onerror=()=>reject(Error('Enregistrement vocal interrompu'));
-      recorder.onstop=()=>resolve(new Blob(parts,{type:recorder.mimeType||'audio/webm'}));
+    // Le déverrouillage sonore doit partir du clic utilisateur.
+    if(!await activateStudioAudio())throw Error('Le moteur audio n’est pas autorisé.');
+    psyVoiceStatus('Autorise le micro dans ton navigateur…');
+    stream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
     });
-    recorder.start();
-    psyVoiceStatus('● ENREGISTREMENT — 3 SECONDES');
-    await new Promise(resolve=>setTimeout(resolve,3000));
-    if(recorder.state==='recording')recorder.stop();
-    const blob=await recorded;
-    await psyLoadVoiceFile(new File([blob],'ma-voix.webm',{type:blob.type}));
-  }catch(error){psyVoiceStatus('ERREUR MICRO : '+error.message);}
-  finally{
-    if(recorder&&recorder.state==='recording')recorder.stop();
-    if(stream)stream.getTracks().forEach(t=>t.stop());
+    const audio=await psyCaptureMicroPCM(stream,3000);
+    psyVoiceLoaded(audio,'MICRO 3 S');
+    recordingOK=true;
+    if(studioChannels && studioChannels.speak && studioChannels.speak.mute){
+      psyVoiceStatus('Voix enregistrée. Attention : la piste SPEAK est en mode MUTE dans MIX.');
+    }
+  }catch(error){
+    const message=error.name==='NotAllowedError'?'Autorisation micro refusée dans les réglages du navigateur.'
+      :error.name==='NotFoundError'?'Aucun microphone détecté.':error.message;
+    psyVoiceStatus('MICRO : '+message);
+  }finally{
+    if(stream)stream.getTracks().forEach(track=>track.stop());
     psyRecording=false;
+    if(record){record.disabled=false;record.textContent='● MICRO 3 S';}
+    if(recordingOK && ctx && ctx.state==='running' && !(studioChannels&&studioChannels.speak&&studioChannels.speak.mute)){
+      psyTriggerSpeak(ctx.currentTime+.07,.9); // Réécouter automatiquement sa voix.
+      psyVoiceStatus('MICRO OK : voici ta voix enregistrée. Relance TEST VOIX ou utilise la piste SPEAK.');
+    }
   }
 }
 function psyParamMarkup(machine,key,label,min,max,step){
@@ -327,8 +452,9 @@ function buildPsyRack(){
     '<div class="psy-voice-actions"><button type="button" class="mb" id="psy-record-voice">● MICRO 3 S</button>'+
     '<button type="button" class="mb" id="psy-upload-voice">IMPORT AUDIO</button>'+
     '<input type="file" accept="audio/*" id="psy-voice-file" hidden></div>'+
-    '<div class="psy-voice-status" id="psy-voice-status">VOIX ROBOT DE SYNTHÈSE — charge un son ou enregistre le micro.</div>'+
-    '<button class="mb psy-preview" type="button" data-psy-preview="speak">▶ TEST VOIX</button>')+
+    '<div class="psy-voice-status" id="psy-voice-status">Pour enregistrer une vraie voix : MICRO 3 S, puis TEST VOIX. Sinon, synthèse robotique.</div>'+
+    '<button class="mb psy-preview" type="button" data-psy-preview="speak">▶ TEST VOIX</button>'+ 
+    '<button class="mb" type="button" id="psy-voice-clear">EFFACER MA VOIX</button>')+
   '</div>';
   root.querySelectorAll('[data-psy-machine]').forEach(function(input){
     input.addEventListener('pointerdown',pushUndo);
@@ -355,7 +481,11 @@ function buildPsyRack(){
         if(what==='snare')psyTriggerT8Snare(time);
         if(what==='hat')psyTriggerT8Hat(time);
         if(what==='theremin')psyTriggerTheremin('C4',time,.9);
-        if(what==='speak')psyTriggerSpeak(time);
+        if(what==='speak'){
+          psyTriggerSpeak(time);
+          if(!psyVoiceBuffer)psyVoiceStatus('Son robotique de démonstration. Enregistre ta vraie voix avec MICRO 3 S ou importe un audio.');
+          else psyVoiceStatus('LECTURE : '+psyVoiceName+' ('+psyVoiceBuffer.duration.toFixed(1)+' s).');
+        }
       }catch(err){setStatus(err.message,'al');}
     });
   });
@@ -363,6 +493,10 @@ function buildPsyRack(){
     pushUndo();psyState.fm2.algorithm=Number(this.value);saveLiveState();
   });
   document.getElementById('psy-record-voice').addEventListener('click',psyRecordVoice);
+  document.getElementById('psy-voice-clear').addEventListener('click',function(){
+    psyVoiceBuffer=null;psyVoiceName='VOIX ROBOT (SYNTH)';
+    psyVoiceStatus('Voix effacée de la mémoire. Mode démo synthétique.');
+  });
   const picker=document.getElementById('psy-voice-file');
   document.getElementById('psy-upload-voice').addEventListener('click',()=>picker.click());
   picker.addEventListener('change',async function(){
@@ -392,6 +526,7 @@ function buildPsyRack(){
   });
   pad.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter')psyStopLiveTheremin();});
   psySyncRack();
+  if(psyVoiceBuffer)psyVoiceStatus('VOIX PRÊTE : '+psyVoiceName+' ('+psyVoiceBuffer.duration.toFixed(1)+' s). TEST VOIX pour écouter.');
 }
 function psyMovePuck(x,y){
   const puck=document.querySelector('#psy-theremin-pad .psy-crosshair');
