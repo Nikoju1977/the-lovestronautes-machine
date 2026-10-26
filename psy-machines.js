@@ -305,9 +305,8 @@ async function psyCaptureMicroPCM(stream,milliseconds=3000){
   const chunks=[];
   let totalFrames=0;
   try{
-    if(context.audioWorklet && typeof AudioWorkletNode!=='undefined'){
+    if(await studioEnsurePCMWorklet()){
       try{
-        await context.audioWorklet.addModule('./pcm-capture-processor.js');
         processor=new AudioWorkletNode(context,'lovestronautes-pcm-capture',{
           numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],
           channelCount:2,channelCountMode:'explicit'
