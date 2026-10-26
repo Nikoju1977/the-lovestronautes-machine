@@ -237,8 +237,12 @@ async function studioExport(format){
     if(studioExportCancel)throw Error('Export annulé');
     const barCount=exportSong?creatorTotalBars():studioExportBars;
     if(barCount<1||barCount>1024)throw Error('Durée du morceau invalide');
-    const duration=barCount*240/bpm,at=ctx.currentTime;
-    if(exportSong){creatorState.running=true;creatorLastSongSection=-1;}
+    const duration=barCount*240/(exportSong?creatorState.tempo:bpm),at=ctx.currentTime;
+    if(exportSong){
+      bpm=creatorState.tempo;
+      const bpmInput=document.getElementById('bpm-input');if(bpmInput)bpmInput.value=bpm;
+      creatorState.running=true;creatorLastSongSection=-1;
+    }
     startSeq();isPlaying=true;started=true;
     if(play){play.textContent='⏸ EXPORT';play.disabled=true;}
     while(ctx.currentTime-at<duration){

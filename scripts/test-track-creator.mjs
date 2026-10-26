@@ -46,6 +46,11 @@ assert.equal(api.creatorSectionAtBar(136).section.name,'FINAL DROP');
 assert.equal(api.creatorSectionAtBar(176).section.name,'OUTRO');
 assert.equal(api.creatorSectionAtBar(192),null);
 assert.ok(api.creatorDurationSeconds()>300 && api.creatorDurationSeconds()<330);
+assert.equal(api.creatorState.sections[5].bars,40);
+const saved=api.creatorProjectState();
+api.creatorRestoreState({creator:saved});
+assert.equal(api.creatorTotalBars(),192, '40-bar FINAL DROP must survive export/import');
+console.log('✓ 40-bar section preserved across JSON save/restore');
 console.log('✓ 192-bar arrangement and precise section boundaries');
 
 assert.equal(api.creatorScalePitch(0,4),'F4');
