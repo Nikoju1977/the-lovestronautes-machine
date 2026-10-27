@@ -223,13 +223,13 @@ function psyMoveLiveTheremin(x,y){
   v.depth.gain.setTargetAtTime(f*p.vibrato*.015,t,.02);
   v.amp.gain.setTargetAtTime(Math.max(.0001,amount),t,.02);
 }
-function psyTriggerSpeak(time,velocity=.86){
+function psyTriggerSpeak(time,velocity=.86,force=false){
   if(!ctx||!chanGain.speak)return;
   const p=psyState.speak,level=psyClamp(velocity,.1,1,.86);
   const loaded=!!psyVoiceBuffer;
   // Play an entire phrase before the next step can retrigger the sample.
   // This prevents a 3-second microphone recording from being cut every 16th step.
-  if(loaded && time < psyVoiceNextAvailableTime)return;
+  if(loaded && !force && time < psyVoiceNextAvailableTime)return;
   const rate=Math.pow(2,p.pitch/12);
   // Une voix enregistrée doit être intelligible : laisser jouer jusqu'à
   // 4 secondes, au lieu de la couper après 0.2-0.7 s.
@@ -407,7 +407,7 @@ async function psyRecordVoice(){
     psyRecording=false;
     if(record){record.disabled=false;record.textContent='● MICRO 3 S';}
     if(recordingOK && ctx && ctx.state==='running' && !(studioChannels&&studioChannels.speak&&studioChannels.speak.mute)){
-      psyTriggerSpeak(ctx.currentTime+.07,.9); // Réécouter automatiquement sa voix.
+      psyTriggerSpeak(ctx.currentTime+.07,.9,true); // Réécouter automatiquement sa voix.
       psyVoiceStatus('MICRO OK : voici ta voix enregistrée. Relance TEST VOIX ou utilise la piste SPEAK.');
     }
   }
@@ -493,8 +493,10 @@ function buildPsyRack(){
         if(what==='hat')psyTriggerT8Hat(time);
         if(what==='theremin')psyTriggerTheremin('C4',time,.9);
         if(what==='speak'){
-          psyTriggerSpeak(time);
-          if(!psyVoiceBuffer)psyVoiceStatus('Son robotique de démonstration. Enregistre ta vraie voix avec MICRO 3 S ou importe un audio.');
+          psyTriggerSpeak(time,.86,true);
+          if(studioChannels && studioChannels.speak && studioChannels.speak.mute){
+            psyVoiceStatus('PISTE SPEAK EN MUTE : ouvre MIX et réactive SPEAK pour entendre ta voix.');
+          }else if(!psyVoiceBuffer)psyVoiceStatus('Son robotique de démonstration. Enregistre ta vraie voix avec MICRO 3 S ou importe un audio.');
           else psyVoiceStatus('LECTURE : '+psyVoiceName+' ('+psyVoiceBuffer.duration.toFixed(1)+' s).');
         }
       }catch(err){setStatus(err.message,'al');}
