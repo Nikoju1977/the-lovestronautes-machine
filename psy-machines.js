@@ -17,8 +17,8 @@ let psyThereminLive=null,psyPreviousAcid=null;
 // Conserve un nombre borné de voix pour éviter les pics CPU sur smartphone.
 const psyPlayingVoices={fm:[],speak:[]};
 let psyMicroCaptureActive=false;
-let psyVoiceLastTrigger=-Infinity;
-const PSY_VOICE_MAX_SECONDS=2.5;
+let psyVoiceNextAvailableTime=-Infinity;
+const PSY_VOICE_MAX_SECONDS=3;
 function psyLimitVoices(kind,oscillators,envelope,start,end,max){
   const voices=psyPlayingVoices[kind];
   for(let i=voices.length-1;i>=0;i--)if(voices[i].end<=start)voices.splice(i,1);
@@ -227,16 +227,16 @@ function psyTriggerSpeak(time,velocity=.86){
   if(!ctx||!chanGain.speak)return;
   const p=psyState.speak,level=psyClamp(velocity,.1,1,.86);
   const loaded=!!psyVoiceBuffer;
-  // A long imported sample on every sequencer step quickly saturates Android.
-  // Limit playback length and skip retriggers while the previous syllable is active.
-  if(loaded && time-psyVoiceLastTrigger<.22)return;
-  psyVoiceLastTrigger=time;
+  // Play an entire phrase before the next step can retrigger the sample.
+  // This prevents a 3-second microphone recording from being cut every 16th step.
+  if(loaded && time < psyVoiceNextAvailableTime)return;
   const rate=Math.pow(2,p.pitch/12);
   // Une voix enregistrée doit être intelligible : laisser jouer jusqu'à
   // 4 secondes, au lieu de la couper après 0.2-0.7 s.
   const duration=loaded
     ?Math.max(.08,Math.min(PSY_VOICE_MAX_SECONDS,psyVoiceBuffer.duration/rate))
     :.22+p.decay*.48;
+  if(loaded)psyVoiceNextAvailableTime=time+duration-.015;
   const voiceGain=ctx.createGain();
   voiceGain.gain.setValueAtTime(.0001,time);
   voiceGain.gain.linearRampToValueAtTime(level*(loaded?.83:.59),time+.009);
@@ -292,7 +292,7 @@ async function psyLoadVoiceFile(file){
     const decoded=await ctx.decodeAudioData(await file.arrayBuffer());
     if(!decoded||decoded.duration<.06)throw Error('Fichier trop court.');
     if(decoded.duration>20)throw Error('Fichier trop long (20 secondes maximum).');
-    psyVoiceBuffer=decoded;psyVoiceName=file.name||'FICHIER AUDIO';
+    psyVoiceBuffer=decoded;psyVoiceNextAvailableTime=-Infinity;psyVoiceName=file.name||'FICHIER AUDIO';
     psyVoiceStatus('VOIX PRÊTE : '+psyVoiceName+' ('+decoded.duration.toFixed(1)+' s). Appuie sur TEST VOIX.');
     return decoded;
   }catch(error){
@@ -301,7 +301,7 @@ async function psyLoadVoiceFile(file){
 }
 function psyVoiceLoaded(buffer,name){
   if(!buffer||buffer.duration<.06)throw Error('Le microphone a enregistré un son vide.');
-  psyVoiceBuffer=buffer;psyVoiceName=name;
+  psyVoiceBuffer=buffer;psyVoiceNextAvailableTime=-Infinity;psyVoiceName=name;
   psyVoiceStatus('MICRO OK : '+buffer.duration.toFixed(1)+' s enregistrées · ▶ TEST VOIX pour écouter.');
 }
 // Enregistre le flux micro directement en PCM Web Audio : évite les WebM/Opus
@@ -507,7 +507,7 @@ function buildPsyRack(){
   const voiceStatus=document.getElementById('psy-voice-status');
   if(voiceStatus)voiceStatus.setAttribute('aria-live','polite');
   document.getElementById('psy-voice-clear').addEventListener('click',function(){
-    psyVoiceBuffer=null;psyVoiceName='VOIX ROBOT (SYNTH)';
+    psyVoiceBuffer=null;psyVoiceNextAvailableTime=-Infinity;psyVoiceName='VOIX ROBOT (SYNTH)';
     psyVoiceStatus('Voix effacée de la mémoire. Mode démo synthétique.');
   });
   const picker=document.getElementById('psy-voice-file');
