@@ -63,6 +63,16 @@ Cette version cible deux défauts remontés sur téléphone Android : des interr
 
 Les tests automatisés vérifient la durée de la voix, la capture PCM simulée, la fermeture du flux micro et la polyphonie. L'écoute humaine et la vraie autorisation du micro sur Android doivent encore être confirmées sur l'appareil final.
 
+## V11 — Stabilité audio et sampler vocal Android
+
+- Polyphonie FM limitée à deux notes simultanées, et sampler vocal à une seule voix à la fois pour réduire les pics CPU.
+- Samples vocaux joués pendant 3 s maximum par pas ; la phrase enregistrée de 3 s se lit entièrement, sans nouveau déclenchement pendant sa lecture, afin d'éviter l'accumulation des voix sur le séquenceur.
+- Préécoute des cinq machines attend désormais réellement l'autorisation de l'AudioContext avant de déclencher le son, notamment sur Android.
+- Enregistrement micro PCM avec protection contre les captures simultanées, messages d'erreur explicites et option **IMPORT AUDIO** en secours.
+- Cache PWA v11 : nouvelle version des scripts distribuée aux utilisateurs.
+
+**Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
+
 ## PSY V10 — Song Mode, Kick & Bass Lab et Melody Lab
 
 **Un nouvel onglet MORCEAU** permet de passer de quatre boucles à une vraie composition continue.

@@ -16,9 +16,13 @@ let psyVoiceBuffer=null,psyVoiceName='VOIX ROBOT (SYNTH)',psyRecording=false;
 let psyThereminLive=null,psyPreviousAcid=null;
 // Conserve un nombre borné de voix pour éviter les pics CPU sur smartphone.
 const psyPlayingVoices={fm:[],speak:[]};
+let psyMicroCaptureActive=false;
+let psyVoiceNextAvailableTime=-Infinity;
+const PSY_VOICE_MAX_SECONDS=3;
 function psyLimitVoices(kind,oscillators,envelope,start,end,max){
   const voices=psyPlayingVoices[kind];
   for(let i=voices.length-1;i>=0;i--)if(voices[i].end<=start)voices.splice(i,1);
+  // Remove finished voices and cap simultaneous oscillators on low-power phones.
   while(voices.length>=max){
     const previous=voices.shift();
     // Transition courte anti-clic avant de voler la voix la plus ancienne.
@@ -128,7 +132,7 @@ function psyTriggerFM2(note,time,vel=.8){
     o.connect(depth);depth.connect(routes[i].frequency);
   });
   const all=carriers.concat(mod);
-  psyLimitVoices('fm',all,out,time,time+duration+.06,3);
+  psyLimitVoices('fm',all,out,time,time+duration+.06,2);
   all.forEach(function(o){
     o.start(time);o.stop(time+duration+.06);
   });
@@ -219,16 +223,20 @@ function psyMoveLiveTheremin(x,y){
   v.depth.gain.setTargetAtTime(f*p.vibrato*.015,t,.02);
   v.amp.gain.setTargetAtTime(Math.max(.0001,amount),t,.02);
 }
-function psyTriggerSpeak(time,velocity=.86){
+function psyTriggerSpeak(time,velocity=.86,force=false){
   if(!ctx||!chanGain.speak)return;
   const p=psyState.speak,level=psyClamp(velocity,.1,1,.86);
   const loaded=!!psyVoiceBuffer;
+  // Play an entire phrase before the next step can retrigger the sample.
+  // This prevents a 3-second microphone recording from being cut every 16th step.
+  if(loaded && !force && time < psyVoiceNextAvailableTime)return;
   const rate=Math.pow(2,p.pitch/12);
   // Une voix enregistrée doit être intelligible : laisser jouer jusqu'à
   // 4 secondes, au lieu de la couper après 0.2-0.7 s.
   const duration=loaded
-    ?Math.max(.08,Math.min(4,psyVoiceBuffer.duration/rate))
+    ?Math.max(.08,Math.min(PSY_VOICE_MAX_SECONDS,psyVoiceBuffer.duration/rate))
     :.22+p.decay*.48;
+  if(loaded)psyVoiceNextAvailableTime=time+duration-.015;
   const voiceGain=ctx.createGain();
   voiceGain.gain.setValueAtTime(.0001,time);
   voiceGain.gain.linearRampToValueAtTime(level*(loaded?.83:.59),time+.009);
@@ -251,11 +259,11 @@ function psyTriggerSpeak(time,velocity=.86){
       const mod=ctx.createOscillator();mod.frequency.value=24+p.robot*88;
       const depth=ctx.createGain();depth.gain.value=p.robot*.13;
       mod.connect(depth);depth.connect(wet.gain);
-      psyLimitVoices('speak',[source,mod],voiceGain,time,time+duration,2);
+      psyLimitVoices('speak',[source,mod],voiceGain,time,time+duration,1);
       source.start(time);source.stop(time+duration);
       mod.start(time);mod.stop(time+duration);
     }else{
-      psyLimitVoices('speak',[source],voiceGain,time,time+duration,2);
+      psyLimitVoices('speak',[source],voiceGain,time,time+duration,1);
       source.start(time);source.stop(time+duration);
     }
   }else{
@@ -268,7 +276,7 @@ function psyTriggerSpeak(time,velocity=.86){
       const gain=ctx.createGain();gain.gain.value=i===0?1:.53;
       source.connect(filter);filter.connect(gain);gain.connect(voiceGain);
     });
-    psyLimitVoices('speak',[source],voiceGain,time,time+duration,2);
+    psyLimitVoices('speak',[source],voiceGain,time,time+duration,1);
     source.start(time);source.stop(time+duration);
   }
 }
@@ -284,7 +292,7 @@ async function psyLoadVoiceFile(file){
     const decoded=await ctx.decodeAudioData(await file.arrayBuffer());
     if(!decoded||decoded.duration<.06)throw Error('Fichier trop court.');
     if(decoded.duration>20)throw Error('Fichier trop long (20 secondes maximum).');
-    psyVoiceBuffer=decoded;psyVoiceName=file.name||'FICHIER AUDIO';
+    psyVoiceBuffer=decoded;psyVoiceNextAvailableTime=-Infinity;psyVoiceName=file.name||'FICHIER AUDIO';
     psyVoiceStatus('VOIX PRÊTE : '+psyVoiceName+' ('+decoded.duration.toFixed(1)+' s). Appuie sur TEST VOIX.');
     return decoded;
   }catch(error){
@@ -293,19 +301,21 @@ async function psyLoadVoiceFile(file){
 }
 function psyVoiceLoaded(buffer,name){
   if(!buffer||buffer.duration<.06)throw Error('Le microphone a enregistré un son vide.');
-  psyVoiceBuffer=buffer;psyVoiceName=name;
+  psyVoiceBuffer=buffer;psyVoiceNextAvailableTime=-Infinity;psyVoiceName=name;
   psyVoiceStatus('MICRO OK : '+buffer.duration.toFixed(1)+' s enregistrées · ▶ TEST VOIX pour écouter.');
 }
 // Enregistre le flux micro directement en PCM Web Audio : évite les WebM/Opus
 // parfois impossibles à décoder sur Android. Aucun son n'est envoyé au serveur.
 async function psyCaptureMicroPCM(stream,milliseconds=3000){
   if(!ctx||!ctx.createMediaStreamSource)throw Error('Audio du microphone indisponible.');
+  if(psyMicroCaptureActive)throw Error('Un enregistrement est déjà en cours.');
+  psyMicroCaptureActive=true;
   const context=ctx,source=context.createMediaStreamSource(stream);
   let processor=null,sink=null,worklet=false;
   const chunks=[];
   let totalFrames=0;
   try{
-    if(await studioEnsurePCMWorklet()){
+    if(context.audioWorklet && typeof studioEnsurePCMWorklet==='function' && await studioEnsurePCMWorklet()){
       try{
         processor=new AudioWorkletNode(context,'lovestronautes-pcm-capture',{
           numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],
@@ -317,7 +327,7 @@ async function psyCaptureMicroPCM(stream,milliseconds=3000){
     if(!processor && context.createScriptProcessor){
       processor=context.createScriptProcessor(2048,1,1);
     }
-    if(!processor)throw Error('Capture micro non prise en charge par ce navigateur.');
+    if(!processor)throw Error('Capture micro non prise en charge par ce navigateur. Essaie IMPORT AUDIO.');
     if(worklet){
       processor.port.onmessage=function(event){
         if(event.data && event.data.type==='chunk'){
@@ -362,6 +372,7 @@ async function psyCaptureMicroPCM(stream,milliseconds=3000){
       else processor.onaudioprocess=null;
     }
     if(sink)try{sink.disconnect();}catch(e){}
+    psyMicroCaptureActive=false;
   }
 }
 async function psyRecordVoice(){
@@ -396,7 +407,7 @@ async function psyRecordVoice(){
     psyRecording=false;
     if(record){record.disabled=false;record.textContent='● MICRO 3 S';}
     if(recordingOK && ctx && ctx.state==='running' && !(studioChannels&&studioChannels.speak&&studioChannels.speak.mute)){
-      psyTriggerSpeak(ctx.currentTime+.07,.9); // Réécouter automatiquement sa voix.
+      psyTriggerSpeak(ctx.currentTime+.07,.9,true); // Réécouter automatiquement sa voix.
       psyVoiceStatus('MICRO OK : voici ta voix enregistrée. Relance TEST VOIX ou utilise la piste SPEAK.');
     }
   }
@@ -471,9 +482,9 @@ function buildPsyRack(){
     });
   });
   root.querySelectorAll('[data-psy-preview]').forEach(function(button){
-    button.addEventListener('click',function(){
+    button.addEventListener('click',async function(){
       try{
-        psyAudioReady();
+        if(!await activateStudioAudio())throw Error('Le son est bloqué. Appuie sur ACTIVER LE SON.');
         const time=ctx.currentTime+.05,what=button.dataset.psyPreview;
         if(what==='td3')psyTriggerTD3('C3',.95,time);
         if(what==='fm2')psyTriggerFM2('C4',time,.92);
@@ -482,8 +493,10 @@ function buildPsyRack(){
         if(what==='hat')psyTriggerT8Hat(time);
         if(what==='theremin')psyTriggerTheremin('C4',time,.9);
         if(what==='speak'){
-          psyTriggerSpeak(time);
-          if(!psyVoiceBuffer)psyVoiceStatus('Son robotique de démonstration. Enregistre ta vraie voix avec MICRO 3 S ou importe un audio.');
+          psyTriggerSpeak(time,.86,true);
+          if(studioChannels && studioChannels.speak && studioChannels.speak.mute){
+            psyVoiceStatus('PISTE SPEAK EN MUTE : ouvre MIX et réactive SPEAK pour entendre ta voix.');
+          }else if(!psyVoiceBuffer)psyVoiceStatus('Son robotique de démonstration. Enregistre ta vraie voix avec MICRO 3 S ou importe un audio.');
           else psyVoiceStatus('LECTURE : '+psyVoiceName+' ('+psyVoiceBuffer.duration.toFixed(1)+' s).');
         }
       }catch(err){setStatus(err.message,'al');}
@@ -493,8 +506,10 @@ function buildPsyRack(){
     pushUndo();psyState.fm2.algorithm=Number(this.value);saveLiveState();
   });
   document.getElementById('psy-record-voice').addEventListener('click',psyRecordVoice);
+  const voiceStatus=document.getElementById('psy-voice-status');
+  if(voiceStatus)voiceStatus.setAttribute('aria-live','polite');
   document.getElementById('psy-voice-clear').addEventListener('click',function(){
-    psyVoiceBuffer=null;psyVoiceName='VOIX ROBOT (SYNTH)';
+    psyVoiceBuffer=null;psyVoiceNextAvailableTime=-Infinity;psyVoiceName='VOIX ROBOT (SYNTH)';
     psyVoiceStatus('Voix effacée de la mémoire. Mode démo synthétique.');
   });
   const picker=document.getElementById('psy-voice-file');
