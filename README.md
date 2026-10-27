@@ -66,7 +66,7 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 ## V11 — Stabilité audio et sampler vocal Android
 
 - Polyphonie FM limitée à deux notes simultanées, et sampler vocal à une seule voix à la fois pour réduire les pics CPU.
-- Samples vocaux joués pendant 2,5 s maximum par pas et déclenchements trop rapprochés ignorés, afin d'éviter l'accumulation des voix sur le séquenceur.
+- Samples vocaux joués pendant 3 s maximum par pas ; la phrase enregistrée de 3 s se lit entièrement, sans nouveau déclenchement pendant sa lecture, afin d'éviter l'accumulation des voix sur le séquenceur.
 - Préécoute des cinq machines attend désormais réellement l'autorisation de l'AudioContext avant de déclencher le son, notamment sur Android.
 - Enregistrement micro PCM avec protection contre les captures simultanées, messages d'erreur explicites et option **IMPORT AUDIO** en secours.
 - Cache PWA v11 : nouvelle version des scripts distribuée aux utilisateurs.
