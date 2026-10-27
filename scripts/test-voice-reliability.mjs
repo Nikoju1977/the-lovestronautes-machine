@@ -63,15 +63,20 @@ const realm=vm.createContext(sandbox);
 const app=vm.runInContext(code+'\n({psyTriggerFM2,psyTriggerSpeak,psyCaptureMicroPCM,psyRecordVoice,psyLoadVoiceFile,psyPlayingVoices,psyVoiceLoaded,getVoiceBuffer:()=>psyVoiceBuffer})',realm);
 
 for(let i=0;i<12;i++)app.psyTriggerFM2('C4',10+i*.07,.85);
-assert.ok(app.psyPlayingVoices.fm.length<=3,'FM polyphony must remain <=3');
-console.log('✓ FM simultaneous voices capped at three');
+assert.ok(app.psyPlayingVoices.fm.length<=2,'FM polyphony must remain <=2');
+console.log('✓ FM simultaneous voices capped at two on mobile');
 
 const buffer={duration:3,getChannelData:()=>new Float32Array(4096)};
 app.psyVoiceLoaded(buffer,'TEST 3 S');
 const before=stopCalls.length;
 app.psyTriggerSpeak(18,.9);
 assert.ok(stopCalls.slice(before).some(t=>Math.abs(t-21)<.005),'Recorded voice playback must last 3 seconds');
-console.log('✓ 3-second recorded voice plays full 3 seconds (not 0.7 s)');
+const beforeRetrigger=stopCalls.length;
+app.psyTriggerSpeak(18.3,.9);
+assert.equal(stopCalls.length,beforeRetrigger,'Playing a voice must not be cut or retriggered before its full 3-second phrase ends');
+app.psyTriggerSpeak(21.2,.9);
+assert.ok(stopCalls.length>beforeRetrigger,'New sample starts after the original phrase has finished');
+console.log('✓ 3-second recorded voice plays completely and does not retrigger mid-phrase');
 
 const fromFile={size:2000,name:'ma-voix.wav',arrayBuffer:async()=>new ArrayBuffer(16)};
 const decoded=await app.psyLoadVoiceFile(fromFile);
