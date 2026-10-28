@@ -2,11 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
-<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V15 · FOUR SYNTHS + LOOPS</title>
+<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V16 · iOS + ANDROID</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -798,7 +798,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V15 · FOUR MACHINES + LOOP STUDIO</span></div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V16 · iOS / ANDROID</span></div>
                 <div class="wm-sub">PSYTRANCE · 16 PISTES · BOUCLES · WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
@@ -812,7 +812,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
-            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V15 · FOUR MACHINES</span></div>
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V16 · MOBILE AUDIO</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
                 <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
@@ -952,6 +952,7 @@ function nikoRetryBtn(container, fn) {
 }
 
 </script>
+<script src="./mobile-compat.js"></script>
 <script src="./audio-extensions.js"></script>
 <script src="./studio-features.js"></script>
 <script src="./psy-machines.js"></script>
@@ -1236,13 +1237,13 @@ function studioAudioError(error) {
     audioReady = false;
     const message = error && error.message ? error.message : 'Audio indisponible';
     const hint = $id('studio-audio-guide');
-    if (hint) hint.textContent = 'AUDIO BLOQUÉ : ' + message + '. Essaye Chrome et autorise la lecture du son.';
+    if (hint) hint.textContent = 'AUDIO BLOQUÉ : ' + message + '. Sur iOS utilise Safari ; sur Android, Chrome. Réactive le son par un toucher.';
     setStatus('AUDIO BLOQUÉ', 'al');
 }
 function initAudio() {
     // Important on Android: while resume() is pending we must not create a second AudioContext.
     if (ctx) {
-        ctx.resume().then(markStudioAudioReady).catch(studioAudioError);
+        mobileResumeAudio(ctx).then(markStudioAudioReady).catch(studioAudioError);
         return;
     }
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -1314,14 +1315,14 @@ function initAudio() {
         if(btn){btn.textContent='REPRENDRE LE SON';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
         if(ctx.state==='closed' && SEQ.playing){stopSeq();isPlaying=false;$id('play-btn').textContent='▶ PLAY';}
     });
-    ctx.resume().then(markStudioAudioReady).catch(studioAudioError);
+    mobileResumeAudio(ctx).then(markStudioAudioReady).catch(studioAudioError);
 }
 async function activateStudioAudio() {
     try {
         // AudioContext initialization starts synchronously in the click gesture.
         initAudio();
         if (!ctx) throw new Error('Ce navigateur ne prend pas en charge Web Audio');
-        if (ctx.state !== 'running') await ctx.resume();
+        if (ctx.state !== 'running') await mobileResumeAudio(ctx);
         if (!markStudioAudioReady()) throw new Error('Audio suspendu par le navigateur');
         return true;
     } catch (error) {
@@ -1343,9 +1344,7 @@ $id('routing-btn').addEventListener('click', function() {
 });
 
 function bestRecordingMime() {
-    if (!window.MediaRecorder) return '';
-    const types = ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/webm','audio/ogg'];
-    return types.find(function(t){ return !MediaRecorder.isTypeSupported || MediaRecorder.isTypeSupported(t); }) || '';
+    return mobileBestRecordingMime(window.MediaRecorder);
 }
 
 function downloadBlob(blob, filename) {
@@ -1353,7 +1352,8 @@ function downloadBlob(blob, filename) {
     const a = document.createElement('a');
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+    // Mobile Safari may defer a download/share sheet. Keep the blob URL available longer.
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
 }
 
 function toggleMasterRecording() {
@@ -1374,11 +1374,17 @@ function toggleMasterRecording() {
         recordChunks = [];
         mediaRecorder = mime ? new MediaRecorder(recordingDest.stream, {mimeType:mime}) : new MediaRecorder(recordingDest.stream);
         mediaRecorder.ondataavailable = function(e){ if (e.data && e.data.size) recordChunks.push(e.data); };
+        mediaRecorder.onerror = function(e){
+            const reason=e && e.error && e.error.message ? e.error.message : 'MediaRecorder interrompu';
+            setStatus('REC MASTER : '+reason+' · UTILISE EXPORT WAV', 'al');
+            if(btn){btn.classList.remove('on');btn.textContent='● REC MASTER';}
+        };
         mediaRecorder.onstop = function() {
             const type = mediaRecorder.mimeType || mime || 'audio/webm';
-            const ext = type.includes('ogg') ? 'ogg' : 'webm';
+            const ext = mobileRecordingExtension(type);
             const blob = new Blob(recordChunks, {type:type});
             if (blob.size) downloadBlob(blob, 'lovestronautes-master-' + new Date().toISOString().replace(/[:.]/g,'-') + '.' + ext);
+            else setStatus('ENREGISTREMENT VIDE · ESSAIE EXPORT WAV', 'al');
             btn.classList.remove('on'); btn.textContent = '● REC MASTER';
             setStatus('MASTER ENREGISTRÉ', 'ok');
         };
