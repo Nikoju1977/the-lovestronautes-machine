@@ -359,7 +359,7 @@ function taigaBuildRack(){
  }
  document.getElementById('taiga-test').addEventListener('click',()=>preview(document.getElementById('taiga-test-note').value));
  if(typeof studioWireMiniKeyboard==='function'){
-  studioWireMiniKeyboard(card,'.taiga-key',note=>preview(note),()=>taigaStopVoices());
+  studioWireMiniKeyboard(card,'.taiga-key',note=>preview(note));
  }else card.querySelectorAll('.taiga-key').forEach(el=>el.addEventListener('click',()=>preview(el.dataset.taigaNote)));
  taigaSyncRack();
 }
