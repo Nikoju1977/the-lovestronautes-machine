@@ -145,30 +145,42 @@ async function studioEnsurePCMWorklet(){
   }
 }
 async function studioReady(){
-  if(!audioReady)initAudio();
-  for(let i=0;i<80 && !audioReady;i++)await studioSleep(50);
-  if(!audioReady||!ctx||!masterOutput)throw Error('Moteur audio non disponible');
-  if(ctx.state!=='running')await ctx.resume();
-  if(ctx.state!=='running')throw Error('Audio suspendu — autorisez le son');
+  // Called directly from the user's EXPORT click: keep activation within its gesture.
+  if(!ctx||ctx.state!=='running'){
+    if(!await activateStudioAudio())
+      throw Error('Audio bloqué sur iOS/Android : touche ACTIVER LE SON, puis relance EXPORT.');
+  }
+  if(!ctx||!masterOutput||ctx.state!=='running')
+    throw Error('Le moteur audio ne fonctionne pas. Sur iOS, ouvre dans Safari.');
 }
 async function studioCaptureStart(){
   const chunks=[];
   let node,silent,worklet=false;
   if(await studioEnsurePCMWorklet()){
-    node=new AudioWorkletNode(ctx,'lovestronautes-pcm-capture',{
-      numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],
-      channelCount:2,channelCountMode:'explicit'
-    });
-    worklet=true;
-    node.port.onmessage=function(e){if(e.data.type==='chunk')chunks.push({left:e.data.left,right:e.data.right});};
-  }else if(ctx.createScriptProcessor){
+    try{
+      node=new AudioWorkletNode(ctx,'lovestronautes-pcm-capture',{
+        numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],
+        channelCount:2,channelCountMode:'explicit'
+      });
+      worklet=true;
+      node.port.onmessage=function(e){
+        if(e.data&&e.data.type==='chunk')chunks.push({left:e.data.left,right:e.data.right});
+      };
+    }catch(error){
+      // Safari may load the module but reject construction; use the PCM fallback.
+      console.warn('AudioWorklet Safari : repli ScriptProcessor',error);
+      node=null;worklet=false;
+    }
+  }
+  if(!node&&ctx.createScriptProcessor){
     node=ctx.createScriptProcessor(4096,2,2);
     node.onaudioprocess=function(e){
       const input=e.inputBuffer;
       chunks.push({left:new Float32Array(input.getChannelData(0)),
         right:new Float32Array(input.getChannelData(input.numberOfChannels>1?1:0))});
     };
-  }else throw Error('Capture PCM non supportée');
+  }
+  if(!node)throw Error('Capture PCM non supportée par ce navigateur. Essaie REC MASTER.');
   silent=ctx.createGain();silent.gain.value=0;
   masterOutput.connect(node);node.connect(silent);silent.connect(ctx.destination);
   return {

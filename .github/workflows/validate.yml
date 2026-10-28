@@ -52,5 +52,29 @@ jobs:
       - name: Four hardware-inspired synthesizers regression
         run: node scripts/test-hardware-synth.mjs
 
+      - name: iOS Safari and Android audio compatibility regressions
+        run: node scripts/test-platform-compat.mjs
+
       - name: Real Chromium user-interface smoke test
         run: node scripts/test-browser-smoke.mjs
+
+  webkit-mobile-smoke:
+    name: WebKit phone-sized browser check (Safari engine)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright and WebKit
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps webkit
+
+      - name: Real WebKit mobile viewport smoke test
+        run: node scripts/test-webkit-smoke.mjs

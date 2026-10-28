@@ -26,6 +26,7 @@ const s1Css = fs.readFileSync('cwejman-s1.css','utf8');
 const taiga = fs.readFileSync('taiga-modular.js','utf8');
 const taigaCss = fs.readFileSync('taiga-modular.css','utf8');
 const keyboard = fs.readFileSync('studio-keyboard.js','utf8');
+const mobile = fs.readFileSync('mobile-compat.js','utf8');
 const keyboardCss = fs.readFileSync('studio-keyboard.css','utf8');
 const loops = fs.readFileSync('loop-studio.js','utf8');
 const loopCss = fs.readFileSync('loop-studio.css','utf8');
@@ -53,7 +54,7 @@ if (inlineSyntax) ok('Syntaxe des ' + scripts.length + ' scripts inline');
 try { new Function(ext); ok('Syntaxe audio-extensions.js'); }
 catch (error) { fail('Syntaxe audio-extensions.js: ' + error.message); }
 
-[studio,capture,mp3,psy,creator,s1,taiga,keyboard,loops,hardware].forEach((code,i) => {
+[studio,capture,mp3,psy,creator,s1,taiga,keyboard,loops,hardware,mobile].forEach((code,i) => {
   try { new Function(code); ok('Syntaxe studio #' + (i+1)); }
   catch(error){ fail('Syntaxe studio #' + (i+1) + ': ' + error.message); }
 });
@@ -105,6 +106,9 @@ assert(creator.includes('p.taiga[step]') || creator.includes('p.taiga[0]'), 'Tai
 assert(creator.includes('<option value="taiga">'), 'Taiga : éditeur 64 pas disponible');
 assert(keyboard.includes('function studioKeyboardStart(') && keyboard.includes('function studioKeyboardMidiMessage('), 'Clavier : multi-touch, activation audio et MIDI notes');
 assert(keyboard.includes('studioKeyboardGlissNote(') && keyboard.includes("['pointerup','pointercancel','lostpointercapture']"), 'Clavier : glissando et relâchement fiable');
+assert(html.includes('mobileResumeAudio(ctx)') && html.includes('mobileBestRecordingMime(window.MediaRecorder)') && html.includes('mobileRecordingExtension(type)'), 'V16 activation WebAudio et MediaRecorder iOS/Android');
+assert(mobile.includes('function mobileResumeAudio(') && mobile.includes('function mobileBestRecordingMime('), 'Safari resume timeout + AAC/MP4 détectés');
+assert(sw.includes("new URL('./mobile-compat.js', scope).href"), 'PWA V16 : compatibilité iOS/Android hors ligne');
 assert(html.includes('function buildKeyboard() { studioKeyboardBuild(); }') && html.includes('studioKeyboardMidiMessage(e.data)'), 'Clavier V13 entièrement connecté au cockpit et au MIDI');
 assert(taigaCss.includes('.taiga-rack') && keyboardCss.includes('.studio-piano-key'), 'Panneaux Taiga et clavier tactile responsive');
 assert(html.includes('data-panel="loops"') && html.includes('id="panel-loops"') && html.includes('loopsBuildUI()'), 'Boucles : onglet et éditeur jouable');
@@ -126,7 +130,7 @@ assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') &&
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v15') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
+assert(sw.includes('lovestronautes-v16') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
 assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
 assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
 assert(psy.includes('async function psyCaptureMicroPCM(') && psy.includes('psyVoiceLoaded(audio'), 'Capture voix PCM directement depuis microphone');
@@ -142,7 +146,7 @@ assert(creator.includes('function creatorGeneratePatterns()') && creator.include
 assert(studio.includes("value=\"-1\"") && studio.includes('exportSong?creatorTotalBars():studioExportBars'), 'Export WAV/MP3 du morceau entier');
 assert(sw.includes("new URL('./psy-track-creator.js', scope).href") && sw.includes("new URL('./psy-track-creator.css', scope).href"), 'Song Mode offline PWA');
 assert(creatorCss.includes('.creator-piano-grid') && creatorCss.includes('.creator-sections'), 'Timeline et piano roll responsive');
-assert(html.includes('if (ctx) {\n        ctx.resume().then(markStudioAudioReady)'), 'un seul AudioContext pendant le démarrage');
+assert(html.includes('if (ctx) {\n        mobileResumeAudio(ctx).then(markStudioAudioReady)'), 'un seul AudioContext pendant le démarrage');
 assert(html.includes('id="studio-demo-btn"') && html.includes('id="studio-test-btn"') && html.includes('id="studio-fx-btn"'), 'barre accès son, démo et FX');
 assert(html.includes('<details class="studio-advanced"'), 'commandes avancées repliables sur mobile');
 assert(!html.includes('<div id="unlock">'), 'ancienne fenêtre audio bloquante supprimée');
@@ -168,7 +172,7 @@ const requiredIds = [
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','loop-studio.js','loop-studio.css','hardware-synth-lab.js','hardware-synth-lab.css','scripts/test-hardware-synth.mjs','scripts/test-loop-studio.mjs','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['mobile-compat.js','scripts/test-platform-compat.mjs','index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','loop-studio.js','loop-studio.css','hardware-synth-lab.js','hardware-synth-lab.css','scripts/test-hardware-synth.mjs','scripts/test-loop-studio.mjs','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);

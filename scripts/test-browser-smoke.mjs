@@ -16,7 +16,7 @@ function browserHarness(){
  window.addEventListener('unhandledrejection',e=>failures.push('Promise: '+String(e.reason).slice(0,100)));
  setTimeout(async function(){
   try{
-   check(document.querySelector('.live-badge')?.textContent.includes('V15'),'V15 badge');
+   check(document.querySelector('.live-badge')?.textContent.includes('V16'),'V16 badge');
    check(typeof taigaTrigger==='function','Taiga synth engine');
    check(!!document.getElementById('taiga-rack'),'Taiga rack rendered');
    check(document.querySelectorAll('#panel-seq .tcard').length===16,'16 step sequencer lanes');
@@ -85,7 +85,7 @@ function browserHarness(){
   }catch(e){failures.push('Exception: '+e.message);}
   const pre=document.createElement('pre');
   pre.id='browser-smoke-result';
-  pre.textContent='V15_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
+  pre.textContent='V16_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
   document.body.appendChild(pre);
  },100);
 }
@@ -124,7 +124,7 @@ try{
  const timeout=setTimeout(()=>process.kill('SIGKILL'),60000);
  const code=await new Promise(resolve=>process.on('close',resolve));
  clearTimeout(timeout);
- const result=stdout.match(/V15_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
+ const result=stdout.match(/V16_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
  if(!result)throw Error('Browser test did not finish (code '+code+', DOM bytes '+stdout.length+'): '+stderr.slice(-1000)+' DOM tail '+stdout.slice(-600));
  console.log('Chromium UI assertions passed: '+result[2]);
  if(result[1]!=='PASS')throw Error('Browser errors: '+result[3]);

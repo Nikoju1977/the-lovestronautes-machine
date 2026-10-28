@@ -47,11 +47,10 @@ function studioNoteByMidi(n){
  if(index<12||index>108)return null;
  return STUDIO_CHROMATIC[index%12]+(Math.floor(index/12)-1);
 }
-function studioKeyboardSound(note,velocity,held){
+function studioKeyboardSound(note,velocity,held,mode=studioKeyMode){
  if(!ctx||ctx.state!=='running')return false;
  const time=ctx.currentTime+.012;
  const v=Math.max(.2,Math.min(1,velocity||.82));
- const mode=studioKeyMode;
  try{
   if(mode==='taiga')return taigaTrigger(note,time,v,held);
   if(mode==='s1')return s1Trigger(note,time,v);
@@ -114,7 +113,7 @@ async function studioKeyboardStart(note,velocity,map,id,held=true){
  const active=map.get(id)===token;
  if(!active&&token.replaced)return;
  // Fast taps that end while AudioContext is resuming still produce a note.
- const played=studioKeyboardSound(note,velocity,active&&held);
+ const played=studioKeyboardSound(note,velocity,active&&held,token.mode);
  token.started=played;
  if(played&&active&&(token.mode==='taiga'||token.mode==='s1'))
   studioKeyCurrentVoice=token;
