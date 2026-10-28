@@ -1757,6 +1757,8 @@ function buildSeq() {
     let p=$id('panel-seq'); p.innerHTML=''; stepEls={};
     TRACKS.forEach(function(name) {
         let isMetal=(name==='metal'), isBiniou=(name==='biniou'); let card=mkEl('div','tcard'+(isMetal?' mc':(isBiniou?' ac':'')));
+        card.dataset.studioTrack=name;
+        card.setAttribute('aria-label','Séquenceur '+name+' · '+trackLengths[name]+' pas');
         card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'T-8 SNARE',hat:'T-8 HAT',sub:'SUB BASS',acid:'TD-3 ACID',fm:'VOLCA FM2',kick:'T-8 KICK',theremin:'THEREMIN',speak:'PO-35 SPEAK',s1:'S1 MK2 · ANALOG',taiga:'TAÏGA · MODULAR',mbase:'MBASE 11 · KICK',solar:'SOLAR 50 · DRONE',modfm:'JOMOX · MOD FM',wing:'WING PINGER'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
         let grid=mkEl('div','sgrid'); stepEls[name]=[];
         for (let i=0;i<16;i++) {
