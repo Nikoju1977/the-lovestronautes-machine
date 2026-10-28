@@ -76,6 +76,19 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
 
+## PSY V15 — QUATRE NOUVELLES MACHINES
+
+Le studio comprend quatre nouveaux instruments **Web Audio indépendants, inspirés de matériels réels**, ajoutés en tant que pistes 13 à 16 avec presets, mixage séparé et intégration aux exportations des boucles et morceaux.
+
+1. **JOMOX MBase 11 Kick Lab** : grosse caisse électronique avec attaque pulse/noise, pente de hauteur et decay, harmoniques, EQ et métalisation de l'attaque. Presets **Psy Punch**, **Deep Sub**, **Hard Techno** et **EBM**.
+2. **ELTA Music SOLAR 50 Drone Lab** : cinq oscillateurs légèrement désaccordés par note pour créer des drones, nappes et textures filmiques. Le matériel original possède 10 groupes de cinq oscillateurs (50 oscillateurs analogiques). Cette version Web Audio est volontairement plus légère : deux notes simultanées maximum.
+3. **JOMOX MOD FM** : moteur FM à quatre opérateurs, trois routages (**chain**, **parallel**, **split**), rapports de fréquences, profondeur FM, ADSR et filtre. L'original offre 26 algorithmes et huit voix : ce logiciel n'en reproduit qu'une petite partie.
+4. **Meng Qi Wing Pinger** : percussions et résonances stéréo inspirées du ping de deux filtres quatre pôles, avec pitch, Q, modulation croisée, chaos et decay, approchés à partir de Biquad numériques.
+
+**Intégration :** MACHINES contient quatre panneaux tactiles avec boutons TEST et presets. Le séquenceur comporte désormais **16 pistes**, les nouvelles pistes étant silencieuses par défaut afin de préserver les anciens morceaux. Tu peux les activer dans SEQ, les jouer depuis le clavier LIVE, et éditer les notes mélodiques dans MORCEAU. MIX gère séparément volume, mute, solo, panoramique et EQ. Les réglages sont conservés dans le projet JSON et les fichiers sont disponibles hors ligne par PWA.
+
+**Stabilité :** les moteurs sont soumis à des limites de polyphonie et nettoient leurs nœuds. Les tests automatiques ne remplacent pas un essai audio sur Android. Ce sont des interprétations indépendantes non affiliées à Jomox, ELTA Music ou Meng Qi.
+
 ## PSY V14 — LOOP STUDIO : créer et exporter des boucles
 
 L'onglet **BOUCLES** permet désormais de programmer des boucles musicales réelles à partir des 12 pistes du séquenceur, en partant de l'un des quatre patterns **A/B/C/D**. Choisis **1, 2, 4, 8, 16 ou 32 mesures**, touche **BOUCLER EN CONTINU** pour entendre la répétition parfaitement synchronisée au tempo et **STOP** pour l'arrêter.
