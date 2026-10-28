@@ -16,7 +16,7 @@ const store=[],updates=[];
 const els={'panel-loops':null};
 const scope={patterns:bank,curPat:'C',matrix:bank.C,bpm:145,isPlaying:false,
  SEQ:{playing:false,barCount:0},creatorState:{running:false},
- studioExportBars:8,document:{
+ studioExportBars:8,isPilot:false,document:{
  getElementById:(id)=>els[id]||null,
  querySelectorAll:()=>[],
  },saveLiveState:()=>store.push('saved'),buildSeq:()=>updates.push('seq'),
