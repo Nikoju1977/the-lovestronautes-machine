@@ -1,0 +1,17 @@
+/* LOVESTRONAUTES · LOOP STUDIO V14 */
+.loops-head{padding:14px 12px;border:1px solid rgba(146,236,181,.4);border-radius:12px;background:linear-gradient(130deg,#0a2421,#06100f);margin-bottom:12px}
+.loops-eyebrow{font:700 11px system-ui,sans-serif;letter-spacing:2px;color:#91e4b7}
+.loops-head h2{font:800 clamp(22px,5vw,32px) system-ui,sans-serif;letter-spacing:1px;margin:7px 0;color:#e7fce9}
+.loops-head p,.loops-tip{font:400 12px/1.6 system-ui,sans-serif;color:#bdcfbf;margin:9px 0 0}
+.loops-card{border:1px solid rgba(156,236,187,.28)!important;padding:12px!important;margin-bottom:12px}
+.loops-card h3{font:800 14px system-ui,sans-serif;color:#c5f9d4;letter-spacing:1px;margin:0 0 12px}
+.loops-card label{font:800 11px system-ui,sans-serif;letter-spacing:1px;color:#ccf0d7;display:flex;flex-direction:column;gap:7px;margin:8px 0}
+.loops-card input,.loops-card select{display:block;width:100%;min-width:0;min-height:44px;border-radius:8px;border:1px solid rgba(136,213,169,.47);padding:9px;background:#09231c;color:#fff;font:600 13px system-ui,sans-serif}
+.loops-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.loops-transport{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.loops-transport button,.loops-card>button{min-height:47px;flex:1 1 160px;padding:10px;border-radius:9px;border:1px solid rgba(165,231,187,.55);background:#15332a;color:#e8ffeb;font:800 12px system-ui,sans-serif;touch-action:manipulation;cursor:pointer}
+.loops-transport button.loops-primary,.loops-card>button.loops-primary{background:linear-gradient(130deg,#a8e9bf,#d9f4bf);color:#143522}
+.loops-transport button.running{background:#faecbe;color:#2e2514}
+.loops-position,.loops-status{border-left:4px solid #98e4a9;background:rgba(102,231,145,.07);padding:9px 10px;color:#c5f8d3;font:800 12px system-ui,sans-serif;line-height:1.5}
+.loops-card button:focus-visible,.loops-card input:focus-visible,.loops-card select:focus-visible{outline:3px solid #ffe2a6;outline-offset:2px}
+@media(max-width:500px){.loops-grid{grid-template-columns:1fr}.loops-card{padding:10px!important}.loops-transport button{flex:1 1 100%}}
