@@ -27,6 +27,8 @@ const taiga = fs.readFileSync('taiga-modular.js','utf8');
 const taigaCss = fs.readFileSync('taiga-modular.css','utf8');
 const keyboard = fs.readFileSync('studio-keyboard.js','utf8');
 const keyboardCss = fs.readFileSync('studio-keyboard.css','utf8');
+const loops = fs.readFileSync('loop-studio.js','utf8');
+const loopCss = fs.readFileSync('loop-studio.css','utf8');
 const creatorCss = fs.readFileSync('psy-track-creator.css', 'utf8');
 const cssV9 = fs.readFileSync('ui-v9.css','utf8');
 const capture = fs.readFileSync('pcm-capture-processor.js', 'utf8');
@@ -49,7 +51,7 @@ if (inlineSyntax) ok('Syntaxe des ' + scripts.length + ' scripts inline');
 try { new Function(ext); ok('Syntaxe audio-extensions.js'); }
 catch (error) { fail('Syntaxe audio-extensions.js: ' + error.message); }
 
-[studio,capture,mp3,psy,creator,s1,taiga,keyboard].forEach((code,i) => {
+[studio,capture,mp3,psy,creator,s1,taiga,keyboard,loops].forEach((code,i) => {
   try { new Function(code); ok('Syntaxe studio #' + (i+1)); }
   catch(error){ fail('Syntaxe studio #' + (i+1) + ': ' + error.message); }
 });
@@ -103,6 +105,12 @@ assert(keyboard.includes('function studioKeyboardStart(') && keyboard.includes('
 assert(keyboard.includes('studioKeyboardGlissNote(') && keyboard.includes("['pointerup','pointercancel','lostpointercapture']"), 'Clavier : glissando et relâchement fiable');
 assert(html.includes('function buildKeyboard() { studioKeyboardBuild(); }') && html.includes('studioKeyboardMidiMessage(e.data)'), 'Clavier V13 entièrement connecté au cockpit et au MIDI');
 assert(taigaCss.includes('.taiga-rack') && keyboardCss.includes('.studio-piano-key'), 'Panneaux Taiga et clavier tactile responsive');
+assert(html.includes('data-panel="loops"') && html.includes('id="panel-loops"') && html.includes('loopsBuildUI()'), 'Boucles : onglet et éditeur jouable');
+assert(loops.includes('function loopsSaveClip(') && loops.includes('function loopsLoadClip(') && loops.includes('function loopsExport('), 'Boucles : clips enregistrés, rappel et export');
+assert(html.includes('loops: loopsProjectState()') && html.includes('loopsRestoreState(state)'), 'Boucles sauvegardées dans le projet JSON');
+assert(html.includes('loopsAtBoundary(SEQ.barCount)') && html.includes('loopsOnStop()'), 'Boucles synchronisées au séquenceur audio et à STOP');
+assert(studio.includes('<option>1</option><option>2</option>') && studio.includes('studioExportBars'), 'Exports 1 ou 2 mesures WAV/MP3 accessibles');
+assert(sw.includes("new URL('./loop-studio.js', scope).href") && sw.includes("new URL('./loop-studio.css', scope).href") && loopCss.includes('.loops-transport'), 'Mode boucles accessible hors ligne sur PWA');
 assert(html.includes('buildExtendedFX()') && html.includes('syncExtendedFX()'), 'contrôles FX nouvelles machines et EQ');
 assert(ext.includes('function triggerSnare(time)') && ext.includes('function triggerHat(time)') && ext.includes('function triggerSub('), 'moteurs Snare, Hat et Sub');
 assert(ext.includes("name:'AIR'") && ext.includes("name:'SUB'"), 'EQ 5 bandes présent');
@@ -111,7 +119,7 @@ assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') &&
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v13') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
+assert(sw.includes('lovestronautes-v14') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
 assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
 assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
 assert(psy.includes('async function psyCaptureMicroPCM(') && psy.includes('psyVoiceLoaded(audio'), 'Capture voix PCM directement depuis microphone');
@@ -153,7 +161,7 @@ const requiredIds = [
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','loop-studio.js','loop-studio.css','scripts/test-loop-studio.mjs','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);
