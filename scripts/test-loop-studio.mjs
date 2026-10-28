@@ -18,7 +18,7 @@ const scope={patterns:bank,curPat:'C',matrix:bank.C,bpm:145,isPlaying:false,
  SEQ:{playing:false,barCount:0},creatorState:{running:false},
  studioExportBars:8,isPilot:false,document:{
  getElementById:(id)=>els[id]||null,
- querySelectorAll:()=>[],
+ querySelectorAll:()=>[],querySelector:()=>null,
  },saveLiveState:()=>store.push('saved'),buildSeq:()=>updates.push('seq'),
  pushUndo:()=>updates.push('undo'),activateStudioAudio:async()=>true,
  startSeq:()=>updates.push('start'),stopSeq:()=>updates.push('stop'),
