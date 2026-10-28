@@ -15,11 +15,13 @@
 
 - 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
 - 🎚️ BPM éditable + Tap Tempo, **swing 50–75 %**, morphing et automation live
-- 🎛️ Mixeur 11 pistes, chaos pad, clavier tactile et oscilloscope temps réel
+- 🎛️ Mixeur 12 pistes, chaos pad, claviers tactiles et oscilloscope temps réel
 - 🎚️ **Égaliseur master 5 bandes** (80, 250, 1 000, 4 000, 10 000 Hz), ±12 dB, bypass, reset et mémorisation
 - 🥁 **Trois nouvelles machines** : 909 Snare, 808 Hi-Hat et Sub Bass, séquenceurs 16 pas et paramètres de synthèse réglables
 - ⚡ **PSY V8 : cinq instruments jouables** TD-3, Volca FM2, Roland T-8, Theremin et PO-35 Speak dans un nouveau rack, deux pistes supplémentaires
 - 🎹 **PSY V12 : synthé S1 MK2 inspiré du Cwejman** — 3 VCO, ring modulation, noise, deux filtres LPF/MMF, EG1/EG2, LFO, 4 presets, clavier et 11ᵉ piste MIDI-like
+- 🌿 **PSY V13 : Pittsburgh Taïga Analog Lab** — 3 oscillateurs avec wavefolding numérique six étapes, filtre multimode, dynamics/LPG, deux ADSR, LFO/S&H et Echos. Nouvel instrument jouable et 12ᵉ piste.
+- 🎹 **Claviers V13** : piano à véritables touches blanches/noires, gliss tactile, pression relâchée proprement, octaves réglables, choix de l’instrument, notes MIDI + clavier PC, raccourci direct sur Android.
 - 📱 **PSY V9** : interface mobile revue, activation sonore non bloquante, DÉMO PSY immédiate, TEST SON et accès direct FX / WAV / MP3
 - 🎼 **PSY V10** : Song Mode et timeline 192 mesures, Kick & Bass Lab rolling K-B-B-B, Melody Lab tonal 64 pas, export complet WAV/MP3
 - 🔧 **PSY V11** : stabilisation audio mobile (anti-surcharge, anti-craquements) et PO-35 vocal micro PCM avec réécoute d'échantillons complets
@@ -73,6 +75,35 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 - Cache PWA v11 : nouvelle version des scripts distribuée aux utilisateurs.
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
+
+## PSY V13 — Pittsburgh Modular Taïga + claviers live
+
+Cette version ajoute un **synthétiseur virtuel Taïga**, inspiré du Pittsburgh Modular Taiga (original de 2023), à l'application Lovestronautes. C'est une **interprétation indépendante construite en Web Audio** et non une émulation circuit-à-circuit officielle. La marque, les noms des produits et la sonorité du matériel original appartiennent à leurs titulaires.
+
+### Taïga Analog Lab (12e piste)
+
+- **Trois oscillateurs** indépendants, formes sinus, triangle, dent de scie et carré, contrôle de forme, de wavefold et de niveau par oscillateur. La courbe de wavefolding est une approximation numérique en **six passes**, pas le circuit propriétaire Pittsburgh.
+- **Mixer et noise**, overdrive doux et **filtre multimode** passe-bas, passe-bande, passe-haut.
+- **Dynamics Controller/LPG** simulant la fermeture simultanée du timbre et du volume, alternative VCA, deux enveloppes ADSR, modulation de coupure et pitch par LFO, **Sample & Hold** aléatoire par note.
+- **Echos** : delay à feedback limité à 38 %, partagé entre les notes pour réduire les ressources sur Android.
+- **4 presets** : Mountain Fold (lead psy), Acid West (basse résonante), Organic LPG (percussions/plucks), Forest Drone (textures modulaires).
+- Monophonie avec extinction progressive des voix précédentes et nettoyage des nœuds Web Audio. Les patches et patterns sont sauvegardés dans le JSON du projet. Les anciens morceaux sont migrés sans modifier leurs anciennes pistes.
+- **SEQ** : piste « TAÏGA · MODULAR » avec 16 pas dans les patterns A/B/C/D. **MIX** : volume, EQ, mute/solo, panoramique. **MORCEAU** : génération tonale et éditeur 64 pas. **FX/WAV/MP3** : piste dans le bus master capturé.
+
+### Claviers tactiles corrigés
+
+Le clavier historique lançait les notes au `pointerdown` alors que l'initialisation audio pouvait encore être suspendue. La V13 attend l'état **AUDIO ONLINE** et traite les taps rapides, le glissement du doigt et l'annulation des pointeurs.
+
+- Nouveau **piano à touches blanches et noires distinctes**, plus faciles à atteindre sur Android, avec feedback visuel vert quand une note est enfoncée.
+- Sélecteur direct **TAÏGA / S1 / VOLCA FM2 / TD-3 / THEREMIN / BINIOU**, octaves +/- et choix 1 ou 2 octaves.
+- Multi-touch, déplacement du doigt entre les notes, relâchement lors de `pointercancel`, `lostpointercapture`, fermeture de page ou perte de focus — évite les notes bloquées.
+- Clavier PC : touches `A W S E D F T G Y H U J K`. MIDI USB/Bluetooth (quand le navigateur le permet) : prise en charge des messages **note-on, note-off et vélocité**, branchement à chaud et CC existants. L'accès Web MIDI varie selon le navigateur et le système.
+- Les mini-claviers **S1 MK2** et **Taïga** partagent la même gestion tactile du glissé ; une préécoute courte n'est plus coupée instantanément au relâchement.
+- Préférences de clavier conservées localement, sans effacer les projets ou exiger un serveur. Cache PWA mis à jour en **v13**.
+
+**Tester sur téléphone :** ouvrir la nouvelle URL, **ACTIVER LE SON**, toucher **NOUVEAU PITTSBURGH TAÏGA MODULAR**, choisir un preset et **TEST TAÏGA**, puis utiliser le bouton **CLAVIER LIVE**. Pour écouter uniquement le Taïga, vérifier la tranche **TAÏGA** dans MIX et activer ses pas dans SEQ.
+
+**Limites connues :** ce synthé ne reproduit pas physiquement le filtre Pittsburgh, les composants analogiques ni les 60 patch points de l'instrument ; il propose plusieurs routages CV préconfigurés, mais pas encore une matrice de câbles arbitraires. Les tests automatisés et tests en navigateur ne prouvent pas à eux seuls la qualité sonore sur un téléphone Android précis.
 
 ## PSY V12 — S1 MK2 ANALOG LAB : sixième synthétiseur
 
