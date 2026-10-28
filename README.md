@@ -76,6 +76,23 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
 
+## PSY V16 — Compatibilité iOS Safari et Android Chrome
+
+**Objectif :** faire fonctionner le même studio Web Audio sur iPhone/iPad (Safari, y compris l'application web ajoutée à l'écran d'accueil) et sur téléphones/tablettes Android (Chrome/PWA), sans serveur ni clé API.
+
+**Correctifs réels :**
+- **Déverrouillage audio** au toucher : `AudioContext.resume()` est lancé dans le geste utilisateur, avec un **délai maximal de 4,5 secondes**. Si Safari reste suspendu (problème WebKit parfois observé en PWA), l'application signale le blocage au lieu de rester figée ; l'utilisateur peut réessayer après avoir rouvert la page ou relancé le navigateur.
+- **Enregistrement master compatible** : choix automatique du format disponible. Chrome utilise généralement Opus/WebM (`.webm`), Safari iOS utilise AAC/MP4 (`.m4a`). L'extension du fichier reflète le conteneur réellement enregistré. Les erreurs et enregistrements vides sont signalés ; **EXPORT WAV** reste disponible.
+- **Capture PCM WAV/MP3** : si Safari accepte le module AudioWorklet mais refuse la création de son nœud, le studio utilise son repli `ScriptProcessor` quand il est disponible.
+- **Microphone** : nettoyage garanti après un échec de `createMediaStreamSource`, sans verrou d'enregistrement restant bloqué. Permissions accordées uniquement avec HTTPS et une action de l'utilisateur.
+- **Clavier multitouch** : le choix de l'instrument est conservé pendant un éventuel déverrouillage audio asynchrone, notamment lors des changements de preset ou des touches rapides.
+- **Téléchargements iOS** : les URL de fichiers WAV/MP3/MP4 restent accessibles plus longtemps pour laisser à Safari le temps de présenter l'enregistrement.
+- **Accessibilité iOS** : l'utilisateur peut zoomer dans Safari ; les contrôles audio et les touches restent tactiles.
+- **PWA v16** : le nouvel assistant de compatibilité audio est installé dans le cache hors ligne.
+- **Tests de régression** : cas Safari MP4, Android WebM, déblocage audio, blocage WebKit, capture PCM et claviers. Les suites des synthétiseurs, des 16 pistes, des boucles et des exports restent exécutées dans GitHub Actions.
+
+**Limites importantes :** Web MIDI n'est pas disponible dans Safari iOS, même si le clavier tactile fonctionne. L'enregistrement du master dépend de `MediaRecorder` et de ses codecs ; l'export WAV/MP3 utilise le moteur PCM indépendant. Sur certains iPhone/iPad, un bug système WebKit peut empêcher la reprise audio d'une PWA après suspension malgré nos correctifs. Les tests de CI Chromium et de logique Safari ne remplacent pas des écoutes physiques sur iPhone, iPad et Android.
+
 ## PSY V15 — QUATRE NOUVELLES MACHINES
 
 Le studio comprend quatre nouveaux instruments **Web Audio indépendants, inspirés de matériels réels**, ajoutés en tant que pistes 13 à 16 avec presets, mixage séparé et intégration aux exportations des boucles et morceaux.
