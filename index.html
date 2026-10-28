@@ -1377,24 +1377,40 @@ function toggleMasterRecording() {
 }
 
 // ── WEB MIDI (IN/OUT & VJ SYNC) ──────────────────────────────────
-let midiOut = null, midiIn = null;
+let midiOut = null, midiIn = null, midiAccess = null;
 function initMIDI() {
-    if (navigator.requestMIDIAccess) {
-        navigator.requestMIDIAccess().then(function(access) {
-            for (let o of access.outputs.values()) { midiOut = o; break; }
-            for (let i of access.inputs.values()) {
-                midiIn = i;
-                midiIn.onmidimessage = handleMIDIIn;
-                break;
-            }
-            setStatus('MIDI OK: IN/OUT', 'ok');
-        });
+    if (!navigator.requestMIDIAccess) {
+        setStatus('MIDI NON SUPPORTÉ ICI', 'al');
+        return;
     }
+    navigator.requestMIDIAccess({sysex:false}).then(function(access) {
+        midiAccess = access;
+        function bindConnectedControllers() {
+            midiIn = null; midiOut = null;
+            for (const input of access.inputs.values()) {
+                if (input.state==='disconnected') continue;
+                input.onmidimessage = handleMIDIIn;
+                if (!midiIn) midiIn = input;
+            }
+            for (const output of access.outputs.values()) {
+                if(output.state!=='disconnected'){midiOut=output;break;}
+            }
+            setStatus(midiIn||midiOut?'MIDI CONNECTÉ · CLAVIER PRÊT':'MIDI ACTIF · CONNECTE TON CLAVIER','ok');
+        }
+        bindConnectedControllers();
+        access.addEventListener('statechange',bindConnectedControllers);
+    }).catch(function(error){
+        setStatus('MIDI REFUSÉ · '+(error && error.message ? error.message : 'ACCÈS'), 'al');
+    });
 }
 
-// Map MIDI IN (Generic CCs) -> Lovestronautes
+// Map MIDI IN (note on/off, generic CC and pitch bend) -> currently selected keyboard instrument.
 function handleMIDIIn(e) {
-    let cmd = e.data[0] >> 4, channel = e.data[0] & 0xf, type = e.data[1], val = e.data[2] / 127.0;
+    if (!e || !e.data || e.data.length<3) return;
+    const cmd=e.data[0] >> 4, type=e.data[1], val=e.data[2] / 127;
+    if ((cmd===8 || cmd===9) && typeof studioKeyboardMidiMessage==='function') {
+        studioKeyboardMidiMessage(e.data);return;
+    }
     if (cmd === 14) { // Pitch Bend -> biniou ±12 semitones
         const bend14 = (e.data[2] << 7) | e.data[1];
         biniouParams.pitch = Math.round((((bend14 - 8192) / 8192) * 12) * 10) / 10;
@@ -1402,13 +1418,15 @@ function handleMIDIIn(e) {
         if (pitch) pitch.value = biniouParams.pitch;
         if (out) out.textContent = (biniouParams.pitch > 0 ? '+' : '') + biniouParams.pitch.toFixed(1);
     }
-    if (cmd === 11) { // CC Message
-        if(type === 20 && chanGain['kick']) chanGain['kick'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
-        if(type === 21 && chanGain['acid']) chanGain['acid'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
-        if(type === 22 && chanGain['fm']) chanGain['fm'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
-        if(type === 23 && chanGain['metal']) chanGain['metal'].gain.setTargetAtTime(val, ctx.currentTime, 0.01);
-        if(type === 1) applyMorph(val); // CC1 Modwheel -> Morph
-        if(type === 2 && masterFilter) masterFilter.frequency.setTargetAtTime(val * 17700 + 300, ctx.currentTime, 0.01);
+    if (cmd === 11) { // Controllers are safe even before activating the audio engine.
+        if(ctx && ctx.state==='running'){
+            if(type === 20 && chanGain.kick) chanGain.kick.gain.setTargetAtTime(val, ctx.currentTime, 0.01);
+            if(type === 21 && chanGain.acid) chanGain.acid.gain.setTargetAtTime(val, ctx.currentTime, 0.01);
+            if(type === 22 && chanGain.fm) chanGain.fm.gain.setTargetAtTime(val, ctx.currentTime, 0.01);
+            if(type === 23 && chanGain.metal) chanGain.metal.gain.setTargetAtTime(val, ctx.currentTime, 0.01);
+            if(type === 2 && masterFilter) masterFilter.frequency.setTargetAtTime(val*17700+300,ctx.currentTime,0.01);
+        }
+        if(type === 1) applyMorph(val); // CC1 modwheel still works offline.
     }
 }
 
