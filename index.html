@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
-<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V11</title>
+<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V12 · S1 MK2</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -769,6 +769,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 </style>
 <link rel="stylesheet" href="./ui-v9.css">
 <link rel="stylesheet" href="./psy-track-creator.css">
+<link rel="stylesheet" href="./cwejman-s1.css">
   <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
@@ -793,8 +794,8 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">PSY V11 · AUDIO STABLE</span></div>
-                <div class="wm-sub">PSYTRANCE · 10 PISTES · WEB AUDIO · MASTER WAV / MP3</div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V12 · ANALOG LAB S1</span></div>
+                <div class="wm-sub">PSYTRANCE · 11 PISTES · S1 MK2 · WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
         </div>
@@ -807,7 +808,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
-            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V10 · SONG MODE</span></div>
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V12 · S1 MK2</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
                 <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
@@ -845,7 +846,9 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         </div>
     </details>
 
-    <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 5 INSTRUMENTS NUMÉRIQUES</button>
+    <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 6 INSTRUMENTS NUMÉRIQUES</button>
+
+    <button id="s1-jump" type="button" class="s1-jump">🎹 NOUVEAU SYNTHÉ VINTAGE · S1 MK2 · OUVRIR</button>
 
     <div class="pat-tabs" id="pat-tabs">
         <button class="pt active" data-pat="A"><span class="pl">A</span><span class="ps">INTRO</span></button>
@@ -944,6 +947,7 @@ function nikoRetryBtn(container, fn) {
 <script src="./studio-features.js"></script>
 <script src="./psy-machines.js"></script>
 <script src="./psy-track-creator.js"></script>
+<script src="./cwejman-s1.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -952,14 +956,14 @@ function nikoRetryBtn(container, fn) {
 'use strict';
 
 // ── VARIABLES GLOBALES & AUTO-SAVE ────────────────────────────────
-let trackLengths = { kick: 16, acid: 16, fm: 16, biniou: 16, metal: 16, snare: 16, hat: 16, sub: 16, theremin:16, speak:16, auto: 16 };
-let trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, auto: 0 };
-let trackChaos = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0 };
+let trackLengths = { kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,s1:16,auto:16 };
+let trackSteps = { kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0,auto:0 };
+let trackChaos = {kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0};
 let aiTimeline = [], agentAdvice = [];
 let bpm = 128, swing = 0.50;
 let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
-let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48};
+let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48,s1:.64};
 let biniouEnabled = false;
 let biniouParams = { drive:0.42, echo:0.28, space:0.24, tone:0.62, cyber:false, harmony:0.34, pitch:0 };
 let curPat = 'A', matrix;
@@ -973,13 +977,14 @@ function initPats() {
     };
     ensureExtendedPatterns(bank, true);
     psyEnsurePatterns(bank, true);
+    s1EnsurePatterns(bank, true);
     return bank;
 }
 let patterns = initPats();
 
 function projectState() {
     return {
-        version: 8,
+        version: 9,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -1003,6 +1008,7 @@ function projectState() {
         machines: Object.assign({},machineParams),
         studio: studioProjectState(),
         psy: psyProjectState(),
+        s1: s1ProjectState(),
         creator: creatorProjectState()
     };
 }
@@ -1022,12 +1028,13 @@ function applyProjectState(state, persist) {
     patterns = JSON.parse(JSON.stringify(state.pat));
     ensureExtendedPatterns(patterns, false);
     psyEnsurePatterns(patterns, false);
+    s1EnsurePatterns(patterns, false);
     ['A','B','C','D'].forEach(function(name) {
         if (!Array.isArray(patterns[name].biniou) || patterns[name].biniou.length !== 16) patterns[name].biniou = Array(16).fill(null);
     });
-    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,auto:16}, state.lengths || {});
-    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0}, state.chaos || {});
-    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48}, state.volumes || {});
+    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,s1:16,auto:16}, state.lengths || {});
+    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0}, state.chaos || {});
+    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48,s1:.64}, state.volumes || {});
     bpm = Number.isFinite(state.bpm) ? Math.max(40, Math.min(220, state.bpm)) : 128;
     swing = Number.isFinite(state.swing) ? Math.max(0.50, Math.min(0.75, state.swing)) : 0.50;
     curPat = ['A','B','C','D'].includes(state.cur) ? state.cur : 'A';
@@ -1044,6 +1051,7 @@ function applyProjectState(state, persist) {
     restoreExtendedState(state);
     restoreStudioState(state);
     psyRestoreState(state);
+    s1RestoreState(state);
     creatorRestoreState(state);
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
@@ -1266,7 +1274,7 @@ function initAudio() {
         }
     });
     // New lead and vocal instruments share the same stereo master and export bus.
-    ['theremin','speak'].forEach(function(t){
+    ['theremin','speak','s1'].forEach(function(t){
         const g=ctx.createGain(); g.gain.value=chanVol[t]; chanGain[t]=g;
         const output=ctx.createGain(); studioInitChannel(t,g,output);
         if(isMultiOut && channelMerger)output.connect(channelMerger,0,3);
@@ -1561,9 +1569,12 @@ function scheduleStep(time) {
     if (subStep) creatorRollingBass(typeof subStep === 'string' ? subStep : (subStep.note || 'C2'),time,typeof subStep === 'object' ? (subStep.vel || 0.8) : 0.8);
     const th=m.theremin[trackSteps.theremin]; if(th)psyTriggerTheremin(typeof th==='string'?th:(th.note||'C4'),time,typeof th==='object'?(th.vel||.75):.75);
     if(m.speak[trackSteps.speak])psyTriggerSpeak(time,.86);
+    const s1Step=m.s1 && m.s1[trackSteps.s1];
+    if(s1Step)s1Trigger(typeof s1Step==='string'?s1Step:(s1Step.note||'F3'),time,
+      typeof s1Step==='object'?(s1Step.vel||.8):.8);
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
 
-    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.snare = (trackSteps.snare + 1) % trackLengths.snare; trackSteps.hat = (trackSteps.hat + 1) % trackLengths.hat; trackSteps.sub = (trackSteps.sub + 1) % trackLengths.sub; trackSteps.theremin = (trackSteps.theremin + 1) % trackLengths.theremin; trackSteps.speak = (trackSteps.speak + 1) % trackLengths.speak; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
+    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.snare = (trackSteps.snare + 1) % trackLengths.snare; trackSteps.hat = (trackSteps.hat + 1) % trackLengths.hat; trackSteps.sub = (trackSteps.sub + 1) % trackLengths.sub; trackSteps.theremin = (trackSteps.theremin + 1) % trackLengths.theremin; trackSteps.speak = (trackSteps.speak + 1) % trackLengths.speak; trackSteps.s1 = (trackSteps.s1 + 1) % trackLengths.s1; trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
     
     sendMIDIVJ('tension', tension); // VJ Sync à chaque step
 }
@@ -1612,8 +1623,8 @@ function schedulerTick() {
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
-function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); if(creatorState.running)creatorStopSong(); }
+function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, s1:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
+function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); if(typeof s1StopVoices==='function')s1StopVoices(); if(creatorState.running)creatorStopSong(); }
 
 // Réécrire WaveShaper.curve à 60 Hz provoque du garbage collection sur mobile.
 let morphLastCurveAt=-Infinity,morphLastCurveValue=-1;
@@ -1691,12 +1702,12 @@ function rafLoop() {
 }
 
 // ── UI BUILDERS ──────────────────────────────────────────────────
-let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak'];
+let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1'];
 function buildSeq() {
     let p=$id('panel-seq'); p.innerHTML=''; stepEls={};
     TRACKS.forEach(function(name) {
         let isMetal=(name==='metal'), isBiniou=(name==='biniou'); let card=mkEl('div','tcard'+(isMetal?' mc':(isBiniou?' ac':'')));
-        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'T-8 SNARE',hat:'T-8 HAT',sub:'SUB BASS',acid:'TD-3 ACID',fm:'VOLCA FM2',kick:'T-8 KICK',theremin:'THEREMIN',speak:'PO-35 SPEAK'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
+        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'T-8 SNARE',hat:'T-8 HAT',sub:'SUB BASS',acid:'TD-3 ACID',fm:'VOLCA FM2',kick:'T-8 KICK',theremin:'THEREMIN',speak:'PO-35 SPEAK',s1:'S1 MK2 · ANALOG'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
         let grid=mkEl('div','sgrid'); stepEls[name]=[];
         for (let i=0;i<16;i++) {
             let s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
@@ -1709,6 +1720,7 @@ function buildSeq() {
                     else if (trk==='sub') next={note:'C2',vel:.8};
                     else if (trk==='biniou') next={note:'A4',vel:.84};
                     else if (trk==='theremin') next={note:'C4',vel:.75};
+                    else if (trk==='s1') next={note:'F3',vel:.8};
                     else next={note:trk==='acid'?'G2':'C4',vel:.8};
                 }
                 matrix[trk][idx]=active?null:next;
@@ -1917,15 +1929,20 @@ function syncProjectUI() {
     syncExtendedFX();
     studioSyncMixer();
     psySyncRack();
+    s1SyncRack();
     creatorSyncUI();
     updateMasterEQ();
     updateHistoryUI();
 }
 
-buildFX(); buildPsyRack(); creatorBuildUI(); buildKeyboard(); syncProjectUI();
+buildFX(); buildPsyRack(); s1BuildRack(); creatorBuildUI(); buildKeyboard(); syncProjectUI();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
+$id('s1-jump').addEventListener('click', function(){
+    const tab=document.querySelector('.nt[data-panel="gear"]');if(tab)tab.click();
+    requestAnimationFrame(function(){const rack=$id('s1-rack');if(rack)rack.scrollIntoView({behavior:'smooth',block:'start'});});
+});
 $id('studio-demo-btn').addEventListener('click', async function() {
     if (!await activateStudioAudio()) return;
     if (isPlaying) { stopSeq(); isPlaying = false; }
