@@ -46,5 +46,8 @@ jobs:
       - name: Taiga modular and mobile keyboards regression
         run: node scripts/test-taiga-keyboard.mjs
 
+      - name: Loop Studio clips and export regression
+        run: node scripts/test-loop-studio.mjs
+
       - name: Real Chromium user-interface smoke test
         run: node scripts/test-browser-smoke.mjs
