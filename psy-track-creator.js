@@ -4,7 +4,7 @@
 'use strict';
 
 const CREATOR_PATTERNS=['A','B','C','D'];
-const CREATOR_TRACKS=['fm','acid','theremin'];
+const CREATOR_TRACKS=['fm','acid','theremin','s1'];
 const CREATOR_ROOTS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const CREATOR_SCALES={
   minor:[0,2,3,5,7,8,10],
@@ -170,6 +170,19 @@ function creatorGeneratePatterns(){
         if(random() > .56+density*.38)return;
         const degree=deg+contour[(j+i)%contour.length];
         p.fm[s]={note:creatorScalePitch(degree,4),vel:.57+(s%8===0?.22:.1)};
+      });
+    }
+    // S1 MK2 analogue-inspired lead: sparse harmonic countermelody.
+    p.s1=Array(16).fill(null);
+    if(isBreak){
+      p.s1[0]={note:creatorScalePitch(deg,3),vel:.55};
+      p.s1[8]={note:creatorScalePitch(deg+2,3),vel:.58};
+    }else{
+      const leads=isDrop?[0,3,6,10,12,14]:isBuild?[0,6,10,14]:[0,8];
+      const motif=[0,2,4,3,5,2,4,1];
+      leads.forEach(function(step,j){
+        if(random()>.56+density*.33)return;
+        p.s1[step]={note:creatorScalePitch(deg+motif[(j+i)%motif.length],3),vel:.56+(j%3)*.09};
       });
     }
     p.theremin=Array(16).fill(null);
@@ -387,8 +400,8 @@ function creatorBuildUI(){
     '<button id="creator-song-play" class="creator-primary" type="button">▶ LIRE LE MORCEAU</button>'+
     '<button id="creator-song-export" class="mb" type="button">EXPORT MORCEAU WAV / MP3</button></div></section>'+
     '<section class="fxcard creator-card"><h3>04 / MELODY LAB · 64 PAS</h3>'+
-    '<p class="creator-help">Sélectionne FM, ACID ou THEREMIN. Choisis une note de la gamme, puis touche un pas pour écrire la mélodie (4 patterns × 16 pas).</p>'+
-    '<div class="creator-piano-tools"><label>PISTE <select id="creator-edit-track"><option value="fm">FM2</option><option value="acid">TD-3 ACID</option><option value="theremin">THEREMIN</option></select></label>'+
+    '<p class="creator-help">Sélectionne FM, ACID, S1 MK2 ou THEREMIN. Choisis une note de la gamme, puis touche un pas pour écrire la mélodie (4 patterns × 16 pas).</p>'+
+    '<div class="creator-piano-tools"><label>PISTE <select id="creator-edit-track"><option value="fm">FM2</option><option value="acid">TD-3 ACID</option><option value="theremin">THEREMIN</option><option value="s1">S1 MK2 · ANALOG</option></select></label>'+
     '<label>NOTE <select id="creator-note-picker"></select></label></div>'+
     '<div id="creator-piano" class="creator-piano"></div></section>';
   [['style','style'],['tempo','tempo'],['root','root'],['scale','scale'],['energy','energy']].forEach(function(entry){
