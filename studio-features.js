@@ -2,7 +2,7 @@
    This extension is loaded before the sequencer's main inline script. */
 'use strict';
 
-const STUDIO_TRACKS=['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak'];
+const STUDIO_TRACKS=['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1'];
 const STUDIO_EQ=[
   ['low',120,'lowshelf'],['mid',1200,'peaking'],['high',7500,'highshelf']
 ];
