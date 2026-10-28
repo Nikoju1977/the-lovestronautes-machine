@@ -390,7 +390,10 @@ function s1BuildRack(){
   document.getElementById('s1-test').addEventListener('click',function(){
     play(document.getElementById('s1-test-note').value);
   });
-  card.querySelectorAll('[data-s1-note]').forEach(function(btn){
+  // Shared touch engine supports slide/gliss and reliable note-off visuals.
+  if(typeof studioWireMiniKeyboard==='function'){
+    studioWireMiniKeyboard(card,'.s1-key',function(note){return play(note);});
+  }else card.querySelectorAll('[data-s1-note]').forEach(function(btn){
     btn.addEventListener('click',function(){play(btn.dataset.s1Note);});
   });
   s1SyncRack();
