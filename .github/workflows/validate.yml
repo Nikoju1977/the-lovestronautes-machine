@@ -39,3 +39,6 @@ jobs:
 
       - name: Mobile audio and voice regression
         run: node scripts/test-voice-reliability.mjs
+
+      - name: Cwejman S1 MK2 inspired synth regression
+        run: node scripts/test-cwejman-s1.mjs
