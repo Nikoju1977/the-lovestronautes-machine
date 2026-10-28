@@ -146,7 +146,7 @@ assert(creator.includes('function creatorGeneratePatterns()') && creator.include
 assert(studio.includes("value=\"-1\"") && studio.includes('exportSong?creatorTotalBars():studioExportBars'), 'Export WAV/MP3 du morceau entier');
 assert(sw.includes("new URL('./psy-track-creator.js', scope).href") && sw.includes("new URL('./psy-track-creator.css', scope).href"), 'Song Mode offline PWA');
 assert(creatorCss.includes('.creator-piano-grid') && creatorCss.includes('.creator-sections'), 'Timeline et piano roll responsive');
-assert(html.includes('if (ctx) {\n        ctx.resume().then(markStudioAudioReady)'), 'un seul AudioContext pendant le démarrage');
+assert(html.includes('if (ctx) {\n        mobileResumeAudio(ctx).then(markStudioAudioReady)'), 'un seul AudioContext pendant le démarrage');
 assert(html.includes('id="studio-demo-btn"') && html.includes('id="studio-test-btn"') && html.includes('id="studio-fx-btn"'), 'barre accès son, démo et FX');
 assert(html.includes('<details class="studio-advanced"'), 'commandes avancées repliables sur mobile');
 assert(!html.includes('<div id="unlock">'), 'ancienne fenêtre audio bloquante supprimée');
