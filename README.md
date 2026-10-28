@@ -15,10 +15,11 @@
 
 - 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
 - 🎚️ BPM éditable + Tap Tempo, **swing 50–75 %**, morphing et automation live
-- 🎛️ Mixeur 8 pistes, chaos pad, clavier tactile et oscilloscope temps réel
+- 🎛️ Mixeur 11 pistes, chaos pad, clavier tactile et oscilloscope temps réel
 - 🎚️ **Égaliseur master 5 bandes** (80, 250, 1 000, 4 000, 10 000 Hz), ±12 dB, bypass, reset et mémorisation
 - 🥁 **Trois nouvelles machines** : 909 Snare, 808 Hi-Hat et Sub Bass, séquenceurs 16 pas et paramètres de synthèse réglables
 - ⚡ **PSY V8 : cinq instruments jouables** TD-3, Volca FM2, Roland T-8, Theremin et PO-35 Speak dans un nouveau rack, deux pistes supplémentaires
+- 🎹 **PSY V12 : synthé S1 MK2 inspiré du Cwejman** — 3 VCO, ring modulation, noise, deux filtres LPF/MMF, EG1/EG2, LFO, 4 presets, clavier et 11ᵉ piste MIDI-like
 - 📱 **PSY V9** : interface mobile revue, activation sonore non bloquante, DÉMO PSY immédiate, TEST SON et accès direct FX / WAV / MP3
 - 🎼 **PSY V10** : Song Mode et timeline 192 mesures, Kick & Bass Lab rolling K-B-B-B, Melody Lab tonal 64 pas, export complet WAV/MP3
 - 🔧 **PSY V11** : stabilisation audio mobile (anti-surcharge, anti-craquements) et PO-35 vocal micro PCM avec réécoute d'échantillons complets
@@ -72,6 +73,29 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 - Cache PWA v11 : nouvelle version des scripts distribuée aux utilisateurs.
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
+
+## PSY V12 — S1 MK2 ANALOG LAB : sixième synthétiseur
+
+Nouveau **synthétiseur numérique semi-modulaire inspiré du Cwejman S1 MK2**, jouable dans **MACHINES → S1 MK2** ou via le bouton visible **NOUVEAU SYNTHÉ VINTAGE · S1 MK2**. Il est entièrement construit avec Web Audio et ne nécessite ni serveur, ni abonnement, ni clé API.
+
+**Signal de synthèse :** trois oscillateurs indépendants avec sinusoïde, triangle, dent de scie et pulse à largeur ajustable, réglage des niveaux, transpositions et accordages fins. **VCO2 × VCO3** utilisent une modulation en anneau réelle via un VCA modulé à fréquence audio. Un générateur de bruit complète les sources. L'étage de drive, les filtres et la sortie VCA sont reliés au mixeur du studio.
+
+**Filtres :** filtre LPF sélectionnable **4 ou 6 pôles**, plus un **filtre multimode LP / HP / BP** sélectionnable **2, 4 ou 6 pôles** ; routage en série ou parallèle, contrôle de fréquence, résonance, balance et enveloppe de filtre. Les pentes sont des approximations numériques par cascades de filtres Biquad, pas des modèles électriques exacts.
+
+**Modulations et enveloppes :** une enveloppe d'amplitude ADSR, une enveloppe de filtre et un LFO appliqué aux fréquences de coupure. Le rendu est **monophonique** ; les voix précédentes sont éteintes progressivement pour éviter une consommation CPU excessive sur smartphone.
+
+**Préréglages musicaux :** PSY LEAD, SOLID ANALOG BASS, MODULAR RING INDUSTRIAL, COSMIC FILTER SPACE. Les boutons TEST et le clavier tactile permettent d'écouter les patches avant de programmer les notes.
+
+**Intégration complète :**
+- **SEQ :** piste « S1 MK2 · ANALOG », 16 pas par pattern A/B/C/D ; la piste existe dans les anciens projets sans détruire leurs patterns.
+- **MORCEAU :** génération tonale de notes S1 dans les quatre patterns, et édition des **64 pas** via le Melody Lab.
+- **MIX :** volume, mute, solo, pan et EQ 3 bandes spécifiques au S1.
+- **FX / WAV / MP3 :** la sortie S1 passe dans le master comme les autres instruments et figure dans la capture des arrangements.
+- **PWA v12 :** moteur et interface S1 disponibles hors ligne après chargement initial ; presets et contrôles restaurés via la sauvegarde JSON.
+
+**Pour écouter sur Android :** ouvrir le site → **ACTIVER LE SON** → **NOUVEAU SYNTHÉ VINTAGE · S1 MK2** → **▶ ÉCOUTER S1**. Régler ensuite le filtre LPF, la résonance ou choisir un preset. Pour composer, activer ses pas dans **SEQ** ou choisir **S1 MK2** dans le piano roll de **MORCEAU**.
+
+Cette création est **non officielle**, sans affiliation avec Cwejman Music. Il s'agit d'une interprétation de fonctionnalités typiques du synthétiseur, et non d'une émulation matérielle authentifiée. Aucune ROM, échantillon ou interface propriétaire n'est reproduit.
 
 ## PSY V10 — Song Mode, Kick & Bass Lab et Melody Lab
 
