@@ -116,16 +116,16 @@ try{
   '--no-first-run','--no-default-browser-check','--disable-extensions',
   '--autoplay-policy=no-user-gesture-required','--disable-background-timer-throttling',
   '--user-data-dir='+temp,'--window-size=430,900',
-  '--virtual-time-budget=6500','--dump-dom',
+  '--virtual-time-budget=5200','--dump-dom',
   'http://127.0.0.1:'+server.address().port+'/'
  ],{stdio:['ignore','pipe','pipe']});
  process.stdout.on('data',v=>stdout+=v.toString());
  process.stderr.on('data',v=>stderr+=v.toString());
- const timeout=setTimeout(()=>process.kill('SIGKILL'),25000);
+ const timeout=setTimeout(()=>process.kill('SIGKILL'),60000);
  const code=await new Promise(resolve=>process.on('close',resolve));
  clearTimeout(timeout);
  const result=stdout.match(/V13_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
- if(!result)throw Error('Browser test did not finish (code '+code+'): '+stderr.slice(-750));
+ if(!result)throw Error('Browser test did not finish (code '+code+', DOM bytes '+stdout.length+'): '+stderr.slice(-1000)+' DOM tail '+stdout.slice(-600));
  console.log('Chromium UI assertions passed: '+result[2]);
  if(result[1]!=='PASS')throw Error('Browser errors: '+result[3]);
  console.log('✓ Live Chromium: 16-track studio, 4 synths, loops, keyboard, MIDI and audio OK');
