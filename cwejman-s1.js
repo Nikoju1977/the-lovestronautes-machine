@@ -172,7 +172,7 @@ function s1Trigger(note,time,velocity=.82){
   const decay=Math.min(gateTime*.50,.012+Math.pow(p.decay,2)*.8);
   const release=.025+Math.pow(p.release,2)*1.1;
   const end=t+gateTime+release+.015;
-  const peak=.42*s1Clamp(velocity,.1,1,.82);
+  const peak=.42*s1Clamp(velocity,.1,1,.82)*(.25+.75*p.level);
   const voiceNodes=[],sourceNodes=[];
 
   // Monophonic analog-style voice stealing: no runaway oscillator accumulation.
@@ -202,7 +202,7 @@ function s1Trigger(note,time,velocity=.82){
 
   const makeFilterStack=function(input,type,poles,cut,res,envScale){
     let previous=input,first=null;
-    const count=type==='bandpass'?Math.max(1,poles/2):Math.max(1,poles/2);
+    const count=Math.max(1,poles/2);
     for(let i=0;i<count;i++){
       const f=ctx.createBiquadFilter();voiceNodes.push(f);
       f.type=type;f.Q.value=i===0?(.65+res*7):.71;
