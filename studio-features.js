@@ -22,7 +22,7 @@ function restoreStudioState(state){
     ch.pan=studioSafe(src.pan,-1,1,0);
     STUDIO_EQ.forEach(function(b){ch[b[0]]=studioSafe(src[b[0]],-9,9,0);});
   });
-  studioExportBars=[-1,4,8,16,32].includes(saved.bars)?saved.bars:8;
+  studioExportBars=[-1,1,2,4,8,16,32].includes(saved.bars)?saved.bars:8;
 }
 function studioInitChannel(name,input,destination){
   const filters=STUDIO_EQ.map(function(b){
@@ -105,7 +105,7 @@ function studioExportCard(){
   card.id='studio-export-card';
   card.innerHTML='<div class="fxtitle">STUDIO EXPORT // WAV + MP3</div>'+
   '<p class="biniou-hint">Capture en temps réel du master stéréo traité (EQ, mix, compresseur, limiteur et effets). Gardez cette page active. Le séquenceur démarre au premier pas du pattern, ou suit toute la timeline en mode MORCEAU ENTIER.</p>'+
-  '<div class="studio-export-opts"><label for="studio-bars">MESURES</label><select id="studio-bars"><option>4</option><option>8</option><option>16</option><option>32</option><option value="-1">MORCEAU ENTIER</option></select><span>WAV PCM 16 bits · MP3 320 kb/s</span></div>'+
+  '<div class="studio-export-opts"><label for="studio-bars">MESURES</label><select id="studio-bars"><option>1</option><option>2</option><option>4</option><option>8</option><option>16</option><option>32</option><option value="-1">MORCEAU ENTIER</option></select><span>WAV PCM 16 bits · MP3 320 kb/s</span></div>'+
   '<div class="studio-export-actions"><button type="button" class="dbtn g" id="studio-export-wav">EXPORT WAV</button>'+
   '<button type="button" class="dbtn m" id="studio-export-mp3">EXPORT MP3</button>'+
   '<button type="button" class="dbtn a" id="studio-export-stop" disabled>ARRÊTER</button></div>'+
