@@ -170,7 +170,7 @@ function loopsBuildUI(){
  const root=document.getElementById('panel-loops');if(!root)return;
  root.innerHTML='<div class="loops-head"><div class="loops-eyebrow">LOVESTRONAUTES · LOOP STUDIO</div>'+
   '<h2>CRÉATEUR DE BOUCLES</h2>'+
-  '<p>Programme tes 13 pistes dans SEQ, choisis un pattern et répète-le en rythme. Enregistre une variation et exporte-la en WAV ou MP3.</p></div>'+
+  '<p>Programme tes pistes dans SEQ, choisis un pattern et répète-le en rythme. Enregistre une variation et exporte-la en WAV ou MP3.</p></div>'+
   '<div class="fxcard loops-card"><h3>01 · BOUCLE AUDIO / LIVE</h3>'+
   '<div class="loops-grid"><label>PATTERN <select id="loops-pattern">'+
    LOOP_PATTERNS.map(p=>'<option value="'+p+'">PATTERN '+p+'</option>').join('')+
