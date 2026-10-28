@@ -76,6 +76,22 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
 
+## PSY V14 — LOOP STUDIO : créer et exporter des boucles
+
+L'onglet **BOUCLES** permet désormais de programmer des boucles musicales réelles à partir des 12 pistes du séquenceur, en partant de l'un des quatre patterns **A/B/C/D**. Choisis **1, 2, 4, 8, 16 ou 32 mesures**, touche **BOUCLER EN CONTINU** pour entendre la répétition parfaitement synchronisée au tempo et **STOP** pour l'arrêter.
+
+- Les boucles sont **éditables** : les notes et percussions proviennent des 16 pas de chaque instrument du pattern. Une boucle de 8 mesures répète ce pattern pendant 8 mesures ; pour les variations de sections, utilise l'onglet MORCEAU.
+- **Bibliothèque de boucles nommées** : sauvegarde jusqu'à 24 clips avec pattern, durée, tempo et snapshot de toutes les pistes. Recharge une boucle dans le pattern choisi, sans toucher aux trois autres patterns ; **UNDO** restaure le précédent contenu.
+- **Export WAV 16 bits ou MP3** : les boutons utilisent la capture stéréo réelle du master existant et arrêtent automatiquement après le nombre de mesures sélectionné. Les exports 1 et 2 mesures sont désormais disponibles.
+- **Sauvegarde rétrocompatible** : clips inclus dans les exports/imports JSON et dans l'enregistrement local. Un ancien projet sans boucles s'ouvre normalement.
+- **PWA hors connexion** : scripts et styles LOOP STUDIO préchargés dans le cache v14.
+
+**À noter :** la capture du master conserve les effets et leur queue, comme le reste du studio ; le fichier exporté inclut donc le temps d'extinction des effets après la fin de la boucle, et n'est pas garanti « seamless » à l'échantillon près. Pour une boucle parfaitement découpée, couper la queue d'effet dans un éditeur audio.
+
+### Essai rapide
+
+Dans **SEQ**, programme un pattern C/DROP (ou l'un des autres). Ouvre **BOUCLES**, choisis **C**, puis **4 mesures** → **BOUCLER EN CONTINU**. Pour sauvegarder : entre un nom puis **+ SAUVEGARDER CE PATTERN**. Pour un fichier, arrête PLAY puis appuie sur **EXPORT WAV** ou **EXPORT MP3**.
+
 ## PSY V13 — Pittsburgh Modular Taïga + claviers live
 
 Cette version ajoute un **synthétiseur virtuel Taïga**, inspiré du Pittsburgh Modular Taiga (original de 2023), à l'application Lovestronautes. C'est une **interprétation indépendante construite en Web Audio** et non une émulation circuit-à-circuit officielle. La marque, les noms des produits et la sonorité du matériel original appartiennent à leurs titulaires.
