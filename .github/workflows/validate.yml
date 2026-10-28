@@ -52,5 +52,8 @@ jobs:
       - name: Four hardware-inspired synthesizers regression
         run: node scripts/test-hardware-synth.mjs
 
+      - name: iOS Safari and Android audio compatibility regressions
+        run: node scripts/test-platform-compat.mjs
+
       - name: Real Chromium user-interface smoke test
         run: node scripts/test-browser-smoke.mjs
