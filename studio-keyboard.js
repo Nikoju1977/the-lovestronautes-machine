@@ -5,6 +5,10 @@
 'use strict';
 const STUDIO_KEYBOARD_MODES=[
  ['taiga','TAÏGA · WAVEFOLD'],
+ ['solar','SOLAR 50 · DRONE'],
+ ['modfm','JOMOX MOD FM'],
+ ['wing','WING PINGER'],
+ ['mbase','MBASE 11 · KICK'],
  ['s1','S1 MK2 · ANALOG'],
  ['fm2','VOLCA FM2'],
  ['td3','TD-3 · ACID'],
@@ -54,6 +58,7 @@ function studioKeyboardSound(note,velocity,held){
   if(mode==='fm2'){psyTriggerFM2(note,time,v);return true;}
   if(mode==='td3'){psyTriggerTD3(note,v,time);return true;}
   if(mode==='theremin'){psyTriggerTheremin(note,time,v);return true;}
+  if(['mbase','solar','modfm','wing'].includes(mode))return hardwareTrigger(mode,note,time,v);
   if(mode==='biniou'){
    if(!biniouEnabled){
     const label=document.getElementById('studio-key-feedback');
