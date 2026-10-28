@@ -4,7 +4,7 @@
 'use strict';
 
 const CREATOR_PATTERNS=['A','B','C','D'];
-const CREATOR_TRACKS=['fm','acid','theremin','s1'];
+const CREATOR_TRACKS=['fm','acid','theremin','s1','taiga'];
 const CREATOR_ROOTS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const CREATOR_SCALES={
   minor:[0,2,3,5,7,8,10],
@@ -183,6 +183,19 @@ function creatorGeneratePatterns(){
       leads.forEach(function(step,j){
         if(random()>.56+density*.33)return;
         p.s1[step]={note:creatorScalePitch(deg+motif[(j+i)%motif.length],3),vel:.56+(j%3)*.09};
+      });
+    }
+    // Taiga: restrained wavefold counter-melody, with rests to protect mobile audio.
+    p.taiga=Array(16).fill(null);
+    if(isBreak){
+      p.taiga[0]={note:creatorScalePitch(deg,3),vel:.5};
+      p.taiga[8]={note:creatorScalePitch(deg+2,3),vel:.56};
+    }else{
+      const positions=isDrop?[0,4,7,10,13]:isBuild?[0,6,12]:[0,8];
+      positions.forEach(function(step,j){
+        if(random() > .63+density*.26)return;
+        const rise=[0,2,4,5,2][j%5];
+        p.taiga[step]={note:creatorScalePitch(deg+rise,3),vel:.53+(j%3)*.11};
       });
     }
     p.theremin=Array(16).fill(null);
@@ -400,8 +413,8 @@ function creatorBuildUI(){
     '<button id="creator-song-play" class="creator-primary" type="button">▶ LIRE LE MORCEAU</button>'+
     '<button id="creator-song-export" class="mb" type="button">EXPORT MORCEAU WAV / MP3</button></div></section>'+
     '<section class="fxcard creator-card"><h3>04 / MELODY LAB · 64 PAS</h3>'+
-    '<p class="creator-help">Sélectionne FM, ACID, S1 MK2 ou THEREMIN. Choisis une note de la gamme, puis touche un pas pour écrire la mélodie (4 patterns × 16 pas).</p>'+
-    '<div class="creator-piano-tools"><label>PISTE <select id="creator-edit-track"><option value="fm">FM2</option><option value="acid">TD-3 ACID</option><option value="theremin">THEREMIN</option><option value="s1">S1 MK2 · ANALOG</option></select></label>'+
+    '<p class="creator-help">Sélectionne FM, ACID, S1 MK2, TAÏGA ou THEREMIN. Choisis une note de la gamme, puis touche un pas pour écrire la mélodie (4 patterns × 16 pas).</p>'+
+    '<div class="creator-piano-tools"><label>PISTE <select id="creator-edit-track"><option value="fm">FM2</option><option value="acid">TD-3 ACID</option><option value="theremin">THEREMIN</option><option value="s1">S1 MK2 · ANALOG</option><option value="taiga">TAÏGA · MODULAR</option></select></label>'+
     '<label>NOTE <select id="creator-note-picker"></select></label></div>'+
     '<div id="creator-piano" class="creator-piano"></div></section>';
   [['style','style'],['tempo','tempo'],['root','root'],['scale','scale'],['energy','energy']].forEach(function(entry){

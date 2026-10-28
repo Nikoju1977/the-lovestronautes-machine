@@ -42,3 +42,6 @@ jobs:
 
       - name: Cwejman S1 MK2 inspired synth regression
         run: node scripts/test-cwejman-s1.mjs
+
+      - name: Taiga modular and mobile keyboards regression
+        run: node scripts/test-taiga-keyboard.mjs

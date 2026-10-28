@@ -19,7 +19,7 @@ class Node{
 const patterns=Object.fromEntries(['A','B','C','D'].map(k=>[k,{
   kick:Array(16).fill(0),snare:Array(16).fill(0),hat:Array(16).fill(0),
   sub:Array(16).fill(null),acid:Array(16).fill(null),fm:Array(16).fill(null),
-  theremin:Array(16).fill(null),metal:Array(16).fill(0),speak:Array(16).fill(0),
+  theremin:Array(16).fill(null),taiga:Array(16).fill(null),metal:Array(16).fill(0),speak:Array(16).fill(0),
   biniou:Array(16).fill(null),auto:Array(16).fill(.6)
 }]));
 const scope={
@@ -61,7 +61,7 @@ assert.equal(api.creatorNote(65),'F4');
 const first=api.creatorGeneratePatterns(),second=api.creatorGeneratePatterns();
 assert.equal(JSON.stringify(first),JSON.stringify(second),'seeded generator deterministic');
 for(const p of Object.values(first)){
-  for(const key of ['kick','snare','hat','sub','acid','fm','theremin','metal','speak','biniou','auto']){
+  for(const key of ['kick','snare','hat','sub','acid','fm','theremin','taiga','metal','speak','biniou','auto']){
     assert.equal(p[key].length,16,key+' must have 16 steps');
   }
 }
@@ -72,6 +72,7 @@ for(let i=0;i<16;i++){
 }
 assert.ok(first.C.fm.some(Boolean));
 assert.ok(first.B.acid.some(Boolean));
+assert.ok(first.C.taiga.some(Boolean),'Taiga lead has generated notes in DROP');
 assert.ok(first.D.theremin.some(Boolean));
 console.log('✓ tonal seeded 64-step melody + K-B-B-B kick/bass');
 

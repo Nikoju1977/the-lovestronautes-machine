@@ -1,0 +1,57 @@
+/* TAIGA ANALOG LAB V13 — warm modular panel, easy to use on phone. */
+.taiga-rack{
+ --taiga-ink:#eff0db;--taiga-muted:#b7bc9e;--taiga-green:#b5e6b8;--taiga-amber:#e8bf7f;
+ --taiga-border:rgba(222,190,126,.28);
+ box-sizing:border-box!important;min-width:0;max-width:100%;overflow:hidden;
+ border:1px solid var(--taiga-border)!important;border-radius:16px!important;
+ background:
+ repeating-linear-gradient(0deg,rgba(255,255,255,.014) 0,rgba(255,255,255,.014) 1px,transparent 1px,transparent 5px),
+ linear-gradient(138deg,#24322c 0%,#101e1a 45%,#081510 100%)!important;
+ box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.13)!important;
+ color:var(--taiga-ink);padding:15px!important;margin:0 0 14px!important;font-family:system-ui,sans-serif
+}
+.taiga-rack *{box-sizing:border-box}
+.taiga-heading{border-bottom:1px solid var(--taiga-border);padding-bottom:11px}
+.taiga-heading>span{font-size:10px;color:var(--taiga-amber);letter-spacing:2px;font-weight:800}
+.taiga-title-row{display:flex;align-items:start;justify-content:space-between;gap:10px}
+.taiga-heading h2{font-size:clamp(23px,4vw,35px);font-weight:900;letter-spacing:1.4px;margin:5px 0;color:#e6f8e9}
+.taiga-heading h2 em{font-style:normal;color:#e6c68c}
+.taiga-heading p{font-size:12px;line-height:1.5;color:var(--taiga-muted);max-width:460px}
+.taiga-heading #taiga-enable{min-width:92px;min-height:43px;border-radius:8px;background:#d5e8bd;border:1px solid #dbf6cc;color:#0d211a;font-size:11px}
+.taiga-heading #taiga-enable:not(.on){background:#402b29;color:#f4b5ab;border-color:#b0746b}
+.taiga-toolbar{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin:15px 0}
+.taiga-toolbar label,.taiga-select{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:10px;color:#edce9c;letter-spacing:.7px;font-weight:900}
+.taiga-toolbar label{flex:1 1 140px}
+.taiga-toolbar select,.taiga-select select{min-width:0;width:100%;background:#152721;border:1px solid var(--taiga-border);border-radius:8px;color:#f0f5e2;font-size:12px;padding:10px 8px;min-height:44px}
+.taiga-test{flex:1 1 130px;min-height:44px;border:1px solid #b1eeb5;border-radius:8px;background:linear-gradient(100deg,#9ce4b6,#d5edb4);color:#163121;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation}
+.taiga-signal{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;margin:13px 0;font-size:11px;font-weight:800;color:var(--taiga-amber)}
+.taiga-signal span{padding:8px 11px;border:1px solid rgba(180,231,188,.3);background:rgba(149,230,167,.07);border-radius:6px;color:#dcf5e4}
+.taiga-primary,.taiga-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.taiga-primary{border:1px solid rgba(183,232,188,.23);border-radius:10px;padding:13px;background:rgba(6,18,13,.65)}
+.taiga-control{display:flex;flex-direction:column;justify-content:space-between;min-width:0;gap:6px}
+.taiga-control span{font-size:10px;letter-spacing:.65px;line-height:1.35;color:#e6d3a6;font-weight:800}
+.taiga-control input{width:100%;accent-color:#a8eabb;min-height:32px;touch-action:pan-y}
+.taiga-control output{color:#aeeebc;text-align:right;font-size:11px;font-weight:800}
+.taiga-module{margin-top:9px;border:1px solid var(--taiga-border);background:rgba(5,15,11,.5);border-radius:10px}
+.taiga-module summary{padding:15px 12px;color:#e8d3a6;font-weight:900;letter-spacing:.8px;font-size:11px;cursor:pointer}
+.taiga-module[open] summary{border-bottom:1px solid var(--taiga-border)}
+.taiga-grid{padding:14px}
+.taiga-mini-keys{display:flex;gap:5px;margin-top:17px;padding:3px 1px 8px;overflow-x:auto;touch-action:pan-x}
+.taiga-key{min-width:43px;flex:1 0 43px;min-height:66px;border-radius:0 0 7px 7px;border:1px solid #d9e9db;border-bottom:5px solid #7b9a8b;background:linear-gradient(#f6f4e5,#c1d5bc);color:#14251c;font:800 11px system-ui,sans-serif;touch-action:none;cursor:pointer}
+.taiga-key:nth-child(3),.taiga-key:nth-child(6),.taiga-key:nth-child(7){background:linear-gradient(#475c4b,#1c2b21);color:#fff;border-color:#586d60;border-bottom-color:#0b1811}
+.taiga-key.pressed,.taiga-key:active{background:#aff0be;color:#103820;border-bottom-width:2px;transform:translateY(2px)}
+.taiga-status{margin:10px 0 0;font-size:11px;color:#bfedca;line-height:1.5;background:rgba(126,225,159,.07);border-left:3px solid #88cb9a;padding:9px}
+.taiga-disclaimer{font-size:10px;line-height:1.5;color:#94a898;margin-top:9px}
+.taiga-rack :is(button,select,input):focus-visible{outline:3px solid #fae1a4;outline-offset:2px}
+@media(max-width:1023px){
+ .taiga-rack{padding:12px!important}
+ .taiga-heading h2{font-size:24px}
+ .taiga-heading p{font-size:11px}
+ .taiga-primary,.taiga-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+ .taiga-toolbar label{flex-basis:100px}
+ .taiga-test{flex-basis:100%}
+ .taiga-signal{gap:4px;font-size:9px}
+ .taiga-signal span{padding:6px}
+ .taiga-key{min-height:61px}
+}
+@media(max-width:410px){.taiga-heading h2{font-size:20px}.taiga-heading #taiga-enable{min-width:74px;font-size:10px}}
