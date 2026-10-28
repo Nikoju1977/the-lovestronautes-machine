@@ -28,8 +28,8 @@ function browserHarness(){
    check(!!document.getElementById('loops-export-wav')&&!!document.getElementById('loops-export-mp3'),'Loop WAV/MP3 buttons');
    check(['mbase','solar','modfm','wing'].every(k=>!!document.getElementById('hardware-'+k)),'Four instrument racks');
    check(['mbase','solar','modfm','wing'].every(k=>!!document.getElementById('hardware-test-'+k)),'Four audition buttons');
-   check(['mbase','solar','modfm','wing'].every(k=>!!document.querySelector('#panel-seq .tcard[data-trk="'+k+'"]')),'New instrument sequencer lanes');
-   check(['mbase','solar','modfm','wing'].every(k=>!!document.querySelector('#panel-mix .mxch[data-trk="'+k+'"]')),'New instrument mixer channels');
+   check(['mbase','solar','modfm','wing'].every(k=>!!document.querySelector('#panel-seq .tcard[data-studio-track="'+k+'"]')),'New instrument sequencer lanes');
+   check(['mbase','solar','modfm','wing'].every(k=>!!document.querySelector('#panel-mix .mxch[data-studio-track="'+k+'"]')),'New instrument mixer channels');
    check(patterns.C.mbase.filter(Boolean).length===0,'Extra kick is silent by default');
    check(document.querySelectorAll('#studio-key-instrument option').length>=10,'Instrument selection on piano');
    check(!!document.querySelector('#creator-edit-track option[value="taiga"]'),'Taiga Melody Lab');
@@ -124,7 +124,7 @@ try{
  const timeout=setTimeout(()=>process.kill('SIGKILL'),60000);
  const code=await new Promise(resolve=>process.on('close',resolve));
  clearTimeout(timeout);
- const result=stdout.match(/V13_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
+ const result=stdout.match(/V15_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
  if(!result)throw Error('Browser test did not finish (code '+code+', DOM bytes '+stdout.length+'): '+stderr.slice(-1000)+' DOM tail '+stdout.slice(-600));
  console.log('Chromium UI assertions passed: '+result[2]);
  if(result[1]!=='PASS')throw Error('Browser errors: '+result[3]);
