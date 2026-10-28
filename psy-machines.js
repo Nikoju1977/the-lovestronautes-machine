@@ -310,11 +310,14 @@ async function psyCaptureMicroPCM(stream,milliseconds=3000){
   if(!ctx||!ctx.createMediaStreamSource)throw Error('Audio du microphone indisponible.');
   if(psyMicroCaptureActive)throw Error('Un enregistrement est déjà en cours.');
   psyMicroCaptureActive=true;
-  const context=ctx,source=context.createMediaStreamSource(stream);
-  let processor=null,sink=null,worklet=false;
+  const context=ctx;
+  let source=null,processor=null,sink=null,worklet=false;
   const chunks=[];
   let totalFrames=0;
   try{
+    // Safari may reject a MediaStreamSource after permission is granted. Always
+    // clear the capture lock in finally, including when source creation fails.
+    source=context.createMediaStreamSource(stream);
     if(context.audioWorklet && typeof studioEnsurePCMWorklet==='function' && await studioEnsurePCMWorklet()){
       try{
         processor=new AudioWorkletNode(context,'lovestronautes-pcm-capture',{
@@ -365,7 +368,7 @@ async function psyCaptureMicroPCM(stream,milliseconds=3000){
     for(const chunk of chunks){data.set(chunk,at);at+=chunk.length;}
     return buffer;
   }finally{
-    try{source.disconnect();}catch(e){}
+    if(source)try{source.disconnect();}catch(e){}
     if(processor){
       try{processor.disconnect();}catch(e){}
       if(worklet){processor.port.onmessage=null;processor.port.close();}
@@ -378,7 +381,7 @@ async function psyCaptureMicroPCM(stream,milliseconds=3000){
 async function psyRecordVoice(){
   if(psyRecording)return;
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    psyVoiceStatus('Micro indisponible : utilise Chrome en HTTPS ou IMPORT AUDIO.');
+    psyVoiceStatus('Micro indisponible : ouvre Safari (iOS) ou Chrome (Android) en HTTPS, ou utilise IMPORT AUDIO.');
     return;
   }
   psyRecording=true;
