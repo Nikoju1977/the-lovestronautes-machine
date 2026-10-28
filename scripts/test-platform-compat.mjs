@@ -1,0 +1,54 @@
+/* V16 regression: Safari iOS / Chrome Android audio and recording. */
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const src=fs.readFileSync('mobile-compat.js','utf8');
+const html=fs.readFileSync('index.html','utf8');
+const studio=fs.readFileSync('studio-features.js','utf8');
+const voice=fs.readFileSync('psy-machines.js','utf8');
+const keyboard=fs.readFileSync('studio-keyboard.js','utf8');
+const sw=fs.readFileSync('sw.js','utf8');
+const timers=[];
+const platform=vm.runInNewContext(src+
+  '\n({mobileResumeAudio,mobileBestRecordingMime,mobileRecordingExtension})',{
+  Promise,WeakMap,Math,Error,setTimeout(fn,ms){const t={fn,ms};timers.push(t);return t;},clearTimeout(){}
+});
+assert.ok(platform.mobileBestRecordingMime({isTypeSupported:t=>t.startsWith('audio/mp4')}).includes('mp4'));
+assert.equal(platform.mobileBestRecordingMime({isTypeSupported:t=>t==='audio/webm;codecs=opus'}),'audio/webm;codecs=opus');
+assert.equal(platform.mobileBestRecordingMime({isTypeSupported:()=>false}),'');
+assert.equal(platform.mobileRecordingExtension('audio/mp4;codecs=mp4a.40.2'),'m4a');
+assert.equal(platform.mobileRecordingExtension('audio/webm'),'webm');
+assert.equal(platform.mobileRecordingExtension('audio/ogg'),'ogg');
+assert.equal(platform.mobileRecordingExtension(null),'audio');
+console.log('✓ Safari M4A/AAC and Android Opus/WebM recording MIME and file suffixes');
+let resumed=0;
+const ready={state:'suspended',resume(){resumed++;this.state='running';return Promise.resolve();}};
+assert.equal(await platform.mobileResumeAudio(ready),true);
+assert.equal(await platform.mobileResumeAudio(ready),true);
+assert.equal(resumed,1);
+console.log('✓ AudioContext resumes exactly once when already running');
+const interrupted={state:'interrupted',resume(){return new Promise(()=>{});}};
+const first=platform.mobileResumeAudio(interrupted,1500);
+const second=platform.mobileResumeAudio(interrupted,1500);
+assert.strictEqual(first,second,'concurrent Safari touches use one resume');
+timers.at(-1).fn();
+await assert.rejects(first,/réactivé le son/);
+const retried=platform.mobileResumeAudio(interrupted,1500);
+assert.notStrictEqual(retried,first,'user may retry after stalled resume');
+timers.at(-1).fn();
+await assert.rejects(retried,/réactivé le son/);
+console.log('✓ iOS interrupted Web Audio times out instead of freezing');
+assert.ok(!html.includes('user-scalable=no'));
+assert.ok(html.includes('mobileResumeAudio(ctx)'));
+assert.ok(html.includes('mobileBestRecordingMime(window.MediaRecorder)'));
+assert.ok(html.includes('mobileRecordingExtension(type)'));
+assert.ok(html.includes('URL.revokeObjectURL(url); }, 60000'));
+assert.ok(studio.includes('if(!await activateStudioAudio())'));
+assert.ok(studio.includes('if(!node&&ctx.createScriptProcessor)'));
+assert.ok(voice.includes('source=context.createMediaStreamSource(stream)'));
+assert.ok(voice.includes('if(source)try{source.disconnect();}'));
+assert.ok(keyboard.includes('studioKeyboardSound(note,velocity,active&&held,token.mode)'));
+assert.ok(sw.includes('lovestronautes-v16'));
+assert.ok(sw.includes("new URL('./mobile-compat.js', scope).href"));
+console.log('✓ iOS viewport, touch note, microphone, offline and export regressions');
+console.log('iOS + Android compatibility regression suite: OK');
