@@ -1,0 +1,29 @@
+/* Hardware synth lab V15, dark analog rack and touch-first controls */
+.hardware-rack{--hw-gold:#e5d3a9;--hw-green:#a8e8c4;box-sizing:border-box;min-width:0;max-width:100%;overflow:hidden;
+  border:1px solid rgba(197,174,125,.42)!important;border-radius:12px!important;
+  background:linear-gradient(135deg,#232925,#111f1d 55%,#091412)!important;
+  padding:13px!important;margin:0 0 13px!important;color:#e9f0df;font-family:system-ui,sans-serif}
+.hardware-rack *{box-sizing:border-box}
+.hardware-header{display:flex;justify-content:space-between;align-items:start;gap:12px;padding-bottom:12px;border-bottom:1px solid rgba(189,209,168,.25)}
+.hardware-header span{display:block;color:var(--hw-gold);letter-spacing:1.9px;font-size:10px;font-weight:800}
+.hardware-header h2{margin:6px 0;color:#e8f0e5;font-size:clamp(20px,3.2vw,28px);font-weight:900;line-height:1.15;letter-spacing:1px}
+.hardware-header p{font-size:11px;color:#9ec9b0;letter-spacing:1px}
+.hardware-header button{min-width:66px;min-height:43px;background:#c8e7c2;color:#162c22;border:1px solid #9bd8a3;border-radius:8px;font-weight:900}
+.hardware-header button:not(.on){background:#382928;color:#edbdb7;border-color:#905350}
+.hardware-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:8px;padding:13px 0}
+.hardware-toolbar label,.hardware-algo{flex:1 1 155px;min-width:0;display:flex;flex-direction:column;gap:6px;font-size:10px;color:var(--hw-gold);font-weight:900}
+.hardware-toolbar select,.hardware-algo select{width:100%;min-width:0;background:#182923;color:#f3f5e6;border:1px solid #51694d;border-radius:7px;min-height:45px;padding:9px;font:700 12px system-ui,sans-serif}
+.hardware-toolbar button{flex:1 1 150px;min-height:46px;border-radius:7px;background:linear-gradient(110deg,#9addac,#ccebb9);border:1px solid #c8f3cf;color:#152c20;font:900 12px system-ui,sans-serif;cursor:pointer}
+.hardware-module{border:1px solid rgba(174,206,166,.27);border-radius:10px;background:rgba(4,12,10,.52);margin-top:9px}
+.hardware-module summary{padding:13px 12px;color:#e6d8af;letter-spacing:1px;font:900 11px system-ui,sans-serif;cursor:pointer}
+.hardware-module[open] summary{border-bottom:1px solid rgba(170,205,160,.27)}
+.hardware-grid{padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.hardware-control{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:10px;font-weight:800;letter-spacing:.6px;color:var(--hw-gold)}
+.hardware-control input{width:100%;accent-color:#b6e6ac;min-height:29px;touch-action:pan-y}
+.hardware-control output{text-align:right;color:var(--hw-green);font-size:11px}
+.hardware-algo{display:flex;max-width:450px;margin:0 0 8px}
+.hardware-status{margin-top:10px;padding:9px;border-left:3px solid #a8e5b5;background:rgba(155,237,172,.07);font-size:11px;color:#c5f3d0;line-height:1.4}
+.hardware-caveat{margin-top:9px;color:#91aca0;font-size:10px;line-height:1.5}
+.hardware-rack button:focus-visible,.hardware-rack select:focus-visible,.hardware-rack input:focus-visible{outline:3px solid #ffe6a8;outline-offset:2px}
+@media(max-width:1023px){.hardware-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.hardware-rack{padding:11px!important}}
+@media(max-width:479px){.hardware-toolbar label{flex-basis:100%}.hardware-toolbar button{flex-basis:100%}.hardware-header h2{font-size:20px}}

@@ -49,5 +49,8 @@ jobs:
       - name: Loop Studio clips and export regression
         run: node scripts/test-loop-studio.mjs
 
+      - name: Four hardware-inspired synthesizers regression
+        run: node scripts/test-hardware-synth.mjs
+
       - name: Real Chromium user-interface smoke test
         run: node scripts/test-browser-smoke.mjs
