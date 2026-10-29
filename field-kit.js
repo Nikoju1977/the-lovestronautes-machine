@@ -231,6 +231,7 @@ function fieldkitStopMic(){
 function fieldkitReconnectMic(){
  if(!fieldkitMicSource||!fieldkitGraph)return;
  try{fieldkitMicSource.disconnect();}catch(e){}
+ if(fieldkitAnalyser)fieldkitMicSource.connect(fieldkitAnalyser);
  if(!fieldkitState.enabled)return;
  for(let i=0;i<4;i++)if(fieldkitState.channels[i].source==='mic')
   fieldkitMicSource.connect(fieldkitGraph.channels[i].input);
