@@ -74,6 +74,8 @@ const sandbox={ctx,document,URL:url,Float32Array,DataView,Number,Math,Array,Obje
 const kit=vm.runInNewContext(helper+
  '\n({fieldkitReadWavPreview,fieldkitImportLargeFile,fieldkitOpenStream,fieldkitPlayStream,fieldkitStopStream,fieldkitFreeStream,getStream:()=>fieldkitStreamAudio,getMode:()=>fieldkitImportMode,FIELDKIT_IMPORT_MAX,FIELDKIT_DIRECT_DECODE_MAX})',sandbox);
 assert.equal(kit.FIELDKIT_IMPORT_MAX,104857600);
+assert.ok(helper.includes('FIELDKIT_WAV_READ_MAX=8*1024*1024'),
+ 'Even exotic 8-channel 192 kHz WAV must not allocate 100 MB buffers');
 assert.equal(await kit.fieldkitImportLargeFile(wav),true);
 assert.ok(loaded&&loaded.b.duration===12);
 assert.ok(Math.abs(loaded.b.getChannelData(0)[250]-.5)<.001);
@@ -111,6 +113,17 @@ assert.ok(page.includes('studioStabilityFault(error)'));
 assert.ok(page.includes('studioEcoMode?135:48'));
 assert.ok(page.includes('studioStabilityInstall()'));
 assert.ok(ui.includes('.fieldkit-channels')&&ui.includes('studio-eco'));
+const health={messages:[],halted:0,playing:true};
+const healthVM=vm.runInNewContext(stability+'\n({studioStabilityFault})',{
+ window:{matchMedia:()=>({matches:true})},document:{getElementById:()=>null},
+ Date,console:{error(){}},setStatus(msg){health.messages.push(msg);},
+ stopSeq(){health.halted++;},isPlaying:true
+});
+for(let i=0;i<3;i++)assert.equal(healthVM.studioStabilityFault(Error('Audio overload')),true);
+assert.equal(healthVM.studioStabilityFault(Error('Audio overload')),false);
+assert.equal(health.halted,1,'Repeated audio failures stop the sequencer instead of crashing forever');
+assert.ok(health.messages.some(s=>s.includes('AUDIO PAUSÉ')));
+console.log('✓ Audio fault circuit breaker stops after four consecutive synthesizer errors');
 assert.ok(stability.includes('function studioStabilityPausePlayback('));
 assert.ok(sw.includes('lovestronautes-v18')&&sw.includes('field-kit-import-v18.js'));
 console.log('✓ V18 clock protection, audio Eco, mobile UI and offline cache integration');
