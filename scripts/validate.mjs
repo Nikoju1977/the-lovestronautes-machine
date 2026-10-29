@@ -33,6 +33,9 @@ const loopCss = fs.readFileSync('loop-studio.css','utf8');
 const hardware = fs.readFileSync('hardware-synth-lab.js','utf8');
 const hardwareCss = fs.readFileSync('hardware-synth-lab.css','utf8');
 const fieldkit = fs.readFileSync('field-kit.js','utf8');
+const largeImport = fs.readFileSync('field-kit-import-v18.js','utf8');
+const stability = fs.readFileSync('studio-stability-v18.js','utf8');
+const mobileV18Css = fs.readFileSync('mobile-v18.css','utf8');
 const fieldkitCss = fs.readFileSync('field-kit.css','utf8');
 const mobileUI = fs.readFileSync('mobile-v17.js','utf8');
 const mobileCss = fs.readFileSync('mobile-v17.css','utf8');
@@ -58,7 +61,7 @@ if (inlineSyntax) ok('Syntaxe des ' + scripts.length + ' scripts inline');
 try { new Function(ext); ok('Syntaxe audio-extensions.js'); }
 catch (error) { fail('Syntaxe audio-extensions.js: ' + error.message); }
 
-[studio,capture,mp3,psy,creator,s1,taiga,keyboard,loops,hardware,mobile,fieldkit,mobileUI].forEach((code,i) => {
+[studio,capture,mp3,psy,creator,s1,taiga,keyboard,loops,hardware,mobile,fieldkit,mobileUI,largeImport,stability].forEach((code,i) => {
   try { new Function(code); ok('Syntaxe studio #' + (i+1)); }
   catch(error){ fail('Syntaxe studio #' + (i+1) + ': ' + error.message); }
 });
@@ -127,6 +130,11 @@ assert(html.includes('hardwareBuildRacks()') && html.includes('hardwareTrigger(m
 assert(hardwareCss.includes('.hardware-rack') && sw.includes("new URL('./hardware-synth-lab.js', scope).href") && sw.includes("new URL('./hardware-synth-lab.css', scope).href"), 'UI tactile et ressources offline V15');
 assert(creator.includes('<option value="solar">') && creator.includes('<option value="modfm">') && creator.includes('<option value="wing">'), 'Melody Lab avec drones et résonateur');
 assert(html.includes('buildExtendedFX()') && html.includes('syncExtendedFX()'), 'contrôles FX nouvelles machines et EQ');
+assert(fieldkit.includes('FIELDKIT_IMPORT_MAX') && fieldkit.includes('fieldkitImportLargeFile(file)'), 'Field Kit V18 : 100 Mo, import sans decode complet');
+assert(largeImport.includes('FIELDKIT_IMPORT_MAX=100*1024*1024') && largeImport.includes('fieldkitReadWavPreview(') && largeImport.includes('fieldkitOpenStream('), 'Gros WAV extraits sur 12 s, autres fichiers audio lus en flux');
+assert(stability.includes('function studioStabilityPausePlayback(') && html.includes('studioStabilityInstall()') && html.includes('studioStabilityFault(error)'), 'Audio mobile : mode ECO, pause arrière-plan et limiteur erreurs');
+assert(html.includes('function studioQueueLiveSave()') && html.includes('studioQueueSeqPaint()'), 'Sérialisation et rendu DOM différés hors du thread du séquenceur');
+assert(mobileV18Css.includes('.fieldkit-channels') && mobileV18Css.includes('.studio-stability-bar'), 'Interface 2026 adaptée écrans tactiles');
 assert(fieldkit.includes('function fieldkitTrigger(') && fieldkit.includes('function fieldkitBuildRack(') && fieldkit.includes('function fieldkitRecordMic('), 'Field Kit : quatre voies, sources et sample micro');
 assert(fieldkit.includes('function fieldkitEnsurePatterns(') && fieldkit.includes('function fieldkitProjectState('), 'Field Kit : pattern et sauvegarde');
 assert(html.includes('fieldkitEnsurePatterns(bank)') && html.includes('fieldkitEnsurePatterns(patterns)') && html.includes('fieldkit: fieldkitProjectState()') && html.includes('fieldkitRestoreState(state)'), 'Field Kit : 17e piste et projets rétrocompatibles');
@@ -144,7 +152,7 @@ assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') &&
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v17') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
+assert(sw.includes('lovestronautes-v18') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
 assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
 assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
 assert(psy.includes('async function psyCaptureMicroPCM(') && psy.includes('psyVoiceLoaded(audio'), 'Capture voix PCM directement depuis microphone');
@@ -186,7 +194,7 @@ const requiredIds = [
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['field-kit.js','field-kit.css','mobile-v17.js','mobile-v17.css','scripts/test-field-kit-mobile-eq.mjs','mobile-compat.js','scripts/test-platform-compat.mjs','index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','loop-studio.js','loop-studio.css','hardware-synth-lab.js','hardware-synth-lab.css','scripts/test-hardware-synth.mjs','scripts/test-loop-studio.mjs','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['field-kit-import-v18.js','studio-stability-v18.js','mobile-v18.css','scripts/test-v18-import-stability.mjs','field-kit.js','field-kit.css','mobile-v17.js','mobile-v17.css','scripts/test-field-kit-mobile-eq.mjs','mobile-compat.js','scripts/test-platform-compat.mjs','index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','loop-studio.js','loop-studio.css','hardware-synth-lab.js','hardware-synth-lab.css','scripts/test-hardware-synth.mjs','scripts/test-loop-studio.mjs','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);
