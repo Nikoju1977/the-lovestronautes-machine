@@ -307,6 +307,14 @@ function fieldkitUseSample(buffer,name){
 }
 async function fieldkitLoadFile(file){
  if(!file)return false;
+ if(typeof SEQ!=='undefined'&&SEQ.playing){
+  fieldkitImportStatus('Arrête PLAY avant IMPORT AUDIO : protège le moteur des coupures pendant la préparation.');
+  return false;
+ }
+ if(typeof studioExportBusy!=='undefined'&&studioExportBusy){
+  fieldkitImportStatus('Attends la fin de l’export WAV/MP3 avant d’importer un autre fichier.');
+  return false;
+ }
  if(fieldkitBusy){fieldkitStatus('Import/REC en cours.');return false;}
  fieldkitBusy=true;
  try{
