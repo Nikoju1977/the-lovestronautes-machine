@@ -79,7 +79,7 @@ assert.ok(started-before>=4,'4 radio/motor/noise channels scheduled');
 assert.equal(kit.fieldkitVoices.length,1,'bounded event voice');
 const voice=kit.fieldkitVoices[0];
 assert.equal(voice.gains.length,4);
-assert.equal(voice.sources.length,5,'radio two sources plus other channels');
+assert.equal(voice.sources.length,6,'two simulated radios, motor and noise sources');
 for(let i=0;i<4;i++)assert.ok(voice.gains[i].targets.includes(graph.channels[i].input),'independent mixer strip '+i);
 assert.ok(voice.sources.every(n=>n.stopTime>n.startTime),'all nodes terminate');
 kit.fieldkitTrigger('G3',10.3,.7);
@@ -123,7 +123,7 @@ assert.equal(eq.studioChannels.fieldkit.presence,0,'old 3 band projects gain neu
 console.log('✓ 17-channel 4-band EQ, per-instrument frequencies, presets, bypass and anti-clip compensation');
 
 const mastering=vm.runInNewContext(master+
- '\n({eqState,masterEqHeadroom,masterEqPreset})',{Math,Number,Object,Array});
+ '\n({eqState,masterEqHeadroom,masterEqPreset})',{Math,Number,Object,Array,ctx:null,document:safeDocument});
 assert.equal(mastering.masterEqHeadroom(),.78);
 mastering.eqState.gains=[6,6,6,6,6];
 assert.ok(mastering.masterEqHeadroom()<.78);
