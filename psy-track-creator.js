@@ -4,7 +4,7 @@
 'use strict';
 
 const CREATOR_PATTERNS=['A','B','C','D'];
-const CREATOR_TRACKS=['fm','acid','theremin','s1','taiga','solar','modfm','wing'];
+const CREATOR_TRACKS=['fm','acid','theremin','s1','taiga','solar','modfm','wing','fieldkit'];
 const CREATOR_ROOTS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const CREATOR_SCALES={
   minor:[0,2,3,5,7,8,10],
@@ -199,7 +199,7 @@ function creatorGeneratePatterns(){
       });
     }
     // Hardware-inspired instruments start silent to avoid doubling the kick or loading mobile CPU.
-    for(const name of ['mbase','solar','modfm','wing'])p[name]=Array(16).fill(null);
+    for(const name of ['mbase','solar','modfm','wing','fieldkit'])p[name]=Array(16).fill(null);
     p.theremin=Array(16).fill(null);
     if(isBreak){
       p.theremin[0]={note:creatorScalePitch(deg,4),vel:.7};
@@ -415,8 +415,8 @@ function creatorBuildUI(){
     '<button id="creator-song-play" class="creator-primary" type="button">▶ LIRE LE MORCEAU</button>'+
     '<button id="creator-song-export" class="mb" type="button">EXPORT MORCEAU WAV / MP3</button></div></section>'+
     '<section class="fxcard creator-card"><h3>04 / MELODY LAB · 64 PAS</h3>'+
-    '<p class="creator-help">Sélectionne FM, ACID, S1 MK2, TAÏGA, SOLAR 50, MOD FM, WING PINGER ou THEREMIN. Choisis une note de la gamme, puis touche un pas pour écrire la mélodie (4 patterns × 16 pas).</p>'+
-    '<div class="creator-piano-tools"><label>PISTE <select id="creator-edit-track"><option value="fm">FM2</option><option value="acid">TD-3 ACID</option><option value="theremin">THEREMIN</option><option value="s1">S1 MK2 · ANALOG</option><option value="taiga">TAÏGA · MODULAR</option><option value="solar">ELTA SOLAR 50</option><option value="modfm">JOMOX MOD FM</option><option value="wing">WING PINGER</option></select></label>'+
+    '<p class="creator-help">Sélectionne FM, ACID, S1 MK2, TAÏGA, SOLAR 50, MOD FM, WING PINGER, FIELD KIT ou THEREMIN. Choisis une note de la gamme, puis touche un pas pour écrire la mélodie (4 patterns × 16 pas).</p>'+
+    '<div class="creator-piano-tools"><label>PISTE <select id="creator-edit-track"><option value="fm">FM2</option><option value="acid">TD-3 ACID</option><option value="theremin">THEREMIN</option><option value="s1">S1 MK2 · ANALOG</option><option value="taiga">TAÏGA · MODULAR</option><option value="solar">ELTA SOLAR 50</option><option value="modfm">JOMOX MOD FM</option><option value="wing">WING PINGER</option><option value="fieldkit">FIELD KIT · ELECTRO</option></select></label>'+
     '<label>NOTE <select id="creator-note-picker"></select></label></div>'+
     '<div id="creator-piano" class="creator-piano"></div></section>';
   [['style','style'],['tempo','tempo'],['root','root'],['scale','scale'],['energy','energy']].forEach(function(entry){
