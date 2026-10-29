@@ -7,7 +7,7 @@
 const FIELDKIT_SOURCES=['osc','radio','noise','motor','sample','mic'];
 const FIELDKIT_DEFAULT={
  enabled:true,radioTune:.48,lfoRate:.32,lfoDepth:.22,sensor:.5,
- auxReturn:.24,decay:.52,master:.74,channels:[
+ auxReturn:.24,decay:.52,master:.74,follower:.52,gate:.24,channels:[
  {source:'osc',gain:.65,level:.60,tone:.46,aux:.16},
  {source:'radio',gain:.57,level:.48,tone:.58,aux:.30},
  {source:'noise',gain:.37,level:.28,tone:.27,aux:.12},
@@ -39,13 +39,13 @@ const fieldkitNames={osc:'OSC / CONDUCTEUR',radio:'RADIO VIRTUELLE',noise:'BRUIT
 let fieldkitState=fieldkitSanitize(FIELDKIT_DEFAULT),fieldkitPreset='field';
 let fieldkitGraph=null,fieldkitGraphCtx=null,fieldkitNoiseCtx=null,fieldkitNoiseData=null;
 let fieldkitSample=null,fieldkitSampleName='',fieldkitMicStream=null,fieldkitMicSource=null;
-let fieldkitBusy=false,fieldkitTimer=null;
+let fieldkitBusy=false,fieldkitTimer=null,fieldkitFollowTimer=null,fieldkitAnalyser=null,fieldkitEnvelope=0;
 const fieldkitVoices=[];
 
 function fieldkitClamp(n,a,b,d){return typeof n==='number'&&Number.isFinite(n)?Math.min(b,Math.max(a,n)):d;}
 function fieldkitSanitize(raw){
  const s=raw&&typeof raw==='object'?raw:{},p={enabled:s.enabled!==false,channels:[]};
- for(const k of ['radioTune','lfoRate','lfoDepth','sensor','auxReturn','decay','master'])
+ for(const k of ['radioTune','lfoRate','lfoDepth','sensor','auxReturn','decay','master','follower','gate'])
   p[k]=fieldkitClamp(s[k],0,1,FIELDKIT_DEFAULT[k]);
  for(let i=0;i<4;i++){
   const old=FIELDKIT_DEFAULT.channels[i],r=Array.isArray(s.channels)&&s.channels[i]&&typeof s.channels[i]==='object'?s.channels[i]:old;
@@ -165,7 +165,7 @@ function fieldkitSource(type,note,t,duration,idx){
   source.buffer=fieldkitNoise();source.loop=true;
   filter.type=type==='radio'?'bandpass':'lowpass';filter.Q.value=type==='radio'?3.8:.72;
   const p=fieldkitState,cv=(p.sensor-.5)*.21;
-  const modulation=type==='radio'?Math.sin((t+idx)*(.5+p.lfoRate*11))*p.lfoDepth*.14:0;
+  const modulation=type==='radio'?Math.sin((t+idx)*(.5+p.lfoRate*11))*p.lfoDepth*.14+fieldkitEnvelope*p.follower*.25:0;
   const tune=fieldkitClamp(p.radioTune+cv+modulation,0,1,p.radioTune);
   filter.frequency.setValueAtTime(Math.min(ctx.sampleRate*.42,
    type==='radio'?120+tune*tune*8500:3900),t);
@@ -218,6 +218,9 @@ function fieldkitTrigger(note,time,velocity=.78){
 }
 
 function fieldkitStopMic(){
+ if(fieldkitFollowTimer){clearInterval(fieldkitFollowTimer);fieldkitFollowTimer=null;}
+ if(fieldkitAnalyser)try{fieldkitAnalyser.disconnect();}catch(e){}
+ fieldkitAnalyser=null;fieldkitEnvelope=0;
  if(fieldkitMicSource)try{fieldkitMicSource.disconnect();}catch(e){}
  fieldkitMicSource=null;
  if(fieldkitMicStream){
@@ -251,7 +254,21 @@ async function fieldkitMonitorMic(){
   }
   fieldkitMicStream=stream;fieldkitMicSource=source;
   fieldkitReconnectMic();
-  fieldkitStatus('MICRO LIVE ACTIVÉ · utilise un casque pour éviter le larsen');
+  // Envelope follower: true audio envelope, polled at 10 Hz for mobile efficiency.
+  fieldkitAnalyser=ctx.createAnalyser();fieldkitAnalyser.fftSize=512;
+  source.connect(fieldkitAnalyser);
+  const samples=new Float32Array(fieldkitAnalyser.fftSize);
+  fieldkitFollowTimer=setInterval(function(){
+   if(!fieldkitMicStream||!fieldkitAnalyser)return;
+   fieldkitAnalyser.getFloatTimeDomainData(samples);
+   let power=0;for(let i=0;i<samples.length;i++)power+=samples[i]*samples[i];
+   const value=Math.min(1,Math.sqrt(power/samples.length)*fieldkitState.follower*7);
+   fieldkitEnvelope=fieldkitEnvelope*.65+value*.35;
+   const text=document.getElementById('fieldkit-envelope');
+   if(text)text.textContent=(fieldkitEnvelope>fieldkitState.gate?'● GATE':'○')+
+    ' ENV '+Math.round(fieldkitEnvelope*100)+'%';
+  },100);
+  fieldkitStatus('MICRO LIVE + ENVELOPE FOLLOWER ACTIVÉS · utilise un casque');
   fieldkitSyncRack();return true;
  }catch(e){
   fieldkitStopMic();fieldkitStatus('MICRO : '+(e.message||'permission refusée'));return false;
@@ -340,10 +357,12 @@ function fieldkitBuildRack(){
   fieldkitControl('lfoRate','LFO RATE')+
   fieldkitControl('lfoDepth','LFO → RADIO')+
   fieldkitControl('sensor','CAPTEUR VIRTUEL')+
-  fieldkitControl('decay','GATE / DECAY')+
+  fieldkitControl('follower','ENV FOLLOW AMOUNT')+
+  fieldkitControl('gate','GATE THRESHOLD')+
+  fieldkitControl('decay','TRIGGER DECAY')+
   fieldkitControl('auxReturn','AUX RETURN')+
   fieldkitControl('master','MASTER LEVEL')+
-  '</div><p class="fieldkit-note">RADIO et MOTEUR sont simulés ; aucun contrôle direct d’un appareil externe.</p></details>'+
+  '</div><output id="fieldkit-envelope" class="fieldkit-envelope" aria-live="off">○ ENV FOLLOWER INACTIF</output><p class="fieldkit-note">RADIO et MOTEUR sont simulés ; aucun contrôle direct d’un appareil externe. Le suiveur d’enveloppe utilise le niveau du microphone quand LIVE est actif.</p></details>'+
   '<div class="fieldkit-sampler"><h3>REC / SAMPLE · FIELD RECORDING</h3>'+
   '<p>Importer une prise de son ou enregistrer 3 secondes depuis le micro. Le sample est conservé en mémoire pendant cette session, pas dans le JSON.</p>'+
   '<div class="fieldkit-actions"><label class="fieldkit-import" for="fieldkit-file">IMPORT AUDIO'+
@@ -355,6 +374,9 @@ function fieldkitBuildRack(){
   '<p id="fieldkit-status" class="fieldkit-status" role="status" aria-live="polite">Prêt · active le son et touche ÉCOUTER. Programme FIELD KIT dans SEQ.</p>'+
   '<p class="fieldkit-note">Instrument Web Audio indépendant. Les entrées physiques, la réception radio et les sorties CV/moteur du Field Kit original ne sont pas reproduites.</p>';
  root.appendChild(article);
+ document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden'&&fieldkitMicStream){fieldkitStopMic();fieldkitSyncRack();}
+ });
  article.querySelectorAll('[data-field-key]').forEach(input=>{
   input.addEventListener('pointerdown',()=>{if(typeof pushUndo==='function')pushUndo();});
   input.addEventListener('input',function(){
@@ -415,6 +437,8 @@ function fieldkitSyncRack(){
  if(enabled){enabled.textContent=fieldkitState.enabled?'FIELD KIT · ON':'FIELD KIT · OFF';enabled.classList.toggle('on',fieldkitState.enabled);}
  const monitor=document.getElementById('fieldkit-monitor');
  if(monitor)monitor.textContent=fieldkitMicStream?'MICRO LIVE · ON':'MICRO LIVE · OFF';
+ const meter=document.getElementById('fieldkit-envelope');
+ if(meter&&!fieldkitMicStream)meter.textContent='○ ENV FOLLOWER INACTIF';
  const name=document.getElementById('fieldkit-sample');
  if(name)name.textContent=fieldkitSample?'SAMPLE : '+fieldkitSampleName+' · '+fieldkitSample.duration.toFixed(1)+' s':'Aucun sample chargé';
 }
