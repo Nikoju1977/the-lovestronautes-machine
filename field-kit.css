@@ -1,0 +1,64 @@
+/* KOMA Field Kit-inspired electroacoustic rack · tactile phone and tablet. */
+.fieldkit-rack{--field-ink:#f0eee3;--field-gold:#f3d3a0;--field-cyan:#a7eee0;--field-line:rgba(239,220,176,.26);
+  min-width:0;max-width:100%;overflow:hidden;box-sizing:border-box!important;
+  padding:15px!important;border:1px solid rgba(227,203,149,.5)!important;border-radius:15px!important;
+  background:repeating-linear-gradient(92deg,transparent 0,transparent 8px,rgba(255,255,255,.009) 9px),
+  linear-gradient(140deg,#32352b 0%,#182823 53%,#101c1c 100%)!important;
+  color:var(--field-ink);font-family:system-ui,sans-serif;margin-bottom:16px!important}
+.fieldkit-rack *{box-sizing:border-box}
+.fieldkit-head{display:flex;align-items:start;justify-content:space-between;gap:10px;border-bottom:1px solid var(--field-line);padding-bottom:13px}
+.fieldkit-eyebrow{color:var(--field-gold);font-size:10px;font-weight:900;letter-spacing:2px}
+.fieldkit-head h2{color:#eee7d3;margin:6px 0;font-size:clamp(26px,4.5vw,38px);font-weight:950;letter-spacing:1.6px}
+.fieldkit-head h2 b{color:#8ddfcb}
+.fieldkit-head p{max-width:520px;font-size:12px;line-height:1.55;color:#bbcbb8}
+.fieldkit-head button{flex:0 0 100px;min-height:44px;background:#c6e3c3;color:#142c21;border-radius:9px;border:1px solid #9be5c3;font-weight:900}
+.fieldkit-head button:not(.on){background:#3a2724;color:#f7c5a9;border-color:#a76a50}
+.fieldkit-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:9px;margin:14px 0}
+.fieldkit-toolbar>label,.fieldkit-source{display:flex;flex-direction:column;gap:6px;min-width:0;color:var(--field-gold);font-size:10px;font-weight:900;letter-spacing:.8px}
+.fieldkit-toolbar>label{flex:1 1 148px}
+.fieldkit-rack select{width:100%;min-height:44px;background:#182924;color:#edffef;border:1px solid #658979;border-radius:8px;padding:9px 7px;font:700 12px system-ui}
+.fieldkit-play{flex:1 1 155px;min-height:46px;border-radius:9px;border:1px solid #b8efd4;background:linear-gradient(105deg,#b2e4be,#ecdfa8);color:#1a2b1c;font-weight:900;font-size:12px;cursor:pointer}
+.fieldkit-channels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.fieldkit-channel{display:flex;flex-direction:column;gap:11px;min-width:0;background:rgba(5,13,12,.6);border:1px solid var(--field-line);border-radius:11px;padding:12px}
+.fieldkit-channel-head{display:flex;justify-content:space-between;align-items:center;gap:4px;border-bottom:1px solid var(--field-line);padding-bottom:9px}
+.fieldkit-channel-head strong{font-size:16px;letter-spacing:.7px;color:#a2e5cc}
+.fieldkit-channel-head span{font-size:9px;color:#e6ce9f;letter-spacing:.6px}
+.fieldkit-source{width:100%}
+.fieldkit-param{display:grid;grid-template-columns:1fr;gap:5px;min-width:0}
+.fieldkit-param span{font-size:10px;font-weight:800;letter-spacing:.65px;color:#edce9e}
+.fieldkit-param input{width:100%;min-height:32px;accent-color:#a8e9c4;touch-action:pan-y}
+.fieldkit-param output{text-align:right;color:#bcf7db;font-size:11px;font-weight:700}
+.fieldkit-module{margin:10px 0;border-radius:11px;border:1px solid var(--field-line);background:rgba(4,14,13,.5)}
+.fieldkit-module summary{padding:15px 12px;font-size:11px;letter-spacing:1px;font-weight:900;color:#f5dba9;cursor:pointer;touch-action:manipulation}
+.fieldkit-module[open] summary{border-bottom:1px solid var(--field-line)}
+.fieldkit-mod-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:13px}
+.fieldkit-sampler{border:1px solid rgba(126,230,202,.32);background:rgba(6,36,29,.42);padding:13px;border-radius:10px}
+.fieldkit-sampler h3{color:#b6f4d6;font-size:13px;font-weight:900;letter-spacing:.9px;margin:0}
+.fieldkit-sampler p{font-size:11px;line-height:1.5;color:#b6cbbb;margin:6px 0 10px}
+.fieldkit-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.fieldkit-actions button,.fieldkit-import{min-width:0;min-height:47px;padding:10px 8px;border-radius:8px;border:1px solid rgba(177,234,203,.6);background:#183b30;color:#ddffe9;font:800 12px system-ui,sans-serif;text-align:center;cursor:pointer;display:grid;place-items:center;touch-action:manipulation}
+.fieldkit-actions button:disabled{opacity:.5;cursor:not-allowed}
+.fieldkit-import{position:relative;overflow:hidden;background:#d0e3be;color:#173224}
+.fieldkit-import input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.fieldkit-sample-info{color:#a5e6c8!important}
+.fieldkit-status{padding:10px;background:rgba(163,230,188,.08);border-left:3px solid #93dfb4;line-height:1.5;font-size:11px;color:#d9f9df;margin:5px 0 0}
+.fieldkit-note{font-size:10px;color:#a3b7a4;line-height:1.45;padding:4px 12px 8px}
+.fieldkit-rack :is(input,button,select,summary):focus-visible{outline:3px solid #ffe8a6;outline-offset:2px}
+@media(max-width:1050px){
+ .fieldkit-channels{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fieldkit-mod-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fieldkit-channel{padding:11px}
+}
+@media(max-width:560px){
+ .fieldkit-rack{padding:11px!important}
+ .fieldkit-head h2{font-size:26px}
+ .fieldkit-head p{font-size:11px}
+ .fieldkit-head button{flex-basis:82px;font-size:10px}
+ .fieldkit-head .fieldkit-eyebrow{font-size:9px}
+ .fieldkit-toolbar>label{flex:1 1 112px}
+ .fieldkit-play{flex:1 1 100%}
+ .fieldkit-channel-head strong{font-size:14px}
+ .fieldkit-channel-head span{font-size:8px}
+ .fieldkit-channel .fieldkit-param{gap:4px}
+ .fieldkit-channel .fieldkit-param input{min-height:36px}
+}
