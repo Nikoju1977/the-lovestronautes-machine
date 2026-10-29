@@ -76,6 +76,34 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
 
+## V18 — Import audio 100 Mo, moteur anti-coupures et interface mobile
+
+Cette version améliore la stabilité du **Field Kit** et de la **Lovestronautes Machine à 17 pistes**, sans nécessiter de serveur.
+
+### Import AUDIO jusqu'à 100 Mo par fichier
+
+- **100 Mio maximum (104 857 600 octets)** pour l'import audio Field Kit, soit environ 105 Mo en unités décimales.
+- **WAV PCM/float classique :** lecture par tranches de fichiers depuis le navigateur (pas de chargement intégral des 100 Mo). Un extrait de **12 secondes maximum** est converti en sample mono local, jouable en séquenceur et exportable avec le studio. S'il reste du contenu après l'extrait, le fichier complet peut également être lu par streaming.
+- **MP3/M4A/OGG et autres formats pris en charge par le navigateur :** petits fichiers de 4 Mio maximum et 12 secondes maximum décodés en sample ; sinon le fichier complet est lu avec `HTMLAudioElement` via `MediaElementAudioSourceNode` dans le mixeur Field Kit. **Pas de conversion intégrale d'un gros MP3 en PCM**, ce qui limite le risque d'épuisement mémoire sur iOS/Android.
+- L'import est **local** via `Blob URL`. Il n'envoie pas le fichier audio à un serveur. On libère l'URL et le moteur de lecture quand le fichier est effacé ou remplacé.
+- Nouveau bouton **▶ LIRE FICHIER LONG / ■ STOP FICHIER LONG**, plus un état d'import visible. Sélectionner une voie **SAMPLE / REC** pour entendre l'enregistrement.
+- **Limites explicites :** lecture de gros fichiers compressés = streaming en temps réel, non garanti sample-accurate sur le premier pas ; les codecs et formats dépendent des capacités du navigateur. L'export WAV/MP3 en temps réel capture le bus Web Audio si ce streaming y est routé. Un sample long n'est pas sérialisé dans le JSON. Les WAV compressés/non standards utilisent le streaming si pris en charge.
+
+### Stabilité audio / mode ECO
+
+- Mode **STABILITÉ AUDIO · ÉCO ON** par défaut sur écrans tactiles. Il réduit la fréquence de l'oscilloscope et la charge visuelle ; on peut repasser en mode studio.
+- Nouveau bouton **↻ RÉACTIVER AUDIO** pour relancer le Web Audio suspendu par le navigateur.
+- Si l'application passe en arrière-plan en mode ECO, le séquenceur et les fichiers longs se mettent en pause plutôt que de déclencher un rattrapage massif et des craquements au retour.
+- **Circuit breaker audio** : après quatre exceptions rapprochées du séquenceur, le transport s'arrête avec un message clair ; une note fautive ne déclenche plus de boucle d'erreurs sans fin.
+- Les modifications aléatoires du séquenceur ne provoquent plus de sauvegardes JSON et de reconstruction des 17 pistes dans la boucle de scheduling audio : ces travaux sont différés.
+- Le mode ECO conserve les 17 instruments, les presets, le clavier tactile, le mixeur EQ, les boucles et l'export.
+
+### Ergonomie
+
+- Boutons téléphone plus grands, textes et contrastes plus lisibles, panneaux Field Kit simplifiés avec **une voie par ligne sur petit smartphone**, onglets accessibles et raccourci **FIELD KIT** dans le dock bas.
+- Zone d'import 100 Mo mise en évidence, contrôles de démarrage et stabilité visibles dans le cockpit, adaptation iOS/Android et respect des marges de sécurité.
+- Les tests automatisés de synthèse, export, import limité en mémoire, Chromium et WebKit sont effectués en CI. **Ils ne garantissent pas l'absence totale de coupures sur des appareils physiques** ; tester avec écoute au casque sur un véritable iPhone et Android reste nécessaire.
+
 ## V17 — KOMA FIELD KIT / Interface mobile / EQ PRO
 
 Version **V17 · Electroacoustic Lab**, utilisable sans compte, clé API ni serveur depuis Safari sur iOS ou Chrome sur Android. Les 16 anciennes pistes et leurs projets restent compatibles ; **FIELD KIT** devient la **17e piste**.

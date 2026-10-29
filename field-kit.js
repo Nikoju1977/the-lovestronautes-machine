@@ -65,6 +65,7 @@ function fieldkitRestoreState(project){
  fieldkitPreset=Object.prototype.hasOwnProperty.call(FIELDKIT_PRESETS,p.preset)?p.preset:'custom';
  // AudioBuffer remains in memory only: importing a JSON must not falsely restore a sample.
  fieldkitSample=null;fieldkitSampleName='';
+ if(typeof fieldkitFreeStream==='function')fieldkitFreeStream();
  fieldkitStopMic();fieldkitStopVoices();fieldkitApplyMix();fieldkitSyncRack();
 }
 function fieldkitEnsurePatterns(bank){
@@ -84,7 +85,9 @@ function fieldkitStatus(message){
 function fieldkitApplyPreset(name){
  if(!Object.prototype.hasOwnProperty.call(FIELDKIT_PRESETS,name))return false;
  fieldkitState=fieldkitSanitize(FIELDKIT_PRESETS[name].patch);fieldkitPreset=name;
- fieldkitApplyMix();fieldkitReconnectMic();fieldkitSyncRack();
+ fieldkitApplyMix();fieldkitReconnectMic();
+ if(typeof fieldkitConnectStream==='function')fieldkitConnectStream();
+ fieldkitSyncRack();
  if(typeof saveLiveState==='function')saveLiveState();
  return true;
 }
@@ -111,6 +114,7 @@ function fieldkitEnsureGraph(){
  fieldkitGraph={master,delay,feedback,wet,channels};
  fieldkitApplyMix();
  fieldkitReconnectMic();
+ if(typeof fieldkitConnectStream==='function')fieldkitConnectStream();
  return fieldkitGraph;
 }
 function fieldkitApplyMix(){
@@ -199,7 +203,16 @@ function fieldkitTrigger(note,time,velocity=.78){
   source.output.connect(amp);amp.connect(fieldkitGraph.channels[i].input);
   sources.push(...source.sources);nodes.push(...source.nodes,amp);gains.push(amp);
  }
- if(!sources.length)return false;
+ if(!sources.length){
+  // Large compressed files remain as an OS-decoded media stream. This playback
+  // is not sample-accurate; a single trigger starts the file once, without
+  // repeated seek/play requests at each step or allocating a huge AudioBuffer.
+  if(fieldkitStreamAudio && fieldkitState.channels.some(ch=>ch.source==='sample')){
+   if(fieldkitStreamAudio.paused)fieldkitPlayStream().catch(error=>fieldkitStatus('STREAM : '+error.message));
+   return true;
+  }
+  return false;
+ }
  const voice={sources,nodes,gains};
  fieldkitVoices.push(voice);
  let ended=0;
@@ -286,6 +299,7 @@ function fieldkitUseSample(buffer,name){
   const source=buffer.getChannelData(ch);
   for(let i=0;i<frames;i++)out[i]+=source[i]/n;
  }
+ if(typeof fieldkitFreeStream==='function')fieldkitFreeStream();
  fieldkitSample=sample;fieldkitSampleName=String(name||'SAMPLE').slice(0,60);
  fieldkitStatus('SAMPLE CHARGÉ : '+fieldkitSampleName+' · '+seconds.toFixed(1)+' s · choisir SAMPLE sur une voie.');
  fieldkitSyncRack();fieldkitSaveSoon();
@@ -293,14 +307,20 @@ function fieldkitUseSample(buffer,name){
 }
 async function fieldkitLoadFile(file){
  if(!file)return false;
+ if(typeof SEQ!=='undefined'&&SEQ.playing){
+  fieldkitImportStatus('Arrête PLAY avant IMPORT AUDIO : protège le moteur des coupures pendant la préparation.');
+  return false;
+ }
+ if(typeof studioExportBusy!=='undefined'&&studioExportBusy){
+  fieldkitImportStatus('Attends la fin de l’export WAV/MP3 avant d’importer un autre fichier.');
+  return false;
+ }
  if(fieldkitBusy){fieldkitStatus('Import/REC en cours.');return false;}
  fieldkitBusy=true;
  try{
-  if(file.size>15*1024*1024)throw Error('Fichier trop volumineux : 15 Mo maximum.');
+  if(file.size>FIELDKIT_IMPORT_MAX)throw Error('Import limité à 100 Mo.');
   if(!await activateStudioAudio())throw Error('Audio indisponible.');
-  const bytes=await file.arrayBuffer();
-  const buffer=await ctx.decodeAudioData(bytes.slice(0));
-  return fieldkitUseSample(buffer,file.name||'IMPORT AUDIO');
+  return await fieldkitImportLargeFile(file);
  }catch(e){fieldkitStatus('IMPORT : '+(e.message||'format non pris en charge'));return false;}
  finally{fieldkitBusy=false;}
 }
@@ -365,13 +385,15 @@ function fieldkitBuildRack(){
   fieldkitControl('master','MASTER LEVEL')+
   '</div><output id="fieldkit-envelope" class="fieldkit-envelope" aria-live="off">○ ENV FOLLOWER INACTIF</output><p class="fieldkit-note">RADIO et MOTEUR sont simulés ; aucun contrôle direct d’un appareil externe. Le suiveur d’enveloppe utilise le niveau du microphone quand LIVE est actif.</p></details>'+
   '<div class="fieldkit-sampler"><h3>REC / SAMPLE · FIELD RECORDING</h3>'+
-  '<p>Importer une prise de son ou enregistrer 3 secondes depuis le micro. Le sample est conservé en mémoire pendant cette session, pas dans le JSON.</p>'+
+  '<p>IMPORT AUDIO jusqu’à 100 Mo : WAV échantillonné sur 12 s et lecture longue en streaming ; gros MP3/M4A lus en flux local pour préserver la mémoire. Aucun envoi sur Internet.</p>'+
   '<div class="fieldkit-actions"><label class="fieldkit-import" for="fieldkit-file">IMPORT AUDIO'+
   '<input id="fieldkit-file" type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm"></label>'+
   '<button id="fieldkit-record" type="button">● REC MICRO 3 S</button>'+
   '<button id="fieldkit-monitor" type="button">MICRO LIVE · OFF</button>'+
+  '<button id="fieldkit-stream-play" type="button" disabled>▶ LIRE FICHIER LONG</button>'+
   '<button id="fieldkit-clear-sample" type="button">EFFACER SAMPLE</button></div>'+
-  '<p id="fieldkit-sample" class="fieldkit-sample-info">Aucun sample chargé</p></div>'+
+  '<p id="fieldkit-sample" class="fieldkit-sample-info">Aucun sample chargé</p>'+
+  '<p id="fieldkit-import-status" class="fieldkit-import-status" role="status" aria-live="polite">100 Mo max · WAV extrait 12 s · gros MP3 en streaming · lecture locale</p></div>'+
   '<p id="fieldkit-status" class="fieldkit-status" role="status" aria-live="polite">Prêt · active le son et touche ÉCOUTER. Programme FIELD KIT dans SEQ.</p>'+
   '<p class="fieldkit-note">Instrument Web Audio indépendant. Les entrées physiques, la réception radio et les sorties CV/moteur du Field Kit original ne sont pas reproduites.</p>';
  root.appendChild(article);
@@ -392,14 +414,14 @@ function fieldkitBuildRack(){
    if(typeof pushUndo==='function')pushUndo();
    const idx=Number(this.dataset.fieldSource);
    if(FIELDKIT_SOURCES.includes(this.value))fieldkitState.channels[idx].source=this.value;
-   fieldkitPreset='custom';fieldkitReconnectMic();fieldkitSyncRack();fieldkitSaveSoon();
+   fieldkitPreset='custom';fieldkitReconnectMic();fieldkitConnectStream();fieldkitSyncRack();fieldkitSaveSoon();
   });
  });
  document.getElementById('fieldkit-enable').addEventListener('click',()=>{
   if(typeof pushUndo==='function')pushUndo();
   fieldkitState.enabled=!fieldkitState.enabled;
-  if(!fieldkitState.enabled){fieldkitStopVoices();fieldkitStopMic();}
-  fieldkitApplyMix();fieldkitSyncRack();saveLiveState();
+  if(!fieldkitState.enabled){fieldkitStopVoices();fieldkitStopMic();fieldkitStopStream();}
+  fieldkitApplyMix();fieldkitConnectStream();fieldkitSyncRack();saveLiveState();
  });
  document.getElementById('fieldkit-preset').addEventListener('change',function(){
   if(this.value==='custom')return;
@@ -419,8 +441,22 @@ function fieldkitBuildRack(){
   try{await fieldkitRecordMic();}finally{this.disabled=false;this.textContent='● REC MICRO 3 S';}
  });
  document.getElementById('fieldkit-monitor').addEventListener('click',fieldkitMonitorMic);
+ document.getElementById('fieldkit-stream-play').addEventListener('click',async function(){
+  if(!fieldkitStreamAudio)return;
+  // Both the Web Audio resume and HTMLMediaElement.play() must start in the
+  // original touch handler: Safari may revoke autoplay after the first await.
+  const activation=activateStudioAudio();
+  const playback=fieldkitStreamAudio.paused?fieldkitPlayStream():Promise.resolve(fieldkitStopStream());
+  try{
+   const [ready]=await Promise.all([activation,playback]);
+   if(!ready)fieldkitImportStatus('Audio bloqué : touche ACTIVER LE SON puis réessaie.');
+  }catch(error){fieldkitImportStatus('LECTURE : '+error.message);}
+  fieldkitSyncRack();
+ });
  document.getElementById('fieldkit-clear-sample').addEventListener('click',()=>{
-  fieldkitSample=null;fieldkitSampleName='';fieldkitSyncRack();fieldkitStatus('Sample effacé de la mémoire.');fieldkitSaveSoon();
+  fieldkitSample=null;fieldkitSampleName='';
+  fieldkitFreeStream();fieldkitImportMode='none';
+  fieldkitSyncRack();fieldkitStatus('Sample et fichier long libérés de la mémoire.');fieldkitSaveSoon();
  });
  fieldkitSyncRack();
 }
@@ -441,5 +477,12 @@ function fieldkitSyncRack(){
  const meter=document.getElementById('fieldkit-envelope');
  if(meter&&!fieldkitMicStream)meter.textContent='○ ENV FOLLOWER INACTIF';
  const name=document.getElementById('fieldkit-sample');
- if(name)name.textContent=fieldkitSample?'SAMPLE : '+fieldkitSampleName+' · '+fieldkitSample.duration.toFixed(1)+' s':'Aucun sample chargé';
+ if(name)name.textContent=fieldkitSample?
+  'SAMPLE : '+fieldkitSampleName+' · extrait '+fieldkitSample.duration.toFixed(1)+' s'+(fieldkitStreamAudio?' + fichier complet en flux':''):
+  fieldkitStreamAudio?'FICHIER LONG : '+fieldkitStreamName+' · lecture en flux / mémoire protégée':'Aucun sample chargé';
+ const play=document.getElementById('fieldkit-stream-play');
+ if(play){
+  play.disabled=!fieldkitStreamAudio;
+  play.textContent=fieldkitStreamAudio&&!fieldkitStreamAudio.paused?'■ STOP FICHIER LONG':'▶ LIRE FICHIER LONG';
+ }
 }

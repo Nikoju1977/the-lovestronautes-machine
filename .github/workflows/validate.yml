@@ -55,6 +55,9 @@ jobs:
       - name: Field Kit electroacoustic and mobile EQ regression
         run: node scripts/test-field-kit-mobile-eq.mjs
 
+      - name: V18 safe 100 MB import and anti-crash regression
+        run: node scripts/test-v18-import-stability.mjs
+
       - name: iOS Safari and Android audio compatibility regressions
         run: node scripts/test-platform-compat.mjs
 

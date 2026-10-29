@@ -1,4 +1,4 @@
-/* V17 regression: KOMA Field Kit-inspired engine and mobile parametric EQ. */
+/* V18 regression: KOMA Field Kit-inspired engine and mobile parametric EQ. */
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -135,7 +135,7 @@ assert.ok(html.includes("fieldkitEnsurePatterns(bank)")&&html.includes("fieldkit
 assert.ok(html.includes("const fieldCell=m.fieldkit")&&html.includes("fieldkitBuildRack()"));
 assert.ok(creator.includes('<option value="fieldkit">'));
 assert.ok(keyboard.includes("if(mode==='fieldkit')return fieldkitTrigger"));
-assert.ok(sw.includes('lovestronautes-v17')&&sw.includes("new URL('./field-kit.js', scope).href"));
+assert.ok(sw.includes('lovestronautes-v18')&&sw.includes("new URL('./field-kit.js', scope).href"));
 assert.ok(html.includes('mobileUIBuild()')&&css.includes('.mobile-studio-dock'));
 console.log('✓ Song Mode, keyboard, loops, offline PWA and phone dock wired');
-console.log('\nField Kit + mobile EQ V17 regression: OK');
+console.log('\nField Kit + mobile EQ V18 regression: OK');
