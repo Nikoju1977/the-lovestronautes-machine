@@ -32,6 +32,10 @@ const loops = fs.readFileSync('loop-studio.js','utf8');
 const loopCss = fs.readFileSync('loop-studio.css','utf8');
 const hardware = fs.readFileSync('hardware-synth-lab.js','utf8');
 const hardwareCss = fs.readFileSync('hardware-synth-lab.css','utf8');
+const fieldkit = fs.readFileSync('field-kit.js','utf8');
+const fieldkitCss = fs.readFileSync('field-kit.css','utf8');
+const mobileUI = fs.readFileSync('mobile-v17.js','utf8');
+const mobileCss = fs.readFileSync('mobile-v17.css','utf8');
 const creatorCss = fs.readFileSync('psy-track-creator.css', 'utf8');
 const cssV9 = fs.readFileSync('ui-v9.css','utf8');
 const capture = fs.readFileSync('pcm-capture-processor.js', 'utf8');
@@ -54,7 +58,7 @@ if (inlineSyntax) ok('Syntaxe des ' + scripts.length + ' scripts inline');
 try { new Function(ext); ok('Syntaxe audio-extensions.js'); }
 catch (error) { fail('Syntaxe audio-extensions.js: ' + error.message); }
 
-[studio,capture,mp3,psy,creator,s1,taiga,keyboard,loops,hardware,mobile].forEach((code,i) => {
+[studio,capture,mp3,psy,creator,s1,taiga,keyboard,loops,hardware,mobile,fieldkit,mobileUI].forEach((code,i) => {
   try { new Function(code); ok('Syntaxe studio #' + (i+1)); }
   catch(error){ fail('Syntaxe studio #' + (i+1) + ': ' + error.message); }
 });
@@ -88,13 +92,13 @@ assert(html.includes('function toggleMasterRecording()'), 'enregistrement master
 assert(html.includes('function triggerBiniou('), 'moteur biniou électronique présent');
 assert(html.includes('function startBiniouDrone()'), 'drone biniou présent');
 assert(html.includes('function updateBiniouFX()'), 'chaîne FX biniou présente');
-assert(html.includes("let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing']"), '16 pistes avec quatre nouveaux instruments');
+assert(html.includes("let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit']"), '17 pistes dont Field Kit');
 assert(html.includes('initMasterEQ(masterFilter, analyserNode)'), 'EQ 5 bandes connecté au bus master');
 assert(s1.includes('function s1Trigger(') && s1.includes('function s1StopVoices(') && s1.includes('function s1BuildRack('), 'moteur audio S1 MK2 et rack tactile');
 assert(s1.includes('function s1EnsurePatterns(') && s1.includes('function s1RestoreState(') && s1.includes('function s1ProjectState('), 'pattern, paramètres et sauvegarde S1 MK2');
 assert(html.includes('s1EnsurePatterns(bank, true)') && html.includes('s1EnsurePatterns(patterns, false)') && html.includes('s1: s1ProjectState()') && html.includes('s1RestoreState(state)'), '11e piste S1 MK2 persistée et rétrocompatible');
 assert(html.includes('const s1Step=m.s1') && html.includes('if(s1Step)s1Trigger(') && html.includes('s1BuildRack()'), 'synthé S1 MK2 relié au séquenceur musical');
-assert(html.includes("['theremin','speak','s1','taiga','mbase','solar','modfm','wing'].forEach") && studio.includes("'speak','s1','taiga','mbase','solar','modfm','wing']"), 'Quatre nouvelles machines reliées au bus master et à WAV/MP3');
+assert(html.includes("['theremin','speak','s1','taiga','mbase','solar','modfm','wing'].forEach") && studio.includes("'speak','s1','taiga','mbase','solar','modfm','wing','fieldkit']"), 'Quatre nouvelles machines reliées au bus master et à WAV/MP3');
 assert(creator.includes('p.s1[step]') || creator.includes('p.s1[0]'), 'Melody Lab 64 pas S1 MK2');
 assert(creator.includes('<option value="s1">'), 'éditeur piano roll sélection S1');
 assert(s1Css.includes('.s1-mini-keys') && s1Css.includes('.s1-mod-grid'), 'clavier tactile et réglages S1 responsive');
@@ -123,6 +127,16 @@ assert(html.includes('hardwareBuildRacks()') && html.includes('hardwareTrigger(m
 assert(hardwareCss.includes('.hardware-rack') && sw.includes("new URL('./hardware-synth-lab.js', scope).href") && sw.includes("new URL('./hardware-synth-lab.css', scope).href"), 'UI tactile et ressources offline V15');
 assert(creator.includes('<option value="solar">') && creator.includes('<option value="modfm">') && creator.includes('<option value="wing">'), 'Melody Lab avec drones et résonateur');
 assert(html.includes('buildExtendedFX()') && html.includes('syncExtendedFX()'), 'contrôles FX nouvelles machines et EQ');
+assert(fieldkit.includes('function fieldkitTrigger(') && fieldkit.includes('function fieldkitBuildRack(') && fieldkit.includes('function fieldkitRecordMic('), 'Field Kit : quatre voies, sources et sample micro');
+assert(fieldkit.includes('function fieldkitEnsurePatterns(') && fieldkit.includes('function fieldkitProjectState('), 'Field Kit : pattern et sauvegarde');
+assert(html.includes('fieldkitEnsurePatterns(bank)') && html.includes('fieldkitEnsurePatterns(patterns)') && html.includes('fieldkit: fieldkitProjectState()') && html.includes('fieldkitRestoreState(state)'), 'Field Kit : 17e piste et projets rétrocompatibles');
+assert(html.includes('const fieldCell=m.fieldkit') && html.includes('fieldkitTrigger('), 'Field Kit : moteur relié au séquenceur 16 pas');
+assert(html.includes("['theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit'].forEach"), 'Field Kit : bus master pour export WAV/MP3');
+assert(creator.includes('<option value="fieldkit">') && keyboard.includes("if(mode==='fieldkit')return fieldkitTrigger"), 'Field Kit : Melody Lab et clavier tactile');
+assert(fieldkitCss.includes('.fieldkit-channels') && mobileCss.includes('.mobile-studio-dock') && mobileUI.includes('function mobileUIBuild('), 'Field Kit et dock : interface iOS/Android');
+assert(studio.includes('const STUDIO_EQ_PRESETS=') && studio.includes('const STUDIO_EQ_FREQUENCIES='), 'EQ 4 bandes par instrument');
+assert(studio.includes('function studioEqTrim(') && studio.includes('function studioApplyEqPreset('), 'EQ : headroom, presets et bypass');
+assert(ext.includes('const MASTER_EQ_PRESETS=') && ext.includes('function masterEqHeadroom(') && ext.includes('function masterEqPreset('), 'Master EQ cinq bandes : profils et compensation');
 assert(ext.includes('function triggerSnare(time)') && ext.includes('function triggerHat(time)') && ext.includes('function triggerSub('), 'moteurs Snare, Hat et Sub');
 assert(ext.includes("name:'AIR'") && ext.includes("name:'SUB'"), 'EQ 5 bandes présent');
 assert(studio.includes('function studioMakeMaster(input)') && html.includes('studioMakeMaster(comp)'), 'limiteur master');
@@ -130,7 +144,7 @@ assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') &&
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v16') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
+assert(sw.includes('lovestronautes-v17') && ['taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
 assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
 assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
 assert(psy.includes('async function psyCaptureMicroPCM(') && psy.includes('psyVoiceLoaded(audio'), 'Capture voix PCM directement depuis microphone');
@@ -165,14 +179,14 @@ assert(html.includes('@media (max-width:679px)'), 'layout mobile performance pr�
 assert(html.includes("id=\"export-project\"") && html.includes("id=\"import-project\""), 'export/import projet présents');
 
 const requiredIds = [
-  's1-jump','taiga-jump','studio-key-jump','play-btn','tap-btn','bpm-input','swing-slider','morph-slider','unlock','studio-demo-btn','studio-test-btn','studio-fx-btn','studio-audio-guide','studio-advanced',
+  's1-jump','taiga-jump','fieldkit-jump','studio-key-jump','play-btn','tap-btn','bpm-input','swing-slider','morph-slider','unlock','studio-demo-btn','studio-test-btn','studio-fx-btn','studio-audio-guide','studio-advanced',
   'undo-btn','redo-btn','rec-btn','midi-btn','routing-btn','biniou-toggle','biniou-drone','biniou-cyber','biniou-reset-pitch','biniou-drive','biniou-tone','biniou-echo','biniou-space','biniou-harmony','biniou-pitch',
   'panel-seq','panel-mix','panel-fx','panel-gear','panel-song','psy-open-rack','panel-dna','kbd','scope'
 ];
 const missingIds = requiredIds.filter(id => !ids.includes(id));
 assert(missingIds.length === 0, missingIds.length ? 'Contrôles manquants: ' + missingIds.join(', ') : 'contrôles critiques présents');
 
-const shellFiles = ['mobile-compat.js','scripts/test-platform-compat.mjs','index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','loop-studio.js','loop-studio.css','hardware-synth-lab.js','hardware-synth-lab.css','scripts/test-hardware-synth.mjs','scripts/test-loop-studio.mjs','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
+const shellFiles = ['field-kit.js','field-kit.css','mobile-v17.js','mobile-v17.css','scripts/test-field-kit-mobile-eq.mjs','mobile-compat.js','scripts/test-platform-compat.mjs','index.html','ui-v9.css','psy-track-creator.css','psy-track-creator.js','cwejman-s1.js','cwejman-s1.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','loop-studio.js','loop-studio.css','hardware-synth-lab.js','hardware-synth-lab.css','scripts/test-hardware-synth.mjs','scripts/test-loop-studio.mjs','scripts/test-taiga-keyboard.mjs','audio-extensions.js','studio-features.js','psy-machines.js','pcm-capture-processor.js','mp3-encoder-worker.js','vendor/lame.min.js','vendor/LICENSE-lamejs.txt','manifest.json','sw.js','icon.svg','banner.svg'];
 for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + file);
 
 if (process.exitCode) process.exit(process.exitCode);
