@@ -141,10 +141,13 @@ function fieldkitStopVoices(when){
  const time=Number.isFinite(when)?Math.max(ctx.currentTime,when):ctx.currentTime;
  while(fieldkitVoices.length){
   const voice=fieldkitVoices.shift();
-  try{voice.gain.gain.cancelScheduledValues(time);voice.gain.gain.setTargetAtTime(.0001,time,.007);}catch(e){}
-  voice.sources.forEach(s=>{try{s.stop(time+.045);}catch(e){}});
+  for(const gain of voice.gains){
+   try{gain.gain.cancelScheduledValues(time);gain.gain.setTargetAtTime(.0001,time,.007);}catch(e){}
+  }
+  voice.sources.forEach(source=>{try{source.stop(time+.045);}catch(e){}});
  }
 }
+
 function fieldkitSource(type,note,t,duration,idx){
  if(type==='mic')return null;
  const sources=[],nodes=[];
@@ -181,38 +184,39 @@ function fieldkitSource(type,note,t,duration,idx){
 function fieldkitTrigger(note,time,velocity=.78){
  if(!ctx||ctx.state!=='running'||!chanGain.fieldkit||!fieldkitState.enabled)return false;
  if(!fieldkitEnsureGraph())return false;
- const t=Math.max(ctx.currentTime+.002,time);
- const dur=.12+fieldkitState.decay*1.25;
- // One voice containing up to four sources. It is never allowed to accumulate
- // unbounded oscillator graphs over long sessions on a mobile CPU.
+ const t=Math.max(ctx.currentTime+.002,time),duration=.12+fieldkitState.decay*1.25;
+ const ampPeak=fieldkitClamp(velocity,.1,1,.78)*.41;
+ // Four independent channel paths, one bounded event; no cross-routing.
  fieldkitStopVoices(t);
- const sources=[],nodes=[],voiceGain=ctx.createGain();
- const peak=fieldkitClamp(velocity,.1,1,.78)*.35;
- voiceGain.gain.setValueAtTime(.0001,t);
- voiceGain.gain.linearRampToValueAtTime(peak,t+.006);
- voiceGain.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ const sources=[],nodes=[],gains=[];
  for(let i=0;i<4;i++){
-  const slot=fieldkitState.channels[i],voice=fieldkitSource(slot.source,note,t,dur,i);
-  if(!voice)continue;
-  const splitter=ctx.createGain();splitter.gain.value=.33;
-  voice.output.connect(splitter);splitter.connect(voiceGain);
-  // Routing via individual four mixer strips after the shared amplitude gate.
-  const lane=ctx.createGain();lane.gain.value=.35;
-  voiceGain.connect(lane);lane.connect(fieldkitGraph.channels[i].input);
-  sources.push(...voice.sources);nodes.push(...voice.nodes,splitter,lane);
+  const source=fieldkitSource(fieldkitState.channels[i].source,note,t,duration,i);
+  if(!source)continue;
+  const amp=ctx.createGain();
+  amp.gain.setValueAtTime(.0001,t);
+  amp.gain.linearRampToValueAtTime(ampPeak*.5,t+.006);
+  amp.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  source.output.connect(amp);amp.connect(fieldkitGraph.channels[i].input);
+  sources.push(...source.sources);nodes.push(...source.nodes,amp);gains.push(amp);
  }
- if(!sources.length){voiceGain.disconnect();return false;}
- nodes.push(voiceGain);
- const voice={sources,nodes,gain:voiceGain};fieldkitVoices.push(voice);
- const first=sources[0];first.onended=function(){
-  const idx=fieldkitVoices.indexOf(voice);if(idx>=0)fieldkitVoices.splice(idx,1);
-  for(const n of sources.concat(nodes))try{n.disconnect();}catch(e){}
- };
- for(const s of sources){
-  s.start(t);s.stop(t+Math.min(dur+.045,s.buffer&&s.buffer.duration&&!s.loop?s.buffer.duration+.012:dur+.045));
+ if(!sources.length)return false;
+ const voice={sources,nodes,gains};
+ fieldkitVoices.push(voice);
+ let ended=0;
+ for(const source of sources){
+  source.onended=function(){
+   ended++;
+   if(ended!==sources.length)return;
+   const idx=fieldkitVoices.indexOf(voice);if(idx>=0)fieldkitVoices.splice(idx,1);
+   for(const node of sources.concat(nodes))try{node.disconnect();}catch(e){}
+  };
+  const end=source.buffer&&!source.loop?Math.min(duration+.02,source.buffer.duration):duration+.055;
+  source.start(t);
+  source.stop(t+Math.max(.045,end));
  }
  return true;
 }
+
 function fieldkitStopMic(){
  if(fieldkitMicSource)try{fieldkitMicSource.disconnect();}catch(e){}
  fieldkitMicSource=null;
