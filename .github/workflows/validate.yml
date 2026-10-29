@@ -52,6 +52,9 @@ jobs:
       - name: Four hardware-inspired synthesizers regression
         run: node scripts/test-hardware-synth.mjs
 
+      - name: Field Kit electroacoustic and mobile EQ regression
+        run: node scripts/test-field-kit-mobile-eq.mjs
+
       - name: iOS Safari and Android audio compatibility regressions
         run: node scripts/test-platform-compat.mjs
 
