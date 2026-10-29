@@ -62,3 +62,7 @@
  .fieldkit-channel .fieldkit-param{gap:4px}
  .fieldkit-channel .fieldkit-param input{min-height:36px}
 }
+
+.fieldkit-envelope{display:block;margin:4px 13px 11px;min-height:25px;color:#b8f1c7;font:800 11px system-ui,sans-serif}
+.fieldkit-jump{display:block;min-height:48px;width:calc(100% - 18px);margin:8px 9px;border:1px solid rgba(175,228,194,.65);border-radius:10px;background:linear-gradient(110deg,#24463c,#1a2e26);color:#e0f8e5;font:900 12px system-ui,sans-serif;letter-spacing:.7px;cursor:pointer;touch-action:manipulation}
+.fieldkit-jump:focus-visible{outline:3px solid #ffdf96;outline-offset:2px}
