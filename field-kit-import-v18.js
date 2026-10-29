@@ -28,7 +28,7 @@ function fieldkitFreeStream(){
  if(fieldkitStreamURL)URL.revokeObjectURL(fieldkitStreamURL);
  fieldkitStreamAudio=null;fieldkitStreamURL=null;fieldkitStreamNode=null;
  fieldkitStreamGain=null;fieldkitStreamSourceCtx=null;fieldkitStreamName='';
- if(fieldkitImportMode==='stream')fieldkitImportMode='none';
+ fieldkitImportMode='none';
 }
 function fieldkitStopStream(){
  if(fieldkitStreamStopTimer){clearTimeout(fieldkitStreamStopTimer);fieldkitStreamStopTimer=null;}
@@ -67,8 +67,11 @@ function fieldkitConnectStream(){
 }
 async function fieldkitPlayStream(){
  if(!fieldkitStreamAudio)return false;
- if(!ctx||ctx.state!=='running')throw Error('Active le son avant la lecture du fichier.');
+ if(!ctx||ctx.state==='closed')throw Error('Active le son avant la lecture du fichier.');
  if(fieldkitStreamStopTimer){clearTimeout(fieldkitStreamStopTimer);fieldkitStreamStopTimer=null;}
+ // Prepare the graph even if the user imported a file before auditioning
+ // any synth. The play() call stays in the same touch gesture for iOS Safari.
+ if(typeof fieldkitEnsureGraph==='function'&&!fieldkitEnsureGraph())return false;
  if(!fieldkitConnectStream())return false;
  const audio=fieldkitStreamAudio;
  if(!fieldkitState.channels.some(ch=>ch.source==='sample')){
@@ -184,7 +187,8 @@ async function fieldkitOpenStream(file,keepPreview=false){
   fieldkitStreamAudio=audio;fieldkitStreamURL=url;
   fieldkitStreamName=String(file.name||'FICHIER AUDIO').slice(0,70);
   fieldkitImportMode=keepPreview?'wav+stream':'stream';
-  fieldkitConnectStream();
+  if(typeof fieldkitEnsureGraph==='function')fieldkitEnsureGraph();
+  else fieldkitConnectStream();
   audio.addEventListener('ended',()=>{
    if(fieldkitStreamAudio===audio){
     if(typeof fieldkitSyncRack==='function')fieldkitSyncRack();
