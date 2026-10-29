@@ -1,4 +1,4 @@
-/* V17 MOBILE CONTROL SURFACE — ergonomic bottom dock for iOS/Android. */
+/* V18 MOBILE CONTROL SURFACE — ergonomic bottom dock for iOS/Android. */
 'use strict';
 let mobileDockBuilt=false;
 function mobileUIBuild(){
@@ -8,7 +8,7 @@ function mobileUIBuild(){
  dock.className='mobile-studio-dock';dock.setAttribute('aria-label','Transport et navigation du studio sur téléphone');
  const buttons=[
   ['sound','SON','unlock'],['play','PLAY','play-btn'],
-  ['seq','SEQ','seq'],['mix','MIX','mix'],['eq','EQ','fx'],['loops','BOUCLES','loops']
+  ['seq','SEQ','seq'],['fieldkit','FIELD KIT','gear'],['mix','MIX','mix'],['loops','BOUCLES','loops']
  ];
  dock.innerHTML=buttons.map(([key,label])=>
   '<button type="button" data-mobile-action="'+key+'" aria-label="'+label+'"'+
@@ -25,10 +25,10 @@ function mobileUIBuild(){
   const key=button.dataset.mobileAction;
   if(key==='sound'){const el=document.getElementById('unlock');if(el)el.click();}
   else if(key==='play'){const el=document.getElementById('play-btn');if(el)el.click();}
-  else if(key==='eq'){
-   goto('fx');
+  else if(key==='fieldkit'){
+   goto('gear');
    requestAnimationFrame(function(){
-    const card=document.querySelector('#panel-fx .eq-card');
+    const card=document.getElementById('fieldkit-rack');
     if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
    });
   }else goto(key);
@@ -51,7 +51,7 @@ function mobileUISyncDock(){
  const dock=document.getElementById('mobile-studio-dock');if(!dock)return;
  const panel=document.querySelector('.nt.active')?.dataset.panel;
  dock.querySelectorAll('[data-mobile-action]').forEach(button=>{
-  const action=button.dataset.mobileAction,selected=action==='eq'?panel==='fx':
+  const action=button.dataset.mobileAction,selected=action==='fieldkit'?panel==='gear':
    action==='sound'?document.getElementById('unlock')?.getAttribute('aria-pressed')==='true':
    action==='play'?document.getElementById('play-btn')?.textContent.includes('PAUSE'):
    action===panel;
