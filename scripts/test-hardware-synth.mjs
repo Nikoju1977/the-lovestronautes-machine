@@ -102,10 +102,10 @@ console.log('✓ Bounded mobile polyphony, voice stealing and stop');
 assert.ok(html.includes('hardwareEnsurePatterns(bank)'));
 assert.ok(html.includes('hardwareRestoreState(state)'));
 assert.ok(html.includes('hardware: hardwareProjectState()'));
-assert.ok(html.includes("['theremin','speak','s1','taiga','mbase','solar','modfm','wing'].forEach"));
+assert.ok(html.includes("['theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit'].forEach"));
 assert.ok(html.includes('hardwareTrigger(machine,'));
 assert.ok(html.includes('hardwareBuildRacks()'));
-assert.ok(studio.includes("'mbase','solar','modfm','wing']"));
+assert.ok(studio.includes("'mbase','solar','modfm','wing','fieldkit']"));
 for(const k of ['mbase','solar','modfm','wing'])
  assert.ok(keyboard.includes("['mbase','solar','modfm','wing'].includes(mode)"));
 assert.ok(creator.includes('<option value="solar">'));
