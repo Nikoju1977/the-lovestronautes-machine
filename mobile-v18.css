@@ -1,0 +1,123 @@
+/* LOVESTRONAUTES V18 · responsive mobile-first console
+ * Legible controls, 100 MB sampler workflow and low-overhead Eco visual mode.
+ */
+:root{--v18-ink:#effff6;--v18-muted:#b3d2c3;--v18-panel:#0b1817;--v18-line:#3e6655;--v18-mint:#a4edc6;--v18-gold:#f1d39a}
+.studio-stability-bar{
+ display:flex;align-items:center;flex-wrap:wrap;gap:9px;
+ margin-top:10px;padding:10px;border:1px solid rgba(142,221,175,.32);
+ border-radius:12px;background:rgba(10,28,24,.78)
+}
+.studio-stability-bar button{
+ min-height:45px;flex:1 1 150px;min-width:0;padding:9px 11px;
+ border:1px solid #719e80;border-radius:9px;background:#214737;
+ color:#effff1;font:800 12px/1.2 system-ui,sans-serif;letter-spacing:.2px;
+ cursor:pointer;touch-action:manipulation
+}
+.studio-stability-bar #studio-stability-toggle[aria-pressed="true"]{
+ background:linear-gradient(120deg,#bcefc8,#e2d89b);border-color:#d7f1c7;color:#163222
+}
+.studio-stability-bar #studio-stability-recover{background:#172f30;border-color:#649d99;color:#c8f5f0}
+#studio-stability-hint{
+ flex:1 1 100%;font:500 12px/1.5 system-ui,sans-serif;
+ color:#bcdcca;min-height:17px
+}
+.fieldkit-import-status{
+ margin-top:9px!important;padding:11px 12px;border-radius:9px;
+ background:#19352d;border:1px solid rgba(153,236,192,.38);
+ color:#d1f7db!important;font:600 12px/1.55 system-ui,sans-serif!important;
+ overflow-wrap:anywhere
+}
+.fieldkit-sampler{background:linear-gradient(145deg,#12352d,#0d2220)!important}
+.fieldkit-actions #fieldkit-stream-play{
+ grid-column:1/-1;background:linear-gradient(110deg,#264f46,#1e484f);
+ border-color:#91e2cf;color:#e0fff5;min-height:51px
+}
+.fieldkit-actions #fieldkit-stream-play:disabled{background:#182a26;border-color:#486457;color:#a0b3a7}
+#fieldkit-rack .fieldkit-status,#fieldkit-rack .fieldkit-sample-info{
+ font-size:12px!important;line-height:1.55!important;overflow-wrap:anywhere
+}
+.fieldkit-rack .fieldkit-toolbar select,.fieldkit-rack .fieldkit-source select{
+ font-size:14px!important
+}
+.fieldkit-rack .fieldkit-param input{accent-color:var(--v18-mint)}
+.fieldkit-rack .fieldkit-param output{font-size:12px}
+.fieldkit-rack .fieldkit-param span{font-size:11px}
+.fieldkit-rack :is(button,select,input,summary):focus-visible,
+.studio-stability-bar button:focus-visible,.mobile-studio-dock button:focus-visible{
+ outline:3px solid #f5d78c!important;outline-offset:3px
+}
+@media(max-width:1023px){
+ .mobile-studio-dock{gap:5px;padding:7px 6px calc(7px + env(safe-area-inset-bottom))}
+ .mobile-studio-dock button{
+  min-height:51px;border-radius:12px;font-size:clamp(11px,2.8vw,13px)!important;
+  letter-spacing:0;white-space:normal;line-height:1.15;
+  background:#172d29;border-color:#5b8471;color:#e1f9ed
+ }
+ .mobile-studio-dock button[data-mobile-action="fieldkit"]{
+  background:#36402c;border-color:#becc93;color:#ffeab4
+ }
+ .mobile-studio-dock button[data-mobile-action="fieldkit"].active{
+  background:#e0dbac;color:#1a3028
+ }
+ .panel.active{padding-bottom:34px!important}
+ .fieldkit-jump{font-size:14px!important;padding:10px 12px;line-height:1.4}
+ .studio-quickbar{border-radius:13px!important}
+ .studio-quick-title{gap:7px}
+ .studio-quick-title strong{font-size:clamp(13px,3vw,17px)!important;line-height:1.25}
+ .studio-quick-actions{gap:8px}
+ .studio-quick-actions button{font-size:13px!important;line-height:1.3;padding:10px 7px}
+ #studio-audio-guide{font-size:12px!important;line-height:1.5}
+ .nav-tabs .nt{min-width:95px!important;font-weight:800}
+ .mxch{min-width:205px!important;flex-basis:205px!important;max-width:225px!important}
+ .mxch :is(input,select,button){accent-color:#9be8bf}
+ .fieldkit-sampler p{font-size:13px!important;line-height:1.55}
+ .fieldkit-rack .fieldkit-note{font-size:12px!important}
+ .fieldkit-module summary{font-size:13px!important}
+ .fieldkit-actions button,.fieldkit-import{font-size:13px!important}
+}
+@media(max-width:560px){
+ .hud-r1 .scope-wrap{max-width:80px;min-width:58px}
+ .wm-main{font-size:clamp(14px,4vw,20px)!important;line-height:1.3;letter-spacing:.2px}
+ .wm-sub{font-size:11px!important;letter-spacing:.3px}
+ .hud-r2{gap:7px}
+ #status{max-width:140px;font-size:11px!important}
+ .studio-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .studio-quick-actions button{min-width:0;font-size:13px!important}
+ .studio-stability-bar{gap:7px}
+ .studio-stability-bar button{flex:1 1 calc(50% - 4px);min-height:44px;font-size:11px}
+ .fieldkit-channels{grid-template-columns:1fr!important;gap:12px}
+ .fieldkit-channel{padding:14px!important;gap:12px;background:rgba(5,19,16,.74)}
+ .fieldkit-channel-head strong{font-size:17px!important}
+ .fieldkit-channel-head span{font-size:11px!important}
+ .fieldkit-channel .fieldkit-param{
+  display:grid;grid-template-columns:minmax(0,92px) minmax(0,1fr) 49px;
+  align-items:center;gap:8px;min-height:44px
+ }
+ .fieldkit-channel .fieldkit-param span{font-size:11px!important;line-height:1.3}
+ .fieldkit-channel .fieldkit-param input{min-height:42px!important}
+ .fieldkit-channel .fieldkit-param output{font-size:11px;text-align:right}
+ .fieldkit-mod-grid{grid-template-columns:1fr 1fr;gap:13px}
+ .fieldkit-rack .fieldkit-toolbar{gap:10px}
+ .fieldkit-rack .fieldkit-toolbar>label{flex:1 1 130px}
+ .fieldkit-rack .fieldkit-head p{font-size:12px!important;line-height:1.5}
+ .fieldkit-rack .fieldkit-head h2{font-size:25px!important}
+ .fieldkit-rack .fieldkit-head button{flex-basis:92px;font-size:12px}
+ .fieldkit-actions{grid-template-columns:1fr 1fr}
+ .fieldkit-actions button,.fieldkit-import{min-height:52px}
+ .fieldkit-import-status{font-size:12px!important}
+}
+@media(max-width:350px){
+ .mobile-studio-dock button{font-size:10px!important;padding:4px 0}
+ .fieldkit-mod-grid{grid-template-columns:1fr}
+ .studio-stability-bar button{flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .mobile-studio-dock,.fieldkit-rack,.studio-quickbar{scroll-behavior:auto}
+}
+html.studio-eco .scope-wrap{opacity:.55}
+html.studio-eco .fieldkit-rack,
+html.studio-eco .mobile-studio-dock{
+ backdrop-filter:none!important;animation:none!important;
+}
+html.studio-eco .live-badge{animation:none!important}
+html.studio-eco .fieldkit-rack::before,html.studio-eco .fieldkit-rack::after{animation:none!important}
