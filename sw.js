@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v16';
+const CACHE_NAME = 'lovestronautes-v17';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
@@ -12,6 +12,8 @@ const APP_SHELL = [
   new URL('./studio-keyboard.css', scope).href,
   new URL('./loop-studio.css', scope).href,
   new URL('./hardware-synth-lab.css', scope).href,
+  new URL('./field-kit.css', scope).href,
+  new URL('./mobile-v17.css', scope).href,
   new URL('./mobile-compat.js', scope).href,
   new URL('./audio-extensions.js', scope).href,
   new URL('./studio-features.js', scope).href,
@@ -22,6 +24,8 @@ const APP_SHELL = [
   new URL('./studio-keyboard.js', scope).href,
   new URL('./loop-studio.js', scope).href,
   new URL('./hardware-synth-lab.js', scope).href,
+  new URL('./field-kit.js', scope).href,
+  new URL('./mobile-v17.js', scope).href,
   new URL('./pcm-capture-processor.js', scope).href,
   new URL('./mp3-encoder-worker.js', scope).href,
   new URL('./vendor/lame.min.js', scope).href,
