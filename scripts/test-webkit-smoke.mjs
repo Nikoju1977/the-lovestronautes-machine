@@ -38,12 +38,15 @@ try{
    waitUntil:'domcontentloaded',timeout:30000
  });
  await page.waitForSelector('#studio-key-instrument',{timeout:20000});
- assert.match(await page.locator('.live-badge').innerText(),/V17/);
+ assert.match(await page.locator('.live-badge').innerText(),/V18/);
  assert.equal(await page.locator('#panel-seq .tcard').count(),17);
  assert.equal(await page.locator('#panel-mix .mxch').count(),17);
  assert.equal(await page.locator('#panel-gear .hardware-rack').count(),4);
  assert.equal(await page.locator('#panel-gear .fieldkit-rack').count(),1);
  assert.equal(await page.locator('#fieldkit-rack .fieldkit-channel').count(),4);
+ assert.equal(await page.locator('#fieldkit-stream-play').count(),1);
+ assert.equal(await page.locator('#studio-stability-toggle').count(),1);
+ assert.ok(await page.locator('#fieldkit-import-status').count());
  assert.equal(await page.locator('#mobile-studio-dock button').count(),6);
  assert.equal(await page.locator('#panel-mix .studio-eq-details').count(),17);
  assert.ok(await page.locator('#eq-preset').count());
