@@ -8,6 +8,7 @@
 const FIELDKIT_IMPORT_MAX=100*1024*1024;
 const FIELDKIT_DIRECT_DECODE_MAX=4*1024*1024;
 const FIELDKIT_PREVIEW_SECONDS=12;
+const FIELDKIT_WAV_READ_MAX=8*1024*1024; // bounded even for 8ch/192kHz 64-bit WAV
 let fieldkitStreamAudio=null,fieldkitStreamURL=null,fieldkitStreamNode=null,fieldkitStreamGain=null;
 let fieldkitStreamSourceCtx=null,fieldkitStreamStopTimer=null,fieldkitStreamName='';
 let fieldkitImportMode='none';
@@ -99,9 +100,9 @@ async function fieldkitPlayStream(){
 function fieldkitRead16(view,offset){return view.getInt16(offset,true)/32768;}
 function fieldkitWavSample(view,offset,bits,format){
  if(format===3){
-  if(bits===32)return Math.max(-1,Math.min(1,view.getFloat32(offset,true)));
-  if(bits===64)return Math.max(-1,Math.min(1,view.getFloat64(offset,true)));
-  return 0;
+  const value=bits===32?view.getFloat32(offset,true):
+   bits===64?view.getFloat64(offset,true):0;
+  return Number.isFinite(value)?Math.max(-1,Math.min(1,value)):0;
  }
  if(bits===8)return (view.getUint8(offset)-128)/128;
  if(bits===16)return fieldkitRead16(view,offset);
@@ -139,10 +140,11 @@ async function fieldkitReadWavPreview(file){
  if(fmt.channels<1||fmt.channels>8||fmt.rate<8000||fmt.rate>192000)return null;
  if(fmt.align<fmt.channels*fmt.bits/8)return null;
  const frames=Math.min(Math.floor(FIELDKIT_PREVIEW_SECONDS*fmt.rate),
-  Math.floor(dataLength/fmt.align));
+  Math.floor(dataLength/fmt.align),
+  Math.floor(FIELDKIT_WAV_READ_MAX/fmt.align));
  if(frames<256)return null;
  const bytes=frames*fmt.align;
- // The largest PCM preview is ~18 MiB (8ch/192k/64-bit/12s); never copy 100 MiB.
+ // Even 8-channel / 192 kHz / 64-bit WAV uses at most 8 MiB input + mono preview.
  const raw=new DataView(await file.slice(dataStart,dataStart+bytes).arrayBuffer());
  const buffer=ctx.createBuffer(1,frames,fmt.rate),data=buffer.getChannelData(0);
  const stride=fmt.bits/8,mixChannels=Math.min(fmt.channels,2);
