@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
-<title>LOVESTRONAUTES MACHINE // PSYTRANCE STUDIO V16 · iOS + ANDROID</title>
+<title>LOVESTRONAUTES MACHINE // STUDIO V17 · FIELD KIT + MOBILE EQ</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -774,6 +774,8 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 <link rel="stylesheet" href="./studio-keyboard.css">
 <link rel="stylesheet" href="./loop-studio.css">
 <link rel="stylesheet" href="./hardware-synth-lab.css">
+<link rel="stylesheet" href="./field-kit.css">
+<link rel="stylesheet" href="./mobile-v17.css">
   <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
@@ -798,8 +800,8 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V16 · iOS / ANDROID</span></div>
-                <div class="wm-sub">PSYTRANCE · 16 PISTES · BOUCLES · WAV / MP3</div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V17 · FIELD KIT / MOBILE EQ</span></div>
+                <div class="wm-sub">STUDIO · 17 PISTES · BOUCLES · WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
         </div>
@@ -812,7 +814,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
-            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V16 · MOBILE AUDIO</span></div>
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V17 · FIELD KIT / EQ PRO</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
                 <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
@@ -850,9 +852,11 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         </div>
     </details>
 
-    <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 11 INSTRUMENTS NUMÉRIQUES</button>
+    <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 12 INSTRUMENTS NUMÉRIQUES</button>
 
     <button id="s1-jump" type="button" class="s1-jump">🎹 NOUVEAU SYNTHÉ VINTAGE · S1 MK2 · OUVRIR</button>
+
+    <button type="button" id="fieldkit-jump" class="fieldkit-jump">◉ FIELD KIT · SAMPLER / MIXER / RADIO · OUVRIR</button>
 
     <button type="button" id="taiga-jump" class="s1-jump">◈ NOUVEAU · PITTSBURGH TAÏGA MODULAR · OUVRIR</button>
     <button type="button" id="studio-key-jump" class="studio-live-jump">🎹 CLAVIER LIVE · OCTAVES / GLISS / MULTITOUCH</button>
@@ -962,6 +966,8 @@ function nikoRetryBtn(container, fn) {
 <script src="./studio-keyboard.js"></script>
 <script src="./loop-studio.js"></script>
 <script src="./hardware-synth-lab.js"></script>
+<script src="./field-kit.js"></script>
+<script src="./mobile-v17.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -970,14 +976,14 @@ function nikoRetryBtn(container, fn) {
 'use strict';
 
 // ── VARIABLES GLOBALES & AUTO-SAVE ────────────────────────────────
-let trackLengths = {kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,s1:16,taiga:16,mbase:16,solar:16,modfm:16,wing:16,auto:16};
-let trackSteps = {kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0,taiga:0,mbase:0,solar:0,modfm:0,wing:0,auto:0};
-let trackChaos = {kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0,taiga:0,mbase:0,solar:0,modfm:0,wing:0};
+let trackLengths = {kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,s1:16,taiga:16,mbase:16,solar:16,modfm:16,wing:16,fieldkit:16,auto:16};
+let trackSteps = {kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0,taiga:0,mbase:0,solar:0,modfm:0,wing:0,fieldkit:0,auto:0};
+let trackChaos = {kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0,taiga:0,mbase:0,solar:0,modfm:0,wing:0,fieldkit:0};
 let aiTimeline = [], agentAdvice = [];
 let bpm = 128, swing = 0.50;
 let isPlaying = false, isPilot = false, isAiAuto = false, isMultiOut = false;
 let tension = 0, morphAmount = 0;
-let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48,s1:.64,taiga:.60,mbase:.54,solar:.48,modfm:.50,wing:.43};
+let chanVol = {kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48,s1:.64,taiga:.60,mbase:.54,solar:.48,modfm:.50,wing:.43,fieldkit:.48};
 let biniouEnabled = false;
 let biniouParams = { drive:0.42, echo:0.28, space:0.24, tone:0.62, cyber:false, harmony:0.34, pitch:0 };
 let curPat = 'A', matrix;
@@ -994,13 +1000,14 @@ function initPats() {
     s1EnsurePatterns(bank, true);
     taigaEnsurePatterns(bank, true);
     hardwareEnsurePatterns(bank);
+    fieldkitEnsurePatterns(bank);
     return bank;
 }
 let patterns = initPats();
 
 function projectState() {
     return {
-        version: 12,
+        version: 13,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -1020,7 +1027,7 @@ function projectState() {
             harmony: biniouParams.harmony,
             pitch: biniouParams.pitch
         },
-        eq: {enabled:eqState.enabled,gains:eqState.gains.slice()},
+        eq: {enabled:eqState.enabled,preset:eqState.preset,gains:eqState.gains.slice()},
         machines: Object.assign({},machineParams),
         studio: studioProjectState(),
         psy: psyProjectState(),
@@ -1028,6 +1035,7 @@ function projectState() {
         taiga: taigaProjectState(),
         loops: loopsProjectState(),
         hardware: hardwareProjectState(),
+        fieldkit: fieldkitProjectState(),
         creator: creatorProjectState()
     };
 }
@@ -1050,12 +1058,13 @@ function applyProjectState(state, persist) {
     s1EnsurePatterns(patterns, false);
     taigaEnsurePatterns(patterns, false);
     hardwareEnsurePatterns(patterns);
+    fieldkitEnsurePatterns(patterns);
     ['A','B','C','D'].forEach(function(name) {
         if (!Array.isArray(patterns[name].biniou) || patterns[name].biniou.length !== 16) patterns[name].biniou = Array(16).fill(null);
     });
-    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,s1:16,taiga:16,mbase:16,solar:16,modfm:16,wing:16,auto:16}, state.lengths || {});
-    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0,taiga:0,mbase:0,solar:0,modfm:0,wing:0}, state.chaos || {});
-    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48,s1:.64,taiga:.60,mbase:.54,solar:.48,modfm:.50,wing:.43}, state.volumes || {});
+    trackLengths = Object.assign({kick:16,acid:16,fm:16,biniou:16,metal:16,snare:16,hat:16,sub:16,theremin:16,speak:16,s1:16,taiga:16,mbase:16,solar:16,modfm:16,wing:16,fieldkit:16,auto:16}, state.lengths || {});
+    trackChaos = Object.assign({kick:0,acid:0,fm:0,biniou:0,metal:0,snare:0,hat:0,sub:0,theremin:0,speak:0,s1:0,taiga:0,mbase:0,solar:0,modfm:0,wing:0,fieldkit:0}, state.chaos || {});
+    chanVol = Object.assign({kick:1,acid:.7,fm:.52,biniou:.68,metal:.45,snare:.62,hat:.35,sub:.58,theremin:.5,speak:.48,s1:.64,taiga:.60,mbase:.54,solar:.48,modfm:.50,wing:.43,fieldkit:.48}, state.volumes || {});
     bpm = Number.isFinite(state.bpm) ? Math.max(40, Math.min(220, state.bpm)) : 128;
     swing = Number.isFinite(state.swing) ? Math.max(0.50, Math.min(0.75, state.swing)) : 0.50;
     curPat = ['A','B','C','D'].includes(state.cur) ? state.cur : 'A';
@@ -1075,6 +1084,7 @@ function applyProjectState(state, persist) {
     s1RestoreState(state);
     taigaRestoreState(state);
     hardwareRestoreState(state);
+    fieldkitRestoreState(state);
     loopsRestoreState(state);
     creatorRestoreState(state);
     matrix = patterns[curPat];
@@ -1140,7 +1150,7 @@ async function requestWakeLock() {
     try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) {}
 }
 document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible' && isPlaying) requestWakeLock(); });
-window.addEventListener('beforeunload', function(e) { stopBiniouDrone(); if(isPlaying) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', function(e) { fieldkitStopMic(); stopBiniouDrone(); if(isPlaying) { e.preventDefault(); e.returnValue = ''; } });
 
 // ── AUDIO ENGINE & MULTI-OUT ──────────────────────────────────────
 let ctx = null, audioReady = false;
@@ -1298,7 +1308,7 @@ function initAudio() {
         }
     });
     // New lead and vocal instruments share the same stereo master and export bus.
-    ['theremin','speak','s1','taiga','mbase','solar','modfm','wing'].forEach(function(t){
+    ['theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit'].forEach(function(t){
         const g=ctx.createGain(); g.gain.value=chanVol[t]; chanGain[t]=g;
         const output=ctx.createGain(); studioInitChannel(t,g,output);
         if(isMultiOut && channelMerger)output.connect(channelMerger,0,3);
@@ -1622,6 +1632,10 @@ function scheduleStep(time) {
     const taigaStep=m.taiga && m.taiga[trackSteps.taiga];
     if(taigaStep)taigaTrigger(typeof taigaStep==='string'?taigaStep:(taigaStep.note||'F3'),time,
       typeof taigaStep==='object'?(taigaStep.vel||.8):.8);
+    const fieldCell=m.fieldkit&&m.fieldkit[trackSteps.fieldkit];
+    if(fieldCell)fieldkitTrigger(typeof fieldCell==='string'?fieldCell:
+      typeof fieldCell==='object'?(fieldCell.note||'C3'):'C3',
+      time,typeof fieldCell==='object'?(fieldCell.vel||.8):.8);
     for(const machine of HARDWARE_IDS){
       const cell=m[machine]&&m[machine][trackSteps[machine]];
       if(cell)hardwareTrigger(machine,typeof cell==='object'?(cell.note||'F3'):
@@ -1629,7 +1643,7 @@ function scheduleStep(time) {
     }
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
 
-    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.snare = (trackSteps.snare + 1) % trackLengths.snare; trackSteps.hat = (trackSteps.hat + 1) % trackLengths.hat; trackSteps.sub = (trackSteps.sub + 1) % trackLengths.sub; trackSteps.theremin = (trackSteps.theremin + 1) % trackLengths.theremin; trackSteps.speak = (trackSteps.speak + 1) % trackLengths.speak; trackSteps.s1 = (trackSteps.s1 + 1) % trackLengths.s1; trackSteps.taiga = (trackSteps.taiga + 1) % trackLengths.taiga; HARDWARE_IDS.forEach(k=>{trackSteps[k]=(trackSteps[k]+1)%trackLengths[k];}); trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
+    trackSteps.kick = (trackSteps.kick + 1) % trackLengths.kick; trackSteps.acid = (trackSteps.acid + 1) % trackLengths.acid; trackSteps.fm = (trackSteps.fm + 1) % trackLengths.fm; trackSteps.biniou = (trackSteps.biniou + 1) % trackLengths.biniou; trackSteps.metal = (trackSteps.metal + 1) % trackLengths.metal; trackSteps.snare = (trackSteps.snare + 1) % trackLengths.snare; trackSteps.hat = (trackSteps.hat + 1) % trackLengths.hat; trackSteps.sub = (trackSteps.sub + 1) % trackLengths.sub; trackSteps.theremin = (trackSteps.theremin + 1) % trackLengths.theremin; trackSteps.speak = (trackSteps.speak + 1) % trackLengths.speak; trackSteps.s1 = (trackSteps.s1 + 1) % trackLengths.s1; trackSteps.taiga = (trackSteps.taiga + 1) % trackLengths.taiga; trackSteps.fieldkit=(trackSteps.fieldkit+1)%trackLengths.fieldkit; HARDWARE_IDS.forEach(k=>{trackSteps[k]=(trackSteps[k]+1)%trackLengths[k];}); trackSteps.auto = (trackSteps.auto + 1) % trackLengths.auto;
     
     sendMIDIVJ('tension', tension); // VJ Sync à chaque step
 }
@@ -1679,8 +1693,8 @@ function schedulerTick() {
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, s1:0, taiga:0, mbase:0, solar:0, modfm:0, wing:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
-function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); loopsOnStop(); if(typeof s1StopVoices==='function')s1StopVoices(); if(typeof taigaStopVoices==='function')taigaStopVoices(); hardwareStop(); if(creatorState.running)creatorStopSong(); }
+function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, s1:0, taiga:0, mbase:0, solar:0, modfm:0, wing:0, fieldkit:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
+function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); loopsOnStop(); if(typeof s1StopVoices==='function')s1StopVoices(); if(typeof taigaStopVoices==='function')taigaStopVoices(); hardwareStop(); fieldkitStopVoices(); if(creatorState.running)creatorStopSong(); }
 
 // Réécrire WaveShaper.curve à 60 Hz provoque du garbage collection sur mobile.
 let morphLastCurveAt=-Infinity,morphLastCurveValue=-1;
@@ -1758,14 +1772,14 @@ function rafLoop() {
 }
 
 // ── UI BUILDERS ──────────────────────────────────────────────────
-let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing'];
+let TRACKS = ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit'];
 function buildSeq() {
     let p=$id('panel-seq'); p.innerHTML=''; stepEls={};
     TRACKS.forEach(function(name) {
         let isMetal=(name==='metal'), isBiniou=(name==='biniou'); let card=mkEl('div','tcard'+(isMetal?' mc':(isBiniou?' ac':'')));
         card.dataset.studioTrack=name;
         card.setAttribute('aria-label','Séquenceur '+name+' · '+trackLengths[name]+' pas');
-        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'T-8 SNARE',hat:'T-8 HAT',sub:'SUB BASS',acid:'TD-3 ACID',fm:'VOLCA FM2',kick:'T-8 KICK',theremin:'THEREMIN',speak:'PO-35 SPEAK',s1:'S1 MK2 · ANALOG',taiga:'TAÏGA · MODULAR',mbase:'MBASE 11 · KICK',solar:'SOLAR 50 · DRONE',modfm:'JOMOX · MOD FM',wing:'WING PINGER'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
+        card.innerHTML = '<div class="thead'+(isMetal?' mm':(isBiniou?' am':''))+'"><span class="ttitle'+(isMetal?' mm':(isBiniou?' am':''))+'">'+(isBiniou?'BINI':({snare:'T-8 SNARE',hat:'T-8 HAT',sub:'SUB BASS',acid:'TD-3 ACID',fm:'VOLCA FM2',kick:'T-8 KICK',theremin:'THEREMIN',speak:'PO-35 SPEAK',s1:'S1 MK2 · ANALOG',taiga:'TAÏGA · MODULAR',mbase:'MBASE 11 · KICK',solar:'SOLAR 50 · DRONE',modfm:'JOMOX · MOD FM',wing:'WING PINGER',fieldkit:'FIELD KIT · AUDIO'}[name] || name.toUpperCase()))+'</span><span class="tmeta">LEN: '+trackLengths[name]+'</span></div>';
         let grid=mkEl('div','sgrid'); stepEls[name]=[];
         for (let i=0;i<16;i++) {
             let s=mkEl('div','step'+(isMetal?' mon':'')); if (i >= trackLengths[name]) s.classList.add('out-of-bounds');
@@ -1781,6 +1795,7 @@ function buildSeq() {
                     else if (trk==='s1') next={note:'F3',vel:.8};
                     else if (trk==='taiga') next={note:'F3',vel:.8};
                     else if (trk==='solar'||trk==='modfm'||trk==='wing') next={note:'F3',vel:.77};
+                    else if (trk==='fieldkit') next={note:'C3',vel:.75};
                     else next={note:trk==='acid'?'G2':'C4',vel:.8};
                 }
                 matrix[trk][idx]=active?null:next;
@@ -1969,16 +1984,21 @@ function syncProjectUI() {
     s1SyncRack();
     taigaSyncRack();
     hardwareSyncRack();
+    fieldkitSyncRack();
     loopsRefresh();
     creatorSyncUI();
     updateMasterEQ();
     updateHistoryUI();
 }
 
-buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI();
+buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); mobileUIBuild();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
+$id('fieldkit-jump').addEventListener('click',function(){
+    const tab=document.querySelector('.nt[data-panel="gear"]');if(tab)tab.click();
+    requestAnimationFrame(function(){const card=$id('fieldkit-rack');if(card)card.scrollIntoView({behavior:'smooth',block:'start'});});
+});
 $id('taiga-jump').addEventListener('click',function(){
     const tab=document.querySelector('.nt[data-panel="gear"]');if(tab)tab.click();
     requestAnimationFrame(function(){const rack=$id('taiga-rack');if(rack)rack.scrollIntoView({behavior:'smooth',block:'start'});});
@@ -2078,6 +2098,7 @@ $id('clear-btn').addEventListener('click', function() {
     s1EnsurePatterns(patterns,false);
     taigaEnsurePatterns(patterns,false);
     hardwareEnsurePatterns(patterns);
+    fieldkitEnsurePatterns(patterns);
     matrix = patterns[curPat];
     buildSeq();
     saveLiveState();

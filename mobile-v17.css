@@ -1,0 +1,76 @@
+/* V17 - Studio ergonomics on Android and iOS, without hiding features. */
+.mobile-studio-dock{display:none}
+.master-eq-preset{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 6px}
+.master-eq-preset label{display:flex;flex-direction:column;gap:5px;color:#bbefca;font-size:12px;font-weight:800;min-width:0;flex:1 1 165px}
+.master-eq-preset select{min-width:0;min-height:44px;width:100%;border:1px solid rgba(159,236,186,.54);border-radius:9px;background:#11271f;color:#eafbe8;padding:9px 10px;font-size:13px}
+.master-eq-preset output{color:#9be9bb;font-size:12px;font-weight:800;line-height:1.6}
+.studio-eq-details{width:100%;border-top:1px solid rgba(125,216,171,.3);padding:8px 0 0}
+.studio-eq-details summary{color:#b7f5d1;font-size:12px;font-weight:800;padding:9px 2px;cursor:pointer;touch-action:manipulation}
+.studio-eq-details[open] summary{border-bottom:1px solid rgba(141,199,162,.2);margin-bottom:9px}
+.studio-eq-details .studio-channel-controls{border-top:0;margin:0;padding:0}
+.studio-eq-preset{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:800;color:#bde9c7}
+.studio-eq-preset select{width:100%;min-width:0;min-height:43px;padding:8px;background:#142b23;color:#e9ffef;border:1px solid #61967c;border-radius:8px;font-size:12px}
+.studio-eq-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;width:100%}
+.studio-eq-actions .mb{min-width:0;min-height:38px;height:auto;padding:6px 3px;border-radius:7px;font-size:10px;letter-spacing:0;font-weight:800}
+.studio-channel-param{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 45px;min-height:36px;gap:4px}
+.studio-channel-param span{font-size:10px;font-weight:800;color:#b6d1ba}
+.studio-channel-param span small{display:block;margin-top:3px;font-size:9px;color:#7fd9b8;white-space:nowrap}
+.studio-channel-param input{min-width:0;min-height:30px;touch-action:pan-y}
+.studio-channel-param output{font-size:10px;white-space:nowrap}
+.studio-eq-headroom{margin:3px 0;color:#90d9ac;font-size:10px;line-height:1.5}
+.eq-grid .eq-band{min-height:103px}
+.eq-grid .eq-band input{min-height:32px;touch-action:pan-y}
+.eq-grid .eq-band output{font-size:12px}
+@media(max-width:1023px){
+ html,body{scroll-padding-bottom:85px}
+ body{padding-bottom:calc(67px + env(safe-area-inset-bottom))!important}
+ .mobile-studio-dock{
+  position:fixed;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:4px;bottom:0;left:0;right:0;z-index:100;
+  min-height:57px;padding:6px 5px calc(6px + env(safe-area-inset-bottom));
+  border-top:2px solid rgba(149,232,189,.53);
+  background:rgba(5,16,14,.98);backdrop-filter:blur(12px);
+  box-shadow:0 -7px 25px rgba(0,0,0,.55)
+ }
+ .mobile-studio-dock button{
+  min-width:0;min-height:47px;background:#1c2b27;color:#c5dbd0;border:1px solid #335949;
+  border-radius:9px;padding:5px 2px;font:800 clamp(10px,1.8vw,12px) system-ui,sans-serif;
+  cursor:pointer;touch-action:manipulation;overflow:hidden
+ }
+ .mobile-studio-dock button.active{background:#bce9c4;color:#133221;border-color:#bce9c4}
+ .mobile-studio-dock button[data-mobile-action="play"]{background:#28563c;color:#e4ffed;border-color:#6eb78d}
+ .mobile-studio-dock button[data-mobile-action="play"].active{background:#eac987;color:#28200d;border-color:#eac987}
+ .nav-tabs{display:flex!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin;scroll-snap-type:x proximity;justify-content:flex-start}
+ .nav-tabs .nt{flex:0 0 auto!important;min-width:89px!important;font-size:12px!important;scroll-snap-align:start;padding:8px 7px;white-space:nowrap}
+ .panel{scroll-margin-top:63px;scroll-margin-bottom:88px}
+ .panel.active{padding:12px 11px 25px!important;gap:13px!important}
+ .hud-r2 input,.studio-quick-actions button,.nt,.pt{font-size:max(12px, .72rem)}
+ .studio-quick-actions button{min-height:49px}
+ .tbar .ctrl-grid .mb{min-height:45px}
+ .sgrid .step{min-height:45px!important}
+ .mxrow{scroll-snap-type:x proximity;scroll-padding-left:12px;align-items:stretch}
+ .mxch{scroll-snap-align:start;min-width:186px!important;max-width:210px!important;flex-basis:190px!important;padding:12px 9px!important;gap:9px}
+ .mxch .chname{font-size:13px!important}
+ .mxch .chmute{min-height:40px;min-width:44px}
+ .mxch .vfader{height:96px}
+ .mxch .studio-eq-details summary{min-height:43px;font-size:12px}
+ .studio-mute-solo .mb{min-height:42px}
+ .eq-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .eq-band{padding:12px 5px!important;gap:9px!important}
+ .eq-band span{font-size:12px!important}
+ .eq-band small{font-size:11px!important}
+ .eq-band output{font-size:12px!important}
+ .extension-actions .mb{min-height:42px}
+ .fxcard .fxtitle{font-size:15px;line-height:1.3}
+ .studio-channel-param input,.eq-band input{accent-color:#9be9b1}
+ .studio-eq-details{min-height:38px}
+ #fieldkit-rack{scroll-margin-top:65px}
+ .kbd-wrap{padding-bottom:14px!important}
+}
+@media(max-width:400px){
+ .mobile-studio-dock button{font-size:10px}
+ .nav-tabs .nt{min-width:81px!important}
+ .studio-quick-title strong{font-size:12px}
+ .studio-eq-actions{grid-template-columns:1fr 1fr}
+ .studio-eq-actions [data-eq-flat]{grid-column:1/-1}
+}

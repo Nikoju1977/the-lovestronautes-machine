@@ -1,13 +1,50 @@
-/* LOVESTRONAUTES STUDIO PRO — eight-channel console and PCM audio export.
+/* LOVESTRONAUTES STUDIO PRO — mobile-friendly console and PCM audio export.
    This extension is loaded before the sequencer's main inline script. */
 'use strict';
 
-const STUDIO_TRACKS=['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing'];
+const STUDIO_TRACKS=['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit'];
 const STUDIO_EQ=[
-  ['low',120,'lowshelf'],['mid',1200,'peaking'],['high',7500,'highshelf']
+  ['low',90,'lowshelf'],['mid',650,'peaking'],
+  ['presence',3200,'peaking'],['high',9600,'highshelf']
 ];
+const STUDIO_EQ_PRESETS={
+ flat:{label:'NEUTRE',values:[0,0,0,0]},
+ punch:{label:'PUNCH',values:[2,-1.5,1,.5]},
+ clarity:{label:'CLARTÉ',values:[-1,-1,2,1]},
+ warmth:{label:'CHALEUR',values:[1.5,.8,-.8,-1.5]},
+ air:{label:'AIR',values:[-1,-.5,1,2]},
+ sub:{label:'SUB FOCUS',values:[2.5,-1.5,-.7,-2]}
+};
+const STUDIO_EQ_FREQUENCIES={
+ kick:[72,380,2800,8500],mbase:[65,400,2800,8500],sub:[65,240,1900,7400],
+ snare:[145,720,3700,9800],hat:[165,1100,5200,10900],metal:[145,900,4000,10800],
+ acid:[90,770,3600,9300],fm:[120,950,3700,10600],
+ biniou:[115,820,3000,9600],speak:[135,1000,3400,10800],
+ s1:[95,660,3000,9800],taiga:[110,690,3700,10200],
+ solar:[72,550,2750,9400],modfm:[105,950,4000,10800],
+ wing:[125,960,4700,10500],theremin:[115,920,3900,10200],fieldkit:[100,840,3300,10000]
+};
+const STUDIO_EQ_RECOMMENDED={
+ kick:'punch',mbase:'punch',sub:'sub',snare:'clarity',hat:'air',metal:'air',
+ acid:'warmth',fm:'clarity',biniou:'warmth',speak:'clarity',
+ s1:'punch',taiga:'warmth',solar:'warmth',modfm:'clarity',wing:'air',
+ theremin:'clarity',fieldkit:'warmth'
+};
+function studioEqFrequencies(name,rate){
+ const defs=STUDIO_EQ_FREQUENCIES[name]||STUDIO_EQ.map(b=>b[1]);
+ return defs.map(f=>Math.min(f,rate*.41));
+}
+function studioEqTrim(settings){
+ if(settings.eqOn===false)return .88;
+ const positive=STUDIO_EQ.reduce((sum,b)=>sum+Math.max(0,settings[b[0]]||0),0);
+ // Half the summed boosts are compensated before the filters to protect
+ // transient peaks without allowing a large positive EQ to clip the bus.
+ return Math.max(.23,.88*Math.pow(10,-positive*.58/20));
+}
 const studioChannels={};
-STUDIO_TRACKS.forEach(n=>studioChannels[n]={mute:false,solo:false,pan:0,low:0,mid:0,high:0});
+STUDIO_TRACKS.forEach(n=>studioChannels[n]={
+ mute:false,solo:false,pan:0,eqOn:true,eqPreset:'flat',low:0,mid:0,presence:0,high:0
+});
 const studioNodes={};
 let studioExportBars=8,studioExportBusy=false,studioExportCancel=false;
 let masterOutput=null,masterLimiter=null;
@@ -20,22 +57,28 @@ function restoreStudioState(state){
     const src=tracks[name] && typeof tracks[name]==='object'?tracks[name]:{};
     const ch=studioChannels[name];ch.mute=src.mute===true;ch.solo=src.solo===true;
     ch.pan=studioSafe(src.pan,-1,1,0);
+    ch.eqOn=src.eqOn!==false;
+    ch.eqPreset=Object.prototype.hasOwnProperty.call(STUDIO_EQ_PRESETS,src.eqPreset)?src.eqPreset:'flat';
     STUDIO_EQ.forEach(function(b){ch[b[0]]=studioSafe(src[b[0]],-9,9,0);});
   });
   studioExportBars=[-1,1,2,4,8,16,32].includes(saved.bars)?saved.bars:8;
 }
 function studioInitChannel(name,input,destination){
-  const filters=STUDIO_EQ.map(function(b){
+  const frequencies=studioEqFrequencies(name,ctx.sampleRate);
+  const trim=ctx.createGain(),filters=STUDIO_EQ.map(function(b,i){
     const node=ctx.createBiquadFilter();
-    node.type=b[2];node.frequency.value=Math.min(b[1],ctx.sampleRate*0.45);
-    if(b[2]==='peaking')node.Q.value=0.8;
+    node.type=b[2];node.frequency.value=frequencies[i];
+    if(b[2]==='peaking')node.Q.value=i===1?.84:1.05;
     return node;
   });
-  input.connect(filters[0]);filters[0].connect(filters[1]);filters[1].connect(filters[2]);
+  input.connect(trim);
+  trim.connect(filters[0]);
+  for(let i=1;i<filters.length;i++)filters[i-1].connect(filters[i]);
   const pan=ctx.createStereoPanner?ctx.createStereoPanner():null;
-  if(pan){filters[2].connect(pan);pan.connect(destination);}
-  else filters[2].connect(destination);
-  studioNodes[name]={filters,pan};
+  const tail=filters[filters.length-1];
+  if(pan){tail.connect(pan);pan.connect(destination);}
+  else tail.connect(destination);
+  studioNodes[name]={trim,filters,pan};
   studioApplyMix();
 }
 function studioApplyMix(){
@@ -47,50 +90,110 @@ function studioApplyMix(){
       g.gain.setTargetAtTime(heard?studioSafe(chanVol[name],0,1,0.5):0,ctx.currentTime,0.015);
     }
     if(!nodes || !ctx)return;
-    STUDIO_EQ.forEach(function(b,i){nodes.filters[i].gain.setTargetAtTime(settings[b[0]],ctx.currentTime,0.025);});
+    STUDIO_EQ.forEach(function(b,i){
+      nodes.filters[i].gain.setTargetAtTime(settings.eqOn?settings[b[0]]:0,ctx.currentTime,.025);
+    });
+    nodes.trim.gain.setTargetAtTime(studioEqTrim(settings),ctx.currentTime,.025);
     if(nodes.pan)nodes.pan.pan.setTargetAtTime(settings.pan,ctx.currentTime,0.02);
   });
 }
+function studioApplyEqPreset(name,preset){
+ const ch=studioChannels[name],presets=STUDIO_EQ_PRESETS;
+ if(!ch||!Object.prototype.hasOwnProperty.call(presets,preset))return false;
+ presets[preset].values.forEach(function(value,i){ch[STUDIO_EQ[i][0]]=value;});
+ ch.eqOn=true;ch.eqPreset=preset;studioApplyMix();studioSyncMixer();
+ return true;
+}
 function studioExtendChannel(name,root){
-  root.dataset.studioTrack=name;
-  const ch=studioChannels[name];
-  const actions=document.createElement('div');actions.className='studio-mute-solo';
-  actions.innerHTML='<button type="button" class="mb" aria-label="Mute '+name+'">M</button><button type="button" class="mb" aria-label="Solo '+name+'">S</button>';
-  ['mute','solo'].forEach(function(key,i){
-    actions.children[i].addEventListener('click',function(){
-      pushUndo();ch[key]=!ch[key];studioApplyMix();studioSyncMixer();saveLiveState();
-    });
+ root.dataset.studioTrack=name;
+ const ch=studioChannels[name];
+ const actions=document.createElement('div');actions.className='studio-mute-solo';
+ actions.innerHTML='<button type="button" class="mb" aria-label="Mute '+name+'">M</button><button type="button" class="mb" aria-label="Solo '+name+'">S</button>';
+ ['mute','solo'].forEach(function(key,i){
+  actions.children[i].addEventListener('click',function(){
+   pushUndo();ch[key]=!ch[key];studioApplyMix();studioSyncMixer();saveLiveState();
   });
-  root.appendChild(actions);
-  const controls=document.createElement('div');controls.className='studio-channel-controls';
-  [['pan','PAN',-1,1,0.05],['low','LOW',-9,9,0.5],['mid','MID',-9,9,0.5],['high','HIGH',-9,9,0.5]].forEach(function(b){
-    const label=document.createElement('label');label.className='studio-channel-param';
-    label.innerHTML='<span>'+b[1]+'</span><input type="range" data-studio="'+b[0]+'" min="'+b[2]+'" max="'+b[3]+'" step="'+b[4]+'" aria-label="'+name+' '+b[1]+'"><output></output>';
-    const input=label.querySelector('input');
-    input.addEventListener('pointerdown',pushUndo);
-    input.addEventListener('input',function(){
-      ch[b[0]]=Number(input.value);studioApplyMix();studioSyncMixer();saveLiveState();
-    });
-    controls.appendChild(label);
+ });
+ root.appendChild(actions);
+ const details=document.createElement('details');details.className='studio-eq-details';
+ details.innerHTML='<summary>EQ 4 BANDES · RÉGLER</summary>';
+ const controls=document.createElement('div');controls.className='studio-channel-controls';
+ const preset=document.createElement('label');preset.className='studio-eq-preset';
+ preset.innerHTML='<span>COURBE</span><select data-eq-preset aria-label="Courbe EQ '+name+'">'+
+  Object.keys(STUDIO_EQ_PRESETS).map(k=>'<option value="'+k+'">'+STUDIO_EQ_PRESETS[k].label+'</option>').join('')+
+  '<option value="custom">PERSONNELLE</option></select>';
+ controls.appendChild(preset);
+ const row=document.createElement('div');row.className='studio-eq-actions';
+ row.innerHTML='<button type="button" data-eq-suggest class="mb">AUTO STYLE</button>'+
+  '<button type="button" data-eq-bypass class="mb">EQ ON</button>'+
+  '<button type="button" data-eq-flat class="mb">FLAT</button>';
+ controls.appendChild(row);
+ [['pan','PANORAMIQUE',-1,1,.05]].concat(STUDIO_EQ.map(b=>[b[0],b[0].toUpperCase(),-9,9,.5]))
+   .forEach(function(b){
+  const label=document.createElement('label');label.className='studio-channel-param';
+  const index=STUDIO_EQ.findIndex(x=>x[0]===b[0]);
+  const info=index<0?'':Math.round(studioEqFrequencies(name,48000)[index])+' Hz';
+  label.innerHTML='<span>'+b[1]+(info?'<small>'+info+'</small>':'')+
+    '</span><input type="range" data-studio="'+b[0]+'" min="'+b[2]+
+    '" max="'+b[3]+'" step="'+b[4]+'" aria-label="'+name+' '+b[1]+
+    '"><output></output>';
+  const input=label.querySelector('input');
+  input.addEventListener('pointerdown',pushUndo);
+  input.addEventListener('input',function(){
+   ch[b[0]]=Number(input.value);
+   if(b[0]!=='pan'){ch.eqPreset='custom';ch.eqOn=true;}
+   studioApplyMix();studioSyncMixer();saveLiveState();
   });
-  root.appendChild(controls);
-  studioSyncMixer();
+  controls.appendChild(label);
+ });
+ const trim=document.createElement('p');trim.className='studio-eq-headroom';
+ trim.textContent='Headroom automatique';
+ controls.appendChild(trim);
+ details.appendChild(controls);root.appendChild(details);
+ preset.querySelector('select').addEventListener('change',function(){
+  if(this.value==='custom')return;
+  pushUndo();studioApplyEqPreset(name,this.value);saveLiveState();
+ });
+ row.querySelector('[data-eq-suggest]').addEventListener('click',function(){
+  pushUndo();studioApplyEqPreset(name,STUDIO_EQ_RECOMMENDED[name]||'flat');saveLiveState();
+ });
+ row.querySelector('[data-eq-bypass]').addEventListener('click',function(){
+  pushUndo();ch.eqOn=!ch.eqOn;studioApplyMix();studioSyncMixer();saveLiveState();
+ });
+ row.querySelector('[data-eq-flat]').addEventListener('click',function(){
+  pushUndo();studioApplyEqPreset(name,'flat');saveLiveState();
+ });
+ studioSyncMixer();
 }
 function studioSyncMixer(){
-  document.querySelectorAll('#panel-mix [data-studio-track]').forEach(function(root){
-    const ch=studioChannels[root.dataset.studioTrack];
-    if(!ch)return;
-    const buttons=root.querySelectorAll('.studio-mute-solo button');
-    if(buttons.length===2){
-      buttons[0].classList.toggle('on',ch.mute);buttons[1].classList.toggle('on',ch.solo);
-      buttons[0].setAttribute('aria-pressed',String(ch.mute));buttons[1].setAttribute('aria-pressed',String(ch.solo));
-    }
-    root.querySelectorAll('input[data-studio]').forEach(function(input){
-      const key=input.dataset.studio;input.value=ch[key];
-      const v=ch[key];
-      input.nextElementSibling.textContent=key==='pan'?(Math.abs(v)<0.01?'C':v<0?'L'+Math.round(-v*100):'R'+Math.round(v*100)):(v>0?'+':'')+v.toFixed(1);
-    });
+ if(typeof document==='undefined')return;
+ document.querySelectorAll('#panel-mix [data-studio-track]').forEach(function(root){
+  const ch=studioChannels[root.dataset.studioTrack];if(!ch)return;
+  const buttons=root.querySelectorAll('.studio-mute-solo button');
+  if(buttons.length===2){
+   buttons[0].classList.toggle('on',ch.mute);buttons[1].classList.toggle('on',ch.solo);
+   buttons[0].setAttribute('aria-pressed',String(ch.mute));
+   buttons[1].setAttribute('aria-pressed',String(ch.solo));
+  }
+  root.querySelectorAll('input[data-studio]').forEach(function(input){
+   const key=input.dataset.studio,value=ch[key];
+   input.value=value;
+   const out=input.nextElementSibling;
+   if(out&&out.tagName==='OUTPUT')
+    out.textContent=key==='pan'?(Math.abs(value)<.01?'C':value<0?'L'+Math.round(-value*100):'R'+Math.round(value*100))
+      :(value>0?'+':'')+value.toFixed(1)+' dB';
   });
+  const select=root.querySelector('[data-eq-preset]');
+  if(select)select.value=ch.eqPreset;
+  const bypass=root.querySelector('[data-eq-bypass]');
+  if(bypass){
+   bypass.textContent=ch.eqOn?'EQ ON':'BYPASS';
+   bypass.classList.toggle('on',ch.eqOn);
+   bypass.setAttribute('aria-pressed',String(ch.eqOn));
+  }
+  const trim=root.querySelector('.studio-eq-headroom');
+  if(trim)trim.textContent='Headroom : '+(20*Math.log10(studioEqTrim(ch))).toFixed(1)+' dB · anti-saturation';
+ });
 }
 function studioMakeMaster(input){
   masterLimiter=ctx.createDynamicsCompressor();

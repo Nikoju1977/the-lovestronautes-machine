@@ -76,6 +76,41 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
 
+## V17 — KOMA FIELD KIT / Interface mobile / EQ PRO
+
+Version **V17 · Electroacoustic Lab**, utilisable sans compte, clé API ni serveur depuis Safari sur iOS ou Chrome sur Android. Les 16 anciennes pistes et leurs projets restent compatibles ; **FIELD KIT** devient la **17e piste**.
+
+### FIELD KIT, instrument virtuel non officiel
+
+Notre moteur Web Audio s'inspire du **KOMA Elektronik Field Kit**, une station électroacoustique connue notamment pour son mixeur quatre voies, la radio à commande CV, le suiveur d'enveloppe, le LFO et les interfaces de capteurs et de moteurs.
+
+- **Quatre voies indépendantes** avec GAIN/PREAMP, LEVEL, tonalité passe-bas/passe-haut, départ auxiliaire et retour AUX/delay. Tous les signaux aboutissent au bus FIELD KIT du mixeur (mute, solo, EQ, volume et master export WAV/MP3).
+- **Sources virtuelles** : oscillateur, bruit/contact, radio synthétique modulée, moteur synthétique, sample importé, micro direct avec autorisation. Le son de RADIO/MOTEUR est **simulé par synthèse**, sans capter de véritables fréquences radio ni piloter des moteurs.
+- **CV numérique** : LFO, capteur virtuel, recherche radio et suiveur d'enveloppe. Le **suiveur d'enveloppe utilise réellement le niveau RMS du microphone activé** et fournit un indicateur de gate ; ces valeurs peuvent moduler les textures radio virtuelles.
+- **Samples** : import de fichiers audio décodables localement (jusqu'à 15 Mo), conversion mono et limite 12 secondes, enregistrement micro de 3 secondes via le captureur PCM interne. Les pistes "SAMPLE" restent silencieuses si aucun fichier n'est chargé.
+- **Confidentialité** : aucune donnée audio transmise à un serveur. Le microphone réclame une autorisation explicite ; le monitoring ne fonctionne que lorsque l'utilisateur active "MICRO LIVE" sur une voie MIC et s'arrête lorsque la page passe en arrière-plan. Utiliser un casque pour éviter le larsen. Les samples sont **en mémoire seulement** ; l'export JSON mémorise les réglages, pas le fichier audio lui-même.
+- **Quatre patches** : FIELD RECORDING, ANTENNA / RADIO CV, CONTACT / INDUSTRIAL, ORGANIC DRONE.
+- **Séquenceur et Boucles** : FIELD KIT s'ajoute aux patterns A/B/C/D, au piano roll 64 pas et à la sortie mixée. Voix audio bornées et nettoyées pour limiter les charges sur téléphone.
+
+### Interface repensée sur téléphone et tablette
+
+- Barre **SON / PLAY / SEQ / MIX / EQ / BOUCLES** toujours visible en bas des écrans iOS/Android, avec respect des marges de sécurité de l'écran.
+- Onglets défilants lisibles et cibles tactiles d'au moins 44 px pour les actions clés, pas du séquenceur plus larges, pistes MIX accessibles par défilement horizontal et **EQ repliables** pour conserver la place.
+- **Égalisation quatre bandes par piste** (LOW, MID, PRESENCE, HIGH), fréquences optimisées par instrument, presets Neutre/Punch/Clarté/Chaleur/Air/Sub Focus, recommandation AUTO STYLE, bypass, mémorisation de toutes les valeurs.
+- Protection du niveau d'entrée de chaque canal : **réduction automatique de gain avant les boosts EQ** afin de limiter les saturations en mixage.
+- **Master EQ cinq bandes** : six presets, BYPASS/FLAT, compensation automatique des boosts avant le traitement master et affichage de la marge de gain.
+- Le clavier multi-touch, le séquenceur, les exports, la création de boucles, les autres instruments, l'import/export JSON et la PWA sont conservés.
+
+### Usage rapide
+
+1. Ouvrir le site puis **ACTIVER LE SON** (Safari sur iPhone/iPad ou Chrome sur Android).
+2. Toucher **FIELD KIT · SAMPLER / MIXER / RADIO**, choisir un preset, puis **ÉCOUTER FIELD KIT**.
+3. Dans **FIELD KIT**, choisir `SAMPLE` sur une voie puis **IMPORT AUDIO**, ou **REC MICRO 3 S**. Pour utiliser `MICRO DIRECT`, choisir cette source et activer **MICRO LIVE** avec un casque.
+4. Dans **SEQ**, activer quelques pas FIELD KIT et lancer PLAY ; utiliser **BOUCLES** pour répéter ou exporter.
+5. Dans **MIX**, ouvrir **EQ 4 BANDES** sur une piste, appuyer sur **AUTO STYLE** ; dans **EQ**, choisir un preset master avant l'export WAV/MP3.
+
+**Limites :** aucune lecture de vraie radio AM/FM/SW, aucune interface CV / moteurs / capteurs matériels, pas de sauvegarde binaire du sample dans le JSON, et aucune garantie d'absence de coupures sur tous les modèles de téléphones sans essai physique. Il s'agit d'un instrument inspiré du Field Kit, **sans affiliation avec KOMA Elektronik ni émulation exacte des composants analogiques**.
+
 ## PSY V16 — Compatibilité iOS Safari et Android Chrome
 
 **Objectif :** faire fonctionner le même studio Web Audio sur iPhone/iPad (Safari, y compris l'application web ajoutée à l'écran d'accueil) et sur téléphones/tablettes Android (Chrome/PWA), sans serveur ni clé API.

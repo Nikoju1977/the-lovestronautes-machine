@@ -9,6 +9,7 @@ const STUDIO_KEYBOARD_MODES=[
  ['modfm','JOMOX MOD FM'],
  ['wing','WING PINGER'],
  ['mbase','MBASE 11 · KICK'],
+ ['fieldkit','FIELD KIT · ELECTRO'],
  ['s1','S1 MK2 · ANALOG'],
  ['fm2','VOLCA FM2'],
  ['td3','TD-3 · ACID'],
@@ -58,6 +59,7 @@ function studioKeyboardSound(note,velocity,held,mode=studioKeyMode){
   if(mode==='td3'){psyTriggerTD3(note,v,time);return true;}
   if(mode==='theremin'){psyTriggerTheremin(note,time,v);return true;}
   if(['mbase','solar','modfm','wing'].includes(mode))return hardwareTrigger(mode,note,time,v);
+  if(mode==='fieldkit')return fieldkitTrigger(note,time,v);
   if(mode==='biniou'){
    if(!biniouEnabled){
     const label=document.getElementById('studio-key-feedback');
@@ -76,6 +78,7 @@ function studioKeyboardReleaseSound(token){
  if(token&&studioKeyCurrentVoice===token){
   if(token.mode==='taiga'&&typeof taigaStopVoices==='function')taigaStopVoices();
   if(token.mode==='s1'&&typeof s1StopVoices==='function')s1StopVoices();
+  if(token.mode==='fieldkit'&&typeof fieldkitStopVoices==='function')fieldkitStopVoices();
   studioKeyCurrentVoice=null;
  }
 }
@@ -115,7 +118,7 @@ async function studioKeyboardStart(note,velocity,map,id,held=true){
  // Fast taps that end while AudioContext is resuming still produce a note.
  const played=studioKeyboardSound(note,velocity,active&&held,token.mode);
  token.started=played;
- if(played&&active&&(token.mode==='taiga'||token.mode==='s1'))
+ if(played&&active&&(token.mode==='taiga'||token.mode==='s1'||token.mode==='fieldkit'))
   studioKeyCurrentVoice=token;
  studioKeyboardPaint();
 }
@@ -129,6 +132,7 @@ function studioKeyboardOffAll(){
  for(const [id,token] of [...studioKeyMidi])studioKeyboardRelease(token,studioKeyMidi,id);
  if(typeof taigaStopVoices==='function')taigaStopVoices();
  if(typeof s1StopVoices==='function')s1StopVoices();
+ if(typeof fieldkitStopVoices==='function')fieldkitStopVoices();
  studioKeyCurrentVoice=null;
 }
 function studioKeyboardGlissNote(event,root){

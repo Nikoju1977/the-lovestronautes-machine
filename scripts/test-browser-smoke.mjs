@@ -16,14 +16,27 @@ function browserHarness(){
  window.addEventListener('unhandledrejection',e=>failures.push('Promise: '+String(e.reason).slice(0,100)));
  setTimeout(async function(){
   try{
-   check(document.querySelector('.live-badge')?.textContent.includes('V16'),'V16 badge');
+   check(document.querySelector('.live-badge')?.textContent.includes('V17'),'V17 badge');
    check(typeof taigaTrigger==='function','Taiga synth engine');
    check(!!document.getElementById('taiga-rack'),'Taiga rack rendered');
-   check(document.querySelectorAll('#panel-seq .tcard').length===16,'16 step sequencer lanes');
-   check(document.querySelectorAll('#panel-mix .mxch').length===16,'16 channel strips');
+   check(document.querySelectorAll('#panel-seq .tcard').length===17,'17 step sequencer lanes');
+   check(document.querySelectorAll('#panel-mix .mxch').length===17,'17 channel strips');
    check(document.querySelectorAll('#taiga-rack [data-taiga-param]').length>20,'Taiga analog controls');
    check(document.querySelectorAll('#taiga-preset option').length===5,'Taiga presets');
    check(!!document.querySelector('#panel-loops #loops-play'),'Loop Studio transport');
+   check(!!document.getElementById('fieldkit-rack'),'Field Kit electroacoustic rack rendered');
+   check(document.querySelectorAll('#fieldkit-rack .fieldkit-channel').length===4,'Field Kit 4 independent mixer inputs');
+   check(document.querySelectorAll('#fieldkit-preset option').length===5,'Field Kit presets available');
+   check(!!document.getElementById('fieldkit-record')&&!!document.getElementById('fieldkit-file'),'Field recording and import on mobile');
+   check(!!document.getElementById('fieldkit-envelope'),'Microphone envelope follower UI');
+   check(!!document.getElementById('mobile-studio-dock'),'Mobile touch navigation mounted');
+   check(!!document.getElementById('eq-preset'),'Master EQ presets visible');
+   check(!!document.querySelector('#panel-mix .studio-eq-details'),'Mobile collapsible channel EQ');
+   check(document.querySelectorAll('#panel-mix .mxch[data-studio-track="fieldkit"]').length===1,'Field Kit mixer channel');
+   check(document.querySelectorAll('#panel-seq .tcard[data-studio-track="fieldkit"]').length===1,'Field Kit sequencer track');
+   check(!!document.querySelector('#creator-edit-track option[value="fieldkit"]'),'Field Kit melody editor');
+   check(!!document.querySelector('#studio-key-instrument option[value="fieldkit"]'),'Field Kit live keyboard');
+
    check(document.querySelectorAll('#loops-bars option').length===6,'Loop bar durations');
    check(!!document.getElementById('loops-export-wav')&&!!document.getElementById('loops-export-mp3'),'Loop WAV/MP3 buttons');
    check(['mbase','solar','modfm','wing'].every(k=>!!document.getElementById('hardware-'+k)),'Four instrument racks');
@@ -43,6 +56,16 @@ function browserHarness(){
    check(ready&&ctx.state==='running','AudioContext running');
    if(ready){
     check(!!chanGain.taiga,'Taiga bus connected');
+    check(!!chanGain.fieldkit,'Field Kit connected to master audio');
+    check(fieldkitTrigger('F3',ctx.currentTime+.09,.68),'Field Kit starts four-channel audio');
+    check(fieldkitVoices.length<=1,'Field Kit mobile voice limit');
+    fieldkitStopVoices();
+    check(studioNodes.fieldkit?.filters.length===4,'Field Kit four-band mixer EQ');
+    check(studioApplyEqPreset('fieldkit','warmth'),'Instrument EQ preset works');
+    check(studioChannels.fieldkit.eqPreset==='warmth','Channel EQ setting persists');
+    check(masterEqPreset('field'),'Master EQ FIELD RECORDING preset works');
+    check(eqState.preset==='field','Master EQ preset stored');
+
     check(['mbase','solar','modfm','wing'].every(k=>!!chanGain[k]),'Four new mix buses connected');
     for(const k of ['mbase','solar','modfm','wing'])
       check(hardwareTrigger(k,'F3',ctx.currentTime+.08,.55),'Web Audio plays '+k);
@@ -85,7 +108,7 @@ function browserHarness(){
   }catch(e){failures.push('Exception: '+e.message);}
   const pre=document.createElement('pre');
   pre.id='browser-smoke-result';
-  pre.textContent='V16_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
+  pre.textContent='V17_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
   document.body.appendChild(pre);
  },100);
 }
@@ -124,7 +147,7 @@ try{
  const timeout=setTimeout(()=>process.kill('SIGKILL'),60000);
  const code=await new Promise(resolve=>process.on('close',resolve));
  clearTimeout(timeout);
- const result=stdout.match(/V16_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
+ const result=stdout.match(/V17_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
  if(!result)throw Error('Browser test did not finish (code '+code+', DOM bytes '+stdout.length+'): '+stderr.slice(-1000)+' DOM tail '+stdout.slice(-600));
  console.log('Chromium UI assertions passed: '+result[2]);
  if(result[1]!=='PASS')throw Error('Browser errors: '+result[3]);

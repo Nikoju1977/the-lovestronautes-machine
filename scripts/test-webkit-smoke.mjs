@@ -38,15 +38,21 @@ try{
    waitUntil:'domcontentloaded',timeout:30000
  });
  await page.waitForSelector('#studio-key-instrument',{timeout:20000});
- assert.match(await page.locator('.live-badge').innerText(),/V16/);
- assert.equal(await page.locator('#panel-seq .tcard').count(),16);
- assert.equal(await page.locator('#panel-mix .mxch').count(),16);
+ assert.match(await page.locator('.live-badge').innerText(),/V17/);
+ assert.equal(await page.locator('#panel-seq .tcard').count(),17);
+ assert.equal(await page.locator('#panel-mix .mxch').count(),17);
  assert.equal(await page.locator('#panel-gear .hardware-rack').count(),4);
+ assert.equal(await page.locator('#panel-gear .fieldkit-rack').count(),1);
+ assert.equal(await page.locator('#fieldkit-rack .fieldkit-channel').count(),4);
+ assert.equal(await page.locator('#mobile-studio-dock button').count(),6);
+ assert.equal(await page.locator('#panel-mix .studio-eq-details').count(),17);
+ assert.ok(await page.locator('#eq-preset').count());
+
  assert.ok(await page.locator('#panel-loops #loops-play').count());
  assert.equal(await page.locator('#loops-bars option').count(),6);
  assert.equal(await page.locator('#kbd .studio-piano-key.white').count(),8);
  assert.equal(await page.locator('#kbd .studio-piano-key.black').count(),5);
- console.log('✓ WebKit: all 16 tracks, four new synths, loops and piano keys render on phone viewport');
+ console.log('✓ WebKit: all 17 tracks, Field Kit and four other synths, loops and piano keys render on phone viewport');
 
  const result=await page.evaluate(()=>({
   WebAudio:!!(window.AudioContext||window.webkitAudioContext),
@@ -73,6 +79,17 @@ try{
  // report that rather than claiming playback was heard on an iPhone.
  if(audio.state==='running'){
   console.log('✓ WebKit AudioContext RUNNING after user tap');
+  await page.locator('.nt[data-panel="gear"]').click();
+  await page.locator('#fieldkit-preset').selectOption('antenna');
+  await page.locator('#fieldkit-test').click();
+  const msg=await page.locator('#fieldkit-status').innerText();
+  assert.match(msg,/SON PROGRAMMÉ/);
+  console.log('✓ WebKit Field Kit four-channel audio audition successful');
+  await page.locator('.nt[data-panel="fx"]').click();
+  await page.locator('#eq-preset').selectOption('field');
+  assert.equal(await page.evaluate(()=>eqState.preset),'field');
+  console.log('✓ WebKit master EQ preset and DSP trim settings work');
+
   await page.locator('.nt[data-panel="gear"]').click();
   await page.locator('#hardware-test-mbase').click();
   await page.waitForTimeout(150);

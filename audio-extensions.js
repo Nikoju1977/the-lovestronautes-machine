@@ -10,7 +10,24 @@ const EQ_BANDS = [
   {name:'PRES', hz:4000, type:'peaking', q:1},
   {name:'AIR', hz:10000, type:'highshelf'}
 ];
-let eqState = {enabled:true, gains:[0,0,0,0,0]};
+const MASTER_EQ_PRESETS={
+ flat:{label:'NEUTRE',gains:[0,0,0,0,0]},
+ punch:{label:'PUNCH / TECHNO',gains:[2.5,-1,-1.5,1.4,.4]},
+ clarity:{label:'CLARTÉ',gains:[-1,-.6,-1.6,1.6,1.3]},
+ warmth:{label:'CHALEUR',gains:[1.5,1,.5,-.8,-1.1]},
+ smooth:{label:'DOUX',gains:[-.6,.5,0,-1.2,-2.3]},
+ field:{label:'FIELD RECORDING',gains:[-.8,-1.2,.8,1.2,.3]}
+};
+let eqState={enabled:true,preset:'flat',gains:[0,0,0,0,0]};
+function masterEqHeadroom(){
+ const sum=eqState.enabled?eqState.gains.reduce((n,g)=>n+Math.max(0,g),0):0;
+ return Math.max(.2,.78*Math.pow(10,-sum*.55/20));
+}
+function masterEqPreset(name){
+ if(!Object.prototype.hasOwnProperty.call(MASTER_EQ_PRESETS,name))return false;
+ eqState.gains=MASTER_EQ_PRESETS[name].gains.slice();eqState.preset=name;
+ updateMasterEQ();syncExtendedFX();return true;
+}
 let eqNodes = [], eqTrim = null;
 let machineParams = {snareSnap:0.65, hatDecay:0.38, subDecay:0.52};
 let drumNoiseBuffer = null;
@@ -45,6 +62,7 @@ function ensureExtendedPatterns(bank, factory) {
 function restoreExtendedState(state) {
   const oldEq = state.eq && typeof state.eq === 'object' ? state.eq : {};
   eqState.enabled = oldEq.enabled !== false;
+  eqState.preset=Object.prototype.hasOwnProperty.call(MASTER_EQ_PRESETS,oldEq.preset)?oldEq.preset:'flat';
   eqState.gains = EQ_BANDS.map(function(_,i) {
     return extClamp(Array.isArray(oldEq.gains) ? oldEq.gains[i] : 0, -12, 12, 0);
   });
@@ -60,10 +78,11 @@ function updateMasterEQ() {
   eqNodes.forEach(function(node,i) {
     node.gain.setTargetAtTime(eqState.enabled ? eqState.gains[i] : 0, time, 0.025);
   });
+  if(eqTrim)eqTrim.gain.setTargetAtTime(masterEqHeadroom(),time,.03);
 }
 function initMasterEQ(input, output) {
   eqTrim = ctx.createGain();
-  eqTrim.gain.value = 0.72; // headroom before boosts; same when bypassed
+  eqTrim.gain.value = masterEqHeadroom(); // pre-EQ headroom compensates positive gains
   input.connect(eqTrim);
   let last = eqTrim;
   eqNodes = EQ_BANDS.map(function(band) {
@@ -148,8 +167,12 @@ function buildExtendedFX() {
   if (!panel) return;
   const eq=document.createElement('section');
   eq.className='fxcard eq-card';
-  eq.innerHTML='<div class="extension-head"><div class="fxtitle">MASTER EQ / 5 BANDES</div><div class="extension-actions"><button type="button" class="mb" id="eq-toggle">EQ: ON</button><button type="button" class="mb" id="eq-reset">FLAT 0 dB</button></div></div>'+
-    '<div class="eq-hint">80 / 250 / 1k / 4k / 10k Hz — ±12 dB · traitement du bus master stéréo. En multi-out, les sorties physiques restent indépendantes.</div>'+
+  eq.innerHTML='<div class="extension-head"><div class="fxtitle">MASTER EQ / 5 BANDES · PRO</div><div class="extension-actions"><button type="button" class="mb" id="eq-toggle">EQ: ON</button><button type="button" class="mb" id="eq-reset">FLAT 0 dB</button></div></div>'+
+    '<div class="master-eq-preset"><label>ÉGALISATION <select id="eq-preset">'+
+    Object.keys(MASTER_EQ_PRESETS).map(k=>'<option value="'+k+'">'+MASTER_EQ_PRESETS[k].label+'</option>').join('')+
+    '<option value="custom">RÉGLAGES PERSONNELS</option></select></label>'+
+    '<output id="eq-headroom" aria-live="polite">Compensation activée</output></div>'+
+    '<div class="eq-hint">80 / 250 / 1k / 4k / 10k Hz — ±12 dB · compensation des boosts pour réduire la saturation. En multi-out, les sorties physiques restent indépendantes.</div>'+
     '<div class="eq-grid">'+EQ_BANDS.map(function(band,i) {
       return '<label class="eq-band"><span>'+band.name+'</span><small>'+band.hz+' Hz</small><input type="range" id="eq-band-'+i+'" min="-12" max="12" step="0.5" value="0" aria-label="Égaliseur '+band.name+'"><output id="eq-value-'+i+'">0 dB</output></label>';
     }).join('')+'</div>';
@@ -173,7 +196,7 @@ function buildExtendedFX() {
     const el=document.getElementById('eq-band-'+i);
     el.addEventListener('pointerdown',pushUndo);
     el.addEventListener('input',function() {
-      eqState.gains[i]=Number(el.value);
+      eqState.gains[i]=Number(el.value);eqState.preset='custom';
       updateMasterEQ();syncExtendedFX();saveLiveState();
     });
   });
@@ -182,8 +205,11 @@ function buildExtendedFX() {
     updateMasterEQ();syncExtendedFX();saveLiveState();
   });
   document.getElementById('eq-reset').addEventListener('click',function() {
-    pushUndo();eqState.gains=[0,0,0,0,0];
-    updateMasterEQ();syncExtendedFX();saveLiveState();
+    pushUndo();masterEqPreset('flat');saveLiveState();
+  });
+  document.getElementById('eq-preset').addEventListener('change',function(){
+    if(this.value==='custom')return;
+    pushUndo();masterEqPreset(this.value);saveLiveState();
   });
   ['snareSnap','hatDecay','subDecay'].forEach(function(key) {
     const el=document.getElementById('machine-'+key);
@@ -209,6 +235,9 @@ function syncExtendedFX() {
   if (!toggle)return;
   toggle.textContent=eqState.enabled?'EQ: ON':'EQ: BYPASS';
   toggle.classList.toggle('on',eqState.enabled);
+  const preset=document.getElementById('eq-preset');if(preset)preset.value=eqState.preset;
+  const headroom=document.getElementById('eq-headroom');
+  if(headroom)headroom.textContent='MARGE : '+(20*Math.log10(masterEqHeadroom())).toFixed(1)+' dB';
   EQ_BANDS.forEach(function(_,i) {
     const input=document.getElementById('eq-band-'+i);
     const out=document.getElementById('eq-value-'+i);
