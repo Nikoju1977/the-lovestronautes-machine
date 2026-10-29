@@ -434,10 +434,15 @@ function fieldkitBuildRack(){
  });
  document.getElementById('fieldkit-monitor').addEventListener('click',fieldkitMonitorMic);
  document.getElementById('fieldkit-stream-play').addEventListener('click',async function(){
-  if(!await activateStudioAudio()){fieldkitImportStatus('Active le son avant LIRE FICHIER.');return;}
   if(!fieldkitStreamAudio)return;
-  if(fieldkitStreamAudio.paused)await fieldkitPlayStream();
-  else fieldkitStopStream();
+  // Both the Web Audio resume and HTMLMediaElement.play() must start in the
+  // original touch handler: Safari may revoke autoplay after the first await.
+  const activation=activateStudioAudio();
+  const playback=fieldkitStreamAudio.paused?fieldkitPlayStream():Promise.resolve(fieldkitStopStream());
+  try{
+   const [ready]=await Promise.all([activation,playback]);
+   if(!ready)fieldkitImportStatus('Audio bloqué : touche ACTIVER LE SON puis réessaie.');
+  }catch(error){fieldkitImportStatus('LECTURE : '+error.message);}
   fieldkitSyncRack();
  });
  document.getElementById('fieldkit-clear-sample').addEventListener('click',()=>{
