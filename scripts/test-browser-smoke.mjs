@@ -16,7 +16,7 @@ function browserHarness(){
  window.addEventListener('unhandledrejection',e=>failures.push('Promise: '+String(e.reason).slice(0,100)));
  setTimeout(async function(){
   try{
-   check(document.querySelector('.live-badge')?.textContent.includes('V17'),'V17 badge');
+   check(document.querySelector('.live-badge')?.textContent.includes('V18'),'V18 badge');
    check(typeof taigaTrigger==='function','Taiga synth engine');
    check(!!document.getElementById('taiga-rack'),'Taiga rack rendered');
    check(document.querySelectorAll('#panel-seq .tcard').length===17,'17 step sequencer lanes');
@@ -28,6 +28,10 @@ function browserHarness(){
    check(document.querySelectorAll('#fieldkit-rack .fieldkit-channel').length===4,'Field Kit 4 independent mixer inputs');
    check(document.querySelectorAll('#fieldkit-preset option').length===5,'Field Kit presets available');
    check(!!document.getElementById('fieldkit-record')&&!!document.getElementById('fieldkit-file'),'Field recording and import on mobile');
+   check(!!document.getElementById('fieldkit-stream-play'),'100MB native stream audio button');
+   check(!!document.getElementById('studio-stability-toggle'),'Eco stability control mounted');
+   check(!!document.getElementById('fieldkit-import-status'),'Safe large-file feedback');
+   check(typeof fieldkitImportLargeFile==='function'&&FIELDKIT_IMPORT_MAX===104857600,'100MB importer engine registered');
    check(!!document.getElementById('fieldkit-envelope'),'Microphone envelope follower UI');
    check(!!document.getElementById('mobile-studio-dock'),'Mobile touch navigation mounted');
    check(!!document.getElementById('eq-preset'),'Master EQ presets visible');
@@ -108,7 +112,7 @@ function browserHarness(){
   }catch(e){failures.push('Exception: '+e.message);}
   const pre=document.createElement('pre');
   pre.id='browser-smoke-result';
-  pre.textContent='V17_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
+  pre.textContent='V18_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
   document.body.appendChild(pre);
  },100);
 }
@@ -147,7 +151,7 @@ try{
  const timeout=setTimeout(()=>process.kill('SIGKILL'),60000);
  const code=await new Promise(resolve=>process.on('close',resolve));
  clearTimeout(timeout);
- const result=stdout.match(/V17_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
+ const result=stdout.match(/V18_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
  if(!result)throw Error('Browser test did not finish (code '+code+', DOM bytes '+stdout.length+'): '+stderr.slice(-1000)+' DOM tail '+stdout.slice(-600));
  console.log('Chromium UI assertions passed: '+result[2]);
  if(result[1]!=='PASS')throw Error('Browser errors: '+result[3]);
