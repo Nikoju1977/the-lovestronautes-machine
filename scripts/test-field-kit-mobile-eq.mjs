@@ -101,7 +101,7 @@ kit.fieldkitRestoreState(saved);
 assert.equal(kit.fieldkitProjectState().sampleName,null,'import JSON never falsely revives lost audio samples');
 console.log('✓ PCM sample remix, JSON patch persistence and honest transient sample state');
 
-const eqWorld={ctx:context,chanGain:{kick:new Node('kick'),fieldkit:new Node('fieldkit')},
+const eqWorld={ctx:context,chanGain:{kick:new Node('kick'),fieldkit:new Node('fieldkit')},chanVol:{kick:.85,fieldkit:.58},
  Math,Number,JSON,Object,Array,document:safeDocument};
 const eq=vm.runInNewContext(studio+
  '\n({STUDIO_TRACKS,STUDIO_EQ,studioChannels,studioNodes,studioInitChannel,studioApplyMix,studioEqTrim,studioApplyEqPreset,restoreStudioState,studioEqFrequencies})',eqWorld);
