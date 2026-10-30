@@ -64,6 +64,9 @@ jobs:
       - name: iOS Safari and Android audio compatibility regressions
         run: node scripts/test-platform-compat.mjs
 
+      - name: V22 continuous playback stability and fault isolation
+        run: node scripts/test-playback-stability-v22.mjs
+
       - name: V20 patchbay routing regression
         run: node scripts/test-patchbay-v20.mjs
 
