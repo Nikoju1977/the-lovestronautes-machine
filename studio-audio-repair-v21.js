@@ -60,12 +60,15 @@ function audioRepairTone(bus,freq){
 }
 async function audioRepairMeter(source,monitor,freq){
  if(!ctx||ctx.state!=='running'||!source||!monitor)return 0;
- const analyser=ctx.createAnalyser(),buffer=new Float32Array(512);
- analyser.fftSize=512;analyser.smoothingTimeConstant=0;
- monitor.connect(analyser);
- // For the speaker test place the analyser IN the audible path.
- // A zero-volume analyser branch can be optimized away by Chromium.
- if(source===monitor)analyser.connect(ctx.destination);
+ const builtIn=monitor===analyserNode;
+ const analyser=builtIn?analyserNode:ctx.createAnalyser();
+ if(!builtIn){
+  analyser.fftSize=512;analyser.smoothingTimeConstant=0;
+  monitor.connect(analyser);
+  // Direct test: analyser is in the audible speaker path.
+  if(source===monitor)analyser.connect(ctx.destination);
+ }
+ const buffer=new Float32Array(analyser.fftSize);
  let maxRms=0;
  const audioClockAtStart=ctx.currentTime;
  try{
@@ -77,8 +80,10 @@ async function audioRepairMeter(source,monitor,freq){
    maxRms=Math.max(maxRms,Math.sqrt(sum/buffer.length));
   }
  }finally{
-  try{monitor.disconnect(analyser);}catch(e){}
-  try{analyser.disconnect();}catch(e){}
+  if(!builtIn){
+   try{monitor.disconnect(analyser);}catch(e){}
+   try{analyser.disconnect();}catch(e){}
+  }
  }
  // Timer acceleration in CI may finish before the actual audio clock advances.
  if(ctx.currentTime-audioClockAtStart<.12)return null;
@@ -109,14 +114,17 @@ async function audioRepairDiagnose(){
   }
   // B: a real note travels through the channel, patchbay and processed master.
   audioRepairMessage('2/2 · Mesure du chemin instrument → master…');
-  let master=await audioRepairMeter(chanGain.kick,masterOutput,440);
+  // The existing analyser is IN the real compressor/limiter path,
+  // so mobile browsers cannot prune this monitoring branch.
+  audioRepairStereo();
+  let master=await audioRepairMeter(chanGain.kick,analyserNode,440);
   if(master===null){
    audioRepairMessage('L’horloge audio n’avance pas pendant le test musical. Réactive le son.','error');
    return false;
   }
   if(master<.001){
    audioRepairMessage('Bus musical silencieux : réparation des branchements…');
-   if(audioRepairReset())master=await audioRepairMeter(chanGain.kick,masterOutput,440);
+   if(audioRepairReset())master=await audioRepairMeter(chanGain.kick,analyserNode,440);
   }
   if(master===null){
    audioRepairMessage('L’horloge audio n’avance pas pendant le test musical. Réactive le son.','error');
