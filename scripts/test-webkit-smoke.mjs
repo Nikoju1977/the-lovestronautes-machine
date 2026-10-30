@@ -38,7 +38,7 @@ try{
    waitUntil:'domcontentloaded',timeout:30000
  });
  await page.waitForSelector('#studio-key-instrument',{timeout:20000});
- assert.match(await page.locator('.live-badge').innerText(),/V19/);
+ assert.match(await page.locator('.live-badge').innerText(),/V21/);
  assert.equal(await page.locator('#panel-seq .tcard').count(),18);
  assert.equal(await page.locator('#panel-mix .mxch').count(),18);
  assert.equal(await page.locator('#panel-gear .hardware-rack').count(),4);
