@@ -49,7 +49,7 @@ const studioNodes={};
 let studioExportBars=8,studioExportBusy=false,studioExportCancel=false;
 let masterOutput=null,masterLimiter=null;
 function studioSafe(v,min,max,otherwise){return Number.isFinite(v)?Math.min(max,Math.max(min,v)):otherwise;}
-function studioProjectState(){return {channels:JSON.parse(JSON.stringify(studioChannels)),bars:studioExportBars,patchRoutes:studioPatchProjectState()};}
+function studioProjectState(){return {channels:JSON.parse(JSON.stringify(studioChannels)),bars:studioExportBars,patchRoutes:typeof studioPatchProjectState==='function'?studioPatchProjectState():{}};}
 function restoreStudioState(state){
   const saved=state && state.studio && typeof state.studio==='object'?state.studio:{};
   const tracks=saved.channels && typeof saved.channels==='object'?saved.channels:{};
@@ -62,7 +62,7 @@ function restoreStudioState(state){
     STUDIO_EQ.forEach(function(b){ch[b[0]]=studioSafe(src[b[0]],-9,9,0);});
   });
   studioExportBars=[-1,1,2,4,8,16,32].includes(saved.bars)?saved.bars:8;
-  studioPatchRestore(saved.patchRoutes);
+  if(typeof studioPatchRestore==='function')studioPatchRestore(saved.patchRoutes);
 }
 function studioInitChannel(name,input,destination){
   const frequencies=studioEqFrequencies(name,ctx.sampleRate);
