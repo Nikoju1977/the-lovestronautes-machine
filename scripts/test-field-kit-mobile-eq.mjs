@@ -105,7 +105,7 @@ const eqWorld={ctx:context,chanGain:{kick:new Node('kick'),fieldkit:new Node('fi
  Math,Number,JSON,Object,Array,document:safeDocument};
 const eq=vm.runInNewContext(studio+
  '\n({STUDIO_TRACKS,STUDIO_EQ,studioChannels,studioNodes,studioInitChannel,studioApplyMix,studioEqTrim,studioApplyEqPreset,restoreStudioState,studioEqFrequencies})',eqWorld);
-assert.equal(eq.STUDIO_TRACKS.length,17);
+assert.equal(eq.STUDIO_TRACKS.length,18);
 assert.equal(eq.STUDIO_EQ.length,4);
 assert.ok(eq.STUDIO_TRACKS.includes('fieldkit'));
 assert.notEqual(eq.studioEqFrequencies('kick',48000)[0],eq.studioEqFrequencies('speak',48000)[0]);
@@ -120,7 +120,7 @@ eq.studioApplyMix();
 assert.ok(eq.studioNodes.kick.filters.every(f=>f.gain.value===0),'bypass zeroes all 4 band gains');
 eq.restoreStudioState({studio:{channels:{fieldkit:{eqOn:true,low:2,mid:-1,high:1}},bars:16}});
 assert.equal(eq.studioChannels.fieldkit.presence,0,'old 3 band projects gain neutral presence');
-console.log('✓ 17-channel 4-band EQ, per-instrument frequencies, presets, bypass and anti-clip compensation');
+console.log('✓ 18-channel 4-band EQ, per-instrument frequencies, presets, bypass and anti-clip compensation');
 
 const mastering=vm.runInNewContext(master+
  '\n({eqState,masterEqHeadroom,masterEqPreset})',{Math,Number,Object,Array,ctx:null,document:safeDocument});
@@ -135,7 +135,7 @@ assert.ok(html.includes("fieldkitEnsurePatterns(bank)")&&html.includes("fieldkit
 assert.ok(html.includes("const fieldCell=m.fieldkit")&&html.includes("fieldkitBuildRack()"));
 assert.ok(creator.includes('<option value="fieldkit">'));
 assert.ok(keyboard.includes("if(mode==='fieldkit')return fieldkitTrigger"));
-assert.ok(sw.includes('lovestronautes-v18')&&sw.includes("new URL('./field-kit.js', scope).href"));
+assert.ok(sw.includes('lovestronautes-v19')&&sw.includes("new URL('./field-kit.js', scope).href"));
 assert.ok(html.includes('mobileUIBuild()')&&css.includes('.mobile-studio-dock'));
 console.log('✓ Song Mode, keyboard, loops, offline PWA and phone dock wired');
 console.log('\nField Kit + mobile EQ V18 regression: OK');
