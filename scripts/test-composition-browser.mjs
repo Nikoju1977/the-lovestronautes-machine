@@ -134,9 +134,8 @@ try{
     const cache=await caches.open('lovestronautes-v23-composition-pro');
     await cache.put(new Request('/stale-pwa-test'),new Response('V23'));
    });
+   // A single navigation now starts recovery without any manual cache button.
    await page.goto('http://127.0.0.1:'+server.address().port+'/update.html',{waitUntil:'domcontentloaded'});
-   await page.waitForFunction(()=>document.querySelector('#repair-status')?.textContent.includes('confirmée'),{timeout:15000});
-   await page.locator('#repair').click();
    await page.waitForURL(/index\.html\?refresh=/,{timeout:15000});
    assert.match(await page.locator('#studio-version-banner').innerText(),/VERSION V25/);
    assert.equal(await page.evaluate(()=>localStorage.getItem('lovestronautes_state')),preserved,'PWA recovery must not delete saved project');

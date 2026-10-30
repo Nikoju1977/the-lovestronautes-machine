@@ -2397,10 +2397,43 @@ rafLoop();
 </main>
 
 <script>
+// V25 PWA: update the worker without using Chrome's old HTTP cache.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .catch(function(err) { console.warn('Service Worker indisponible:', err); });
+  let studioUpdatePending=false;
+  const studioHadController=!!navigator.serviceWorker.controller;
+  function studioApplyWorkerUpdate(){
+    if(!studioUpdatePending)return;
+    const busy=(typeof SEQ!=='undefined'&&SEQ.playing)||
+      (typeof isPlaying!=='undefined'&&isPlaying)||
+      (typeof studioExportBusy!=='undefined'&&studioExportBusy)||
+      (typeof mediaRecorder!=='undefined'&&mediaRecorder&&mediaRecorder.state==='recording');
+    if(busy){
+      const health=document.getElementById('studio-playback-health');
+      if(health)health.textContent='MISE À JOUR PRÊTE · APRÈS STOP';
+      return;
+    }
+    studioUpdatePending=false;
+    try{if(typeof saveLiveState==='function')saveLiveState();}catch(error){console.warn('Sauvegarde avant MAJ :',error);}
+    const url=new URL('./index.html',location.href);
+    url.searchParams.set('worker-refresh',String(Date.now()));
+    location.replace(url.href);
+  }
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(!studioHadController)return; // first install: no reload loop
+    studioUpdatePending=true;
+    studioApplyWorkerUpdate();
+  });
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
+      .then(function(registration){
+        registration.update().catch(function(error){console.warn('MAJ PWA :',error);});
+        // Do not interrupt a live performance or recording.
+        setInterval(studioApplyWorkerUpdate,3000);
+        document.addEventListener('visibilitychange',function(){
+          if(!document.hidden)registration.update().catch(function(){});
+        });
+      })
+      .catch(function(err){console.warn('Service Worker indisponible:',err);});
   });
 }
 </script>
