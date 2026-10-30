@@ -60,9 +60,12 @@ function audioRepairTone(bus,freq){
 }
 async function audioRepairMeter(source,monitor,freq){
  if(!ctx||ctx.state!=='running'||!source||!monitor)return 0;
- const analyser=ctx.createAnalyser(),silent=ctx.createGain(),buffer=new Float32Array(512);
- analyser.fftSize=512;analyser.smoothingTimeConstant=0;silent.gain.value=0;
- monitor.connect(analyser);analyser.connect(silent);silent.connect(ctx.destination);
+ const analyser=ctx.createAnalyser(),buffer=new Float32Array(512);
+ analyser.fftSize=512;analyser.smoothingTimeConstant=0;
+ monitor.connect(analyser);
+ // For the speaker test place the analyser IN the audible path.
+ // A zero-volume analyser branch can be optimized away by Chromium.
+ if(source===monitor)analyser.connect(ctx.destination);
  let maxRms=0;
  try{
   audioRepairTone(source,freq);
@@ -74,7 +77,7 @@ async function audioRepairMeter(source,monitor,freq){
   }
  }finally{
   try{monitor.disconnect(analyser);}catch(e){}
-  try{analyser.disconnect();silent.disconnect();}catch(e){}
+  try{analyser.disconnect();}catch(e){}
  }
  return maxRms;
 }
@@ -90,7 +93,7 @@ async function audioRepairDiagnose(){
   }
   // A: audio sent directly to the requested output, independent of the sequencer.
   audioRepairMessage('1/2 · Écoute le bip de test du haut-parleur…');
-  const bus=ctx.createGain();bus.connect(ctx.destination);
+  const bus=ctx.createGain();
   let direct;
   try{direct=await audioRepairMeter(bus,bus,660);}finally{bus.disconnect();}
   if(direct<.001){
