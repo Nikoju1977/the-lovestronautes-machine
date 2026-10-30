@@ -66,7 +66,8 @@ function composeProjectState(){return composeClone(composeState);}
 function composeRestoreState(project){
  composeState=composeSanitize(project?.composition);
  composeRun.active=false;composeRun.section=-1;composeRun.events=[];
- composeView.bar=0;composeView.step=0;
+ composeView.bar=Math.max(0,Math.min(composeView.bar,(composeSelected()?.bars||1)-1));
+ composeView.step=Math.max(0,Math.min(15,composeView.step));
 }
 function composeSelected(){return composeState.clips.find(c=>c.id===composeState.selected)||null;}
 function composeTotalBars(){return composeState.sections.reduce((sum,s)=>sum+(composeState.clips.find(c=>c.id===s.clip)?.bars||0)*s.repeat,0);}
