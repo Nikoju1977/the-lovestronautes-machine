@@ -27,7 +27,7 @@ const GRANDMOTHER_PRESETS={
  rave:{label:'RAVE PULSE 140',patch:{...GRANDMOTHER_DEFAULT,osc1:'pulse',osc2:'square',
   osc1Octave:0,osc2Octave:0,pulseWidth:.26,osc2Detune:.28,cutoff:.55,resonance:.54,filterEnv:.70,attack:.007,decay:.18,sustain:.63,release:.13,lfoRate:.64,lfoDepth:.19,drive:.52}}
 };
-let grandmotherState=grandmotherSanitize(GRANDMOTHER_DEFAULT);
+let grandmotherState=grandmotherSanitize(GRANDMOTHER_PRESETS.bass.patch);
 let grandmotherPreset='bass',grandmotherGraph=null,grandmotherGraphCtx=null;
 let grandmotherVoice=null,grandmotherNoiseContext=null,grandmotherNoiseBuffer=null;
 let grandmotherLastFrequency=0,grandmotherSaveTimer=null,grandmotherArpTimer=null;
@@ -137,7 +137,7 @@ function grandmotherWave(osc,name){
  else osc.type=GRANDMOTHER_WAVES.includes(name)?name:'triangle';
 }
 function grandmotherReleaseVoice(v,when,fast=false){
- if(!v||v.released)return;
+ if(!v||(v.released&&!fast))return;
  v.released=true;
  const t=Math.max(v.startTime,Number.isFinite(when)?when:ctx.currentTime);
  const rel=fast?.025:.035+grandmotherState.release*1.4;
@@ -244,6 +244,7 @@ function grandmotherTrigger(note,time,velocity=.78,held=false){
   for(const node of sources.concat(nodes))try{node.disconnect();}catch(e){}
   if(grandmotherVoice===v)grandmotherVoice=null;
  };
+ for(const source of sources)source.start(t);
  if(!held){
   const releaseAt=Math.max(t+gate,t+attack+decay+.025);
   amp.gain.setValueAtTime(sustainPeak,releaseAt);
@@ -251,7 +252,6 @@ function grandmotherTrigger(note,time,velocity=.78,held=false){
   for(const source of sources)source.stop(releaseAt+rel+.04);
   v.released=true;
  }
- for(const source of sources)source.start(t);
  return true;
 }
 function grandmotherArpTick(){
