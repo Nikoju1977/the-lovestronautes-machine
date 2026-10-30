@@ -1,0 +1,88 @@
+/* V19 GRANDMOTHER-INSPIRED DIGITAL LAB · touch-first responsive control surface. */
+.grandmother-rack{
+ --gm-ink:#f4f2e8;--gm-line:#73716a;--gm-ocean:#79bbc9;--gm-yellow:#f3d083;
+ --gm-sand:#e7c8a1;--gm-orange:#f3ad70;
+ border:1px solid #837a68;border-radius:17px;padding:17px;
+ background:linear-gradient(140deg,#272d37 0%,#19222d 50%,#111c25 100%);
+ color:var(--gm-ink);font-family:system-ui,-apple-system,sans-serif;
+ margin:14px 0 24px;box-shadow:0 15px 50px rgba(0,0,0,.25)
+}
+.grandmother-rack *{box-sizing:border-box}
+.grandmother-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+ padding-bottom:14px;border-bottom:1px solid #6f777d}
+.grandmother-eyebrow{font-size:11px;font-weight:900;color:var(--gm-orange);letter-spacing:2px}
+.grandmother-header h2{
+ font-size:clamp(23px,5vw,36px);font-weight:950;color:#f5ebd7;
+ letter-spacing:.2px;margin:8px 0;line-height:1.05
+}
+.grandmother-header h2 span{color:#91d2d3}
+.grandmother-header p:not(.grandmother-eyebrow){font-size:12px;line-height:1.6;
+ color:#d5e3e1;max-width:730px}
+.grandmother-header button{flex:0 0 auto;border:1px solid #f2c987;
+ border-radius:10px;padding:10px 12px;background:#785943;color:#fff3d8;
+ min-height:46px;cursor:pointer;font-size:12px;font-weight:850}
+.grandmother-header button.on{background:#bfd1bd;border-color:#bceabc;color:#172723}
+.grandmother-toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:9px;margin:15px 0}
+.grandmother-toolbar label,.grandmother-select{
+ display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;font-weight:800;
+ letter-spacing:.5px;color:#eed6aa
+}
+.grandmother-toolbar label{flex:1 1 145px}
+.grandmother-rack select{
+ min-width:0;width:100%;min-height:45px;border-radius:9px;padding:9px 8px;
+ color:#f8f7ed;background:#1e3139;border:1px solid #8ab3ae;font-size:13px;font-weight:700
+}
+.grandmother-toolbar button{flex:1 1 133px;min-height:46px;padding:10px 8px;
+ border-radius:9px;border:1px solid #9ac6bc;background:#28454b;color:#f8f9ee;
+ font-size:12px;font-weight:900;cursor:pointer}
+.grandmother-toolbar .grandmother-play{background:#ebdbad;color:#222b29;border-color:#f2d8a8}
+.grandmother-modules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.grandmother-modules article{min-width:0;padding:14px;border-radius:12px;
+ border:1px solid rgba(233,220,181,.34);background:rgba(0,0,0,.22)}
+.grandmother-modules article:nth-child(1){border-top:5px solid #94c2d0}
+.grandmother-modules article:nth-child(2){border-top:5px solid #f2c98c}
+.grandmother-modules article:nth-child(3){border-top:5px solid #e5a68c}
+.grandmother-modules h3{color:#ebdbb8;letter-spacing:1px;font-size:13px;
+ line-height:1.35;margin:0 0 13px;font-weight:900}
+.grandmother-control{display:grid;grid-template-columns:minmax(0,100px) minmax(0,1fr) 44px;
+ gap:8px;align-items:center;min-height:41px;margin-bottom:7px}
+.grandmother-control span{font-size:10px;color:#dcdfd4;font-weight:800;line-height:1.3}
+.grandmother-control input{width:100%;min-width:0;min-height:36px;accent-color:#b4e2c7;
+ touch-action:pan-y}
+.grandmother-control output{font-size:11px;color:#c6f3d7;font-weight:800;text-align:right}
+.grandmother-select{margin:10px 0 13px}
+.grandmother-switch{display:flex;align-items:center;gap:9px;margin:13px 0;
+ font-size:12px;font-weight:750;color:#f6dec6}
+.grandmother-switch input{width:20px;height:20px;accent-color:#c6e3c4}
+.grandmother-note{font-size:11px;line-height:1.6;color:#c2d5cc;padding:10px;
+ background:rgba(30,69,60,.25);border-radius:8px}
+.grandmother-status{background:rgba(158,209,184,.08);border-left:3px solid #cce8b4;
+ padding:13px;margin:15px 0 0;color:#f1f8e9;font-size:12px;line-height:1.6;
+ overflow-wrap:anywhere}
+.grandmother-rack :is(button,select,input):focus-visible{
+ outline:3px solid #f2cd82;outline-offset:3px}
+.grandmother-jump{display:block;width:calc(100% - 18px);margin:8px 9px;padding:11px 13px;
+ min-height:50px;border:1px solid #cba978;border-radius:12px;
+ background:linear-gradient(115deg,#484d47,#233f44);color:#fff0d4;
+ font:850 13px/1.35 system-ui,sans-serif;cursor:pointer;touch-action:manipulation}
+@media(max-width:1100px){
+ .grandmother-modules{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .grandmother-modules article:last-child{grid-column:1/-1}
+}
+@media(max-width:680px){
+ .grandmother-rack{padding:12px;margin:12px 0 24px}
+ .grandmother-header{flex-direction:column;gap:10px}
+ .grandmother-header button{width:100%;min-height:44px}
+ .grandmother-modules{grid-template-columns:1fr;gap:11px}
+ .grandmother-modules article:last-child{grid-column:auto}
+ .grandmother-modules article{padding:14px}
+ .grandmother-control{grid-template-columns:minmax(0,100px) minmax(0,1fr) 40px}
+ .grandmother-toolbar button{flex-basis:calc(50% - 6px)}
+ .grandmother-rack .grandmother-header h2{font-size:26px}
+ .grandmother-jump{font-size:14px}
+}
+@media(max-width:390px){
+ .grandmother-control{grid-template-columns:minmax(0,85px) minmax(0,1fr) 37px;gap:5px}
+ .grandmother-control span{font-size:9.5px}
+ .grandmother-rack select{font-size:12px}
+}
