@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v19';
+const CACHE_NAME = 'lovestronautes-v20-patchbay';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
@@ -13,12 +13,14 @@ const APP_SHELL = [
   new URL('./loop-studio.css', scope).href,
   new URL('./hardware-synth-lab.css', scope).href,
   new URL('./grandmother-synth.css', scope).href,
+  new URL('./studio-patchbay.css', scope).href,
   new URL('./field-kit.css', scope).href,
   new URL('./mobile-v17.css', scope).href,
   new URL('./mobile-v18.css', scope).href,
   new URL('./mobile-compat.js', scope).href,
   new URL('./audio-extensions.js', scope).href,
   new URL('./studio-features.js', scope).href,
+  new URL('./studio-patchbay.js', scope).href,
   new URL('./psy-machines.js', scope).href,
   new URL('./psy-track-creator.js', scope).href,
   new URL('./cwejman-s1.js', scope).href,
