@@ -67,6 +67,22 @@ function browserHarness(){
    catch(error){failures.push('Audio unlock: '+error.message);}
    check(ready&&ctx.state==='running','AudioContext running');
    if(ready){
+    // Numerical audio assertion: unlike a UI trigger, this proves that
+    // a generated note reaches the real master audio bus.
+    const audioProbe=ctx.createAnalyser();audioProbe.fftSize=512;
+    masterOutput.connect(audioProbe);
+    const audioSamples=new Float32Array(512);
+    let observedPeak=0;
+    const kickAt=ctx.currentTime+.025;
+    psyTriggerT8Kick(kickAt);
+    for(let i=0;i<12;i++){
+      await new Promise(r=>setTimeout(r,35));
+      audioProbe.getFloatTimeDomainData(audioSamples);
+      const rms=Math.sqrt(audioSamples.reduce((sum,v)=>sum+v*v,0)/audioSamples.length);
+      observedPeak=Math.max(observedPeak,rms);
+    }
+    masterOutput.disconnect(audioProbe);
+    check(observedPeak>.0002,'Real synthesized kick reaches master PCM ('+observedPeak.toFixed(5)+')');
     check(!!chanGain.taiga,'Taiga bus connected');
     check(!!chanGain.fieldkit,'Field Kit connected to master audio');
     check(!!chanGain.grandmother,'Grandmother bus connected to master audio');
