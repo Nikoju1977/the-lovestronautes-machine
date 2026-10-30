@@ -819,6 +819,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
+            <div id="studio-version-banner" class="studio-version-banner" role="status">VERSION V24 · CORRECTIFS AUDIO CHARGÉS</div>
             <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION MUSICALE</strong><span class="studio-build">V24 · COMPOSITION / AUDIO STABLE</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
@@ -826,6 +827,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
                 <button id="studio-compose-btn" type="button">COMPOSER UN MORCEAU</button>
                 <button id="studio-test-btn" type="button">♪ TEST SON</button>
                 <button id="studio-fx-btn" type="button">FX / WAV / MP3</button>
+                <button id="studio-refresh-btn" type="button" aria-label="Actualiser la version sans supprimer mes projets">↻ ACTUALISER LA VERSION</button>
             </div>
             <div id="studio-audio-guide" role="status" aria-live="polite">1. Activer le son · 2. DÉMO PSY · 3. MIX ou FX pour régler les effets.</div>
         </section>
@@ -2155,6 +2157,26 @@ buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks()
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
+$id('studio-refresh-btn').addEventListener('click', async function(){
+    const button=this;button.disabled=true;button.textContent='ACTUALISATION…';
+    // Always preserve projects and stop the audio before replacing the document.
+    try {
+        if(SEQ.playing)stopSeq();
+        saveLiveState();
+        if('serviceWorker' in navigator){
+            const registration=await navigator.serviceWorker.getRegistration();
+            if(registration){
+                await Promise.race([registration.update(),new Promise(resolve=>setTimeout(resolve,2200))]);
+            }
+        }
+    } catch(error){console.warn('Mise à jour PWA :',error);}
+    // This unique URL bypasses stale HTTP/navigation cache without deleting
+    // IndexedDB, media, localStorage or any saved session.
+    const url=new URL('./',location.href);
+    url.searchParams.set('build','v24-mobile');
+    url.searchParams.set('check',String(Date.now()));
+    location.replace(url.href);
+});
 $id('grandmother-jump').addEventListener('click',function(){
     const tab=document.querySelector('.nt[data-panel="gear"]');if(tab)tab.click();
     requestAnimationFrame(function(){
