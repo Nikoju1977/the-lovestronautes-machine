@@ -1419,8 +1419,21 @@ $id('routing-btn').addEventListener('click', function() {
         saveLiveState();
         setStatus(isMultiOut?'SORTIES 4CH CONNECTÉES':'STÉRÉO CONNECTÉE','ok');
     } catch(error){
-        setStatus('SORTIES NON COMPATIBLES','al');
-        $id('studio-audio-guide').textContent='Le périphérique a refusé ce routage : repasse en stéréo ou reconnecte ton interface.';
+        // Always recover the stereo monitor without reloading or dropping the recorder.
+        if(channelMerger){
+            try{masterOutput.disconnect(channelMerger);}catch(ignore){}
+            try{channelMerger.disconnect();}catch(ignore){}
+            channelMerger=null;
+        }
+        try{ctx.destination.channelCount=Math.min(2,ctx.destination.maxChannelCount||2);}catch(ignore){}
+        try{masterOutput.connect(ctx.destination);}catch(ignore){}
+        isMultiOut=false;
+        studioPatchReconnectAll();
+        this.classList.remove('on');
+        this.textContent='🎛️ SORTIES : STÉRÉO';
+        setStatus('STÉRÉO RÉTABLIE','al');
+        $id('studio-audio-guide').textContent='Cette interface a refusé le 4 canaux. Le routage stéréo a été rétabli.';
+        saveLiveState();
     }
 });
 
