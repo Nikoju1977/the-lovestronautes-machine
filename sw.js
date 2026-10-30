@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v23-composition-pro';
+const CACHE_NAME = 'lovestronautes-v24-audio-lifecycle';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
