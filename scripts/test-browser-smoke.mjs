@@ -16,7 +16,7 @@ function browserHarness(){
  window.addEventListener('unhandledrejection',e=>failures.push('Promise: '+String(e.reason).slice(0,100)));
  setTimeout(async function(){
   try{
-   check(document.querySelector('.live-badge')?.textContent.includes('V19'),'V19 badge');
+   check(document.querySelector('.live-badge')?.textContent.includes('V21'),'V21 badge');
    check(typeof taigaTrigger==='function','Taiga synth engine');
    check(!!document.getElementById('taiga-rack'),'Taiga rack rendered');
    check(document.querySelectorAll('#panel-seq .tcard').length===18,'18 step sequencer lanes');
@@ -42,6 +42,8 @@ function browserHarness(){
    check(typeof fieldkitImportLargeFile==='function'&&FIELDKIT_IMPORT_MAX===104857600,'100MB importer engine registered');
    check(!!document.getElementById('fieldkit-envelope'),'Microphone envelope follower UI');
    check(!!document.getElementById('mobile-studio-dock'),'Mobile touch navigation mounted');
+   check(!!document.getElementById('studio-audio-repair'),'Audio diagnosis visible');
+   check(typeof audioRepairDiagnose==='function'&&typeof audioRepairReset==='function','One-tap audio repair loaded');
    check(!!document.getElementById('eq-preset'),'Master EQ presets visible');
    check(!!document.querySelector('#panel-mix .studio-eq-details'),'Mobile collapsible channel EQ');
    check(document.querySelectorAll('#panel-mix .mxch[data-studio-track="fieldkit"]').length===1,'Field Kit mixer channel');
