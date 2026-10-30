@@ -9,11 +9,25 @@ let studioAudioFaults=0,studioFaultAt=0;
 let studioStabilityMounted=false;
 // Track-local circuit breaker: one defective synth must not stop all 18 tracks.
 const studioTrackFailureState=Object.create(null);
+// Enter a short degradation window only when Android/iOS timer delivery is late.
+// Rhythmic core stays audible; optional high-CPU textures can miss a few notes.
+let studioAudioPressureUntil=0,studioAudioPressureNotice=0;
+const studioOptionalTracks=new Set(['biniou','theremin','speak','s1','taiga','solar','modfm','wing','fieldkit','grandmother']);
+function studioStabilityReportLateStep(){
+ if(!studioEcoMode)return;
+ const now=Date.now();
+ studioAudioPressureUntil=now+1600;
+ if(now-studioAudioPressureNotice>6500){
+  studioAudioPressureNotice=now;
+  if(typeof setStatus==='function')setStatus('AUDIO STABILISÉ · TEXTURES ALLÉGÉES TEMPORAIREMENT','al');
+ }
+}
 function studioSafeTrigger(track,trigger){
  const now=Date.now();
  const state=studioTrackFailureState[track]||
   (studioTrackFailureState[track]={failures:0,last:0,muteUntil:0});
  if(now<state.muteUntil)return false;
+ if(studioEcoMode && now<studioAudioPressureUntil && studioOptionalTracks.has(track))return false;
  try{
   trigger();
   state.failures=0;
