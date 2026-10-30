@@ -87,6 +87,35 @@ try{
  // report that rather than claiming playback was heard on an iPhone.
  if(audio.state==='running'){
   console.log('✓ WebKit AudioContext RUNNING after user tap');
+  // Exercise real touch input with a deliberately muted, disabled and unplugged
+  // instrument; previously the UI could show a pressed key while PCM stayed zero.
+  await page.locator('#studio-key-instrument').selectOption('taiga');
+  await page.evaluate(()=>{
+    taigaState.enabled=false;
+    studioChannels.taiga.mute=true;
+    studioPatchRoutes.taiga='off';
+    studioPatchReconnect('taiga');
+    studioApplyMix();
+  });
+  const keyboardPCM=page.evaluate(async()=>{
+    const probe=ctx.createAnalyser();probe.fftSize=512;masterOutput.connect(probe);
+    const buffer=new Float32Array(512);let peak=0;
+    try{
+      for(let i=0;i<35;i++){
+        await new Promise(r=>setTimeout(r,30));
+        probe.getFloatTimeDomainData(buffer);
+        for(const n of buffer)peak=Math.max(peak,Math.abs(n));
+      }
+      return {peak,enabled:taigaState.enabled,mute:studioChannels.taiga.mute,
+        route:studioPatchRoutes.taiga,state:ctx.state};
+    }finally{try{masterOutput.disconnect(probe);}catch(ignore){}}
+  });
+  await page.locator('#kbd .studio-piano-key[data-note="C3"]').tap({timeout:10000});
+  const keyboard=await keyboardPCM;
+  assert.ok(keyboard.enabled && !keyboard.mute && keyboard.route!=='off',
+    'Touch piano must reactivate muted/unplugged synthesizer '+JSON.stringify(keyboard));
+  assert.ok(keyboard.peak>.00002,'Touch piano must produce actual master PCM '+JSON.stringify(keyboard));
+  console.log('✓ WebKit touch piano: real master PCM, restored synth power/mute/patch cable');
   // Real-time playback regression: prior smoke only tested a single triggered note.
   // Exercise the full 18-lane scheduler for more than one musical bar.
   await page.locator('#studio-demo-btn').click();
@@ -94,22 +123,25 @@ try{
    const probe=ctx.createAnalyser();probe.fftSize=512;
    masterOutput.connect(probe);
    const samples=new Float32Array(512);
-   let peak=0;
+   let peak=0,latePeak=0;
    try{
     for(let i=0;i<110;i++){
      await new Promise(resolve=>setTimeout(resolve,120));
      probe.getFloatTimeDomainData(samples);
      let power=0;for(const n of samples)power+=n*n;
-     peak=Math.max(peak,Math.sqrt(power/samples.length));
+     const rms=Math.sqrt(power/samples.length);
+     peak=Math.max(peak,rms);
+     if(i>=70)latePeak=Math.max(latePeak,rms);
     }
     return {playing:SEQ.playing,bars:SEQ.barCount,step:SEQ.masterStep,
-      audio:ctx.state,peak,faults:studioAudioFaults,clock:ctx.currentTime};
+      audio:ctx.state,peak,latePeak,faults:studioAudioFaults,clock:ctx.currentTime,late:SEQ.lateSteps};
    }finally{try{masterOutput.disconnect(probe);}catch(ignore){}}
   });
   assert.equal(playback.playing,true,'Full demo must keep playing without an audio crash');
   assert.ok(playback.bars>=5,'Sustained multi-bar playback must advance beyond the first ~3 seconds: '+JSON.stringify(playback));
   assert.equal(playback.audio,'running','AudioContext must remain running during playback');
   assert.ok(playback.peak>.00002,'Sequenced instruments must produce non-silent master PCM: '+JSON.stringify(playback));
+  assert.ok(playback.latePeak>.00002,'Master PCM must remain audible after 8s, not only during initial notes: '+JSON.stringify(playback));
   await page.locator('#play-btn').click();
   assert.equal(await page.evaluate(()=>SEQ.playing),false);
   console.log('✓ WebKit: 13-second 18-track playback, beat advance and audible-path PCM ('+playback.peak.toFixed(5)+')');
