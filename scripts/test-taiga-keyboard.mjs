@@ -100,7 +100,11 @@ console.log('✓ Three folding VCOs, filter, dynamics LPG, dual envelopes, LFO a
 
 const midiNotes=[],held=[],stopped=[];
 const keyboardContext={
- ctx:{state:'running',currentTime:20},document:{
+ ctx:{state:'running',currentTime:20},
+ taigaState:{enabled:false},studioChannels:{taiga:{mute:true,solo:false},fm:{mute:false,solo:false}},
+ studioPatchRoutes:{taiga:'off'},studioPatchDefault:()=> 'fx',
+ studioPatchReconnect:()=>true,studioApplyMix:()=>{},studioSyncMixer:()=>{},
+ studioQueueLiveSave:()=>{},document:{
   querySelectorAll:()=>[],
   getElementById:id=>id==='studio-key-feedback'?view:null
  },
@@ -124,6 +128,9 @@ await keyboard.studioKeyboardStart('F3',.8,keyboard.studioKeyPointers,10);
 assert.equal(held.length,1);
 assert.equal(held[0][0],'F3');
 assert.equal(held[0][3],true,'Taiga touched keys should sustain while finger held');
+assert.equal(keyboardContext.taigaState.enabled,true,'Keyboard enables a disabled synth on first note');
+assert.equal(keyboardContext.studioChannels.taiga.mute,false,'Keyboard restores muted instrument channel');
+assert.equal(keyboardContext.studioPatchRoutes.taiga,'fx','Keyboard repairs an unplugged patch route');
 keyboard.studioKeyboardFinish(keyboard.studioKeyPointers,10);
 assert.ok(stopped.length>=1,'releases stop note to avoid hung oscillators');
 keyboard.setMode('fm2');
