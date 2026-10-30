@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v21-audio-repair';
+const CACHE_NAME = 'lovestronautes-v22-playback-stable';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
