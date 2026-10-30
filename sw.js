@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v25-automatic-recovery';
+const CACHE_NAME = 'lovestronautes-v25-mobile-keyboard-play-automatic-recovery';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
