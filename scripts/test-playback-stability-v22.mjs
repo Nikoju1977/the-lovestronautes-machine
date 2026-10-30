@@ -38,12 +38,16 @@ assert.equal(errors.length,1,'Only threshold failure emits an error');
 console.log('✓ A faulty synth is isolated; rhythm keeps playing; voice recovers after four seconds');
 
 studioStabilityReportLateStep();
-assert.equal(studioSafeTrigger('solar',()=>{}),false,'Heavy textures are skipped while the phone is late');
+assert.equal(studioSafeTrigger('solar',()=>{}),true,'Single late step cannot abruptly mute optional textures');
+studioStabilityReportLateStep();
+const optionalResults=Array.from({length:6},()=>studioSafeTrigger('solar',()=>{}));
+assert.deepEqual(optionalResults,[true,true,false,true,true,false],
+ 'Repeated scheduling delays shed only one third of optional notes');
 assert.equal(studioSafeTrigger('kick',()=>{kick++;}),true,'Critical drums must not be skipped');
 assert.equal(studioSafeTrigger('acid',()=>{}),true,'Bass and acid remain active');
-now+=1601;
-assert.equal(studioSafeTrigger('solar',()=>{}),true,'Heavy textures resume after load decreases');
-console.log('✓ Mobile CPU fallback is temporary and preserves kick, bass and acid');
+now+=651;
+assert.equal(studioSafeTrigger('solar',()=>{}),true,'Full instrument playback resumes after 650ms');
+console.log('✓ Mobile pressure mode never silences all textures after a single timer hiccup');
 
 const scheduled=index.slice(index.indexOf('function scheduleStep(time)'),index.indexOf('function stepInterval('));
 for(const name of ['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','fieldkit','grandmother']){
