@@ -55,5 +55,5 @@ assert.ok(index.includes('studioEcoMode?400:170'),'Mobile sequence redraw should
 assert.ok(!index.includes('recordingDest = ctx.createMediaStreamDestination();\n        masterOutput.connect(recordingDest);\n    }'),'No permanent recording stream while only playing');
 assert.ok(index.includes('recordingDest = ctx.createMediaStreamDestination();\n        masterOutput.connect(recordingDest);'),'REC retains a real capture bus');
 assert.ok(index.includes('masterOutput.disconnect(recordingDest)'),'Recorder releases capture bus after STOP or error');
-assert.ok(sw.includes('lovestronautes-v22-playback-stable'),'PWA cache must be refreshed for corrected audio');
+assert.ok(sw.includes('lovestronautes-v23-composition-pro'),'PWA cache must be refreshed for corrected audio');
 console.log('✓ 18-track scheduling, lazy recording path and PWA cache integration');

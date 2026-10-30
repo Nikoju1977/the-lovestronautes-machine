@@ -106,7 +106,8 @@ function creatorRollingBass(note,time,velocity){
   if(!ctx||!chanGain.sub)return;
   const settings=creatorState.bass,freq=hz(note||'F2'),sixteenth=60/(bpm*4);
   // Fast 16th-note gate: no overlapping half-second sub tails.
-  const duration=Math.min(sixteenth*.98,.065+(1-settings.tightness)*sixteenth*.33);
+  const baseDuration=Math.min(sixteenth*.98,.065+(1-settings.tightness)*sixteenth*.33);
+  const duration=typeof composeDuration==='function'?composeDuration(baseDuration):baseDuration;
   const filter=ctx.createBiquadFilter();
   filter.type='lowpass';filter.frequency.value=Math.min(ctx.sampleRate*.40,180+settings.cutoff*1550);
   filter.Q.value=.6+settings.drive*1.7;
@@ -256,9 +257,8 @@ function creatorHighlightSection(index){
 function creatorSongBoundary(bar){
   if(!creatorState.running)return true;
   if(bar>=creatorTotalBars()){
-    stopSeq();isPlaying=false;creatorState.running=false;
-    const play=document.getElementById('play-btn');
-    if(play){play.textContent='▶ PLAY';play.disabled=false;}
+    // The lookahead scheduler reaches this boundary before the audio clock.
+    SEQ.endTime=SEQ.nextTime;
     creatorNotice('Morceau terminé · '+creatorTotalBars()+' mesures.');
     creatorHighlightSection(-1);
     setStatus('MORCEAU TERMINÉ','ok');

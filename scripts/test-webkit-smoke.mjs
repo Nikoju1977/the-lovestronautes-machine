@@ -38,7 +38,7 @@ try{
    waitUntil:'domcontentloaded',timeout:30000
  });
  await page.waitForSelector('#studio-key-instrument',{timeout:20000});
- assert.match(await page.locator('.live-badge').innerText(),/V22/);
+ assert.match(await page.locator('.live-badge').innerText(),/V23/);
  assert.equal(await page.locator('#panel-seq .tcard').count(),18);
  assert.equal(await page.locator('#panel-mix .mxch').count(),18);
  assert.equal(await page.locator('#panel-gear .hardware-rack').count(),4);
@@ -147,6 +147,28 @@ try{
   await page.locator('#loops-stop').click();
   assert.equal(await page.evaluate(()=>SEQ.playing),false);
   console.log('✓ WebKit: loop playback starts/stops without hanging');
+  await page.locator('.nt[data-panel="compose"]').click();
+  await page.locator('#cp-new').click();
+  await page.locator('#cp-bars').selectOption('1');
+  await page.locator('[data-cp-track="kick"]').click();
+  await page.locator('#cp-roll [data-cp-step="0"]').click();
+  await page.evaluate(()=>{composeState.sections=[];composeRender();});
+  await page.locator('#cp-add-section').click();
+  await page.locator('#cp-tempo').fill('220');
+  await page.locator('#cp-tempo').dispatchEvent('change');
+  await page.locator('#cp-play-song').click();
+  const composition=await page.evaluate(async()=>{
+   const values=new Float32Array(analyserNode.fftSize);let peak=0;
+   for(let i=0;i<18;i++){
+    await new Promise(resolve=>setTimeout(resolve,90));analyserNode.getFloatTimeDomainData(values);
+    for(const n of values)peak=Math.max(peak,Math.abs(n));
+   }
+   return {peak,playing:SEQ.playing,bars:SEQ.barCount,midi:Array.from(composeMidiBytes('song').subarray(0,4))};
+  });
+  assert.ok(composition.peak>.00002,'Composition Pro must generate master PCM on WebKit');
+  assert.equal(composition.playing,false);assert.equal(composition.bars,1);
+  assert.deepEqual(composition.midi,[77,84,104,100]);
+  console.log('✓ WebKit Composition Pro: touch note editing, arrangement, finite playback PCM and MIDI header');
  }else{
   console.log('! WebKit headless audio unavailable ('+audio.state+') - actual iOS playback remains unverified');
   assert.ok(audio.instructions.length>0,'Audio failure provides visible guidance');

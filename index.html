@@ -780,6 +780,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 <link rel="stylesheet" href="./grandmother-synth.css">
 <link rel="stylesheet" href="./studio-patchbay.css">
 <link rel="stylesheet" href="./studio-audio-repair-v21.css">
+<link rel="stylesheet" href="./composition-pro.css">
   <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
@@ -804,7 +805,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V22 · LECTURE STABLE / 18 PISTES</span></div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V23 · COMPOSITION PRO / 18 PISTES</span></div>
                 <div class="wm-sub">18 PISTES · GRANDMOTHER · FIELD KIT 100 MO · WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
@@ -818,10 +819,11 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
-            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V22 · MOTEUR AUDIO STABILISÉ</span></div>
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION MUSICALE</strong><span class="studio-build">V23 · CLIPS / PIANO ROLL / MIDI</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
                 <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
+                <button id="studio-compose-btn" type="button">COMPOSER UN MORCEAU</button>
                 <button id="studio-test-btn" type="button">♪ TEST SON</button>
                 <button id="studio-fx-btn" type="button">FX / WAV / MP3</button>
             </div>
@@ -877,6 +879,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     </div>
 
     <div class="nav-tabs">
+        <button class="nt" data-panel="compose">COMPOSITION PRO</button>
         <button class="nt active" data-panel="seq">SEQ</button>
         <button class="nt" data-panel="mix">MIX</button>
         <button class="nt" data-panel="fx">FX / WAV</button>
@@ -887,6 +890,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     </div>
 
     <div class="panels">
+        <div class="panel" id="panel-compose"></div>
         <div class="panel active" id="panel-seq"></div>
         <div class="panel" id="panel-mix"></div>
         <div class="panel" id="panel-fx"></div>
@@ -919,8 +923,8 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 
 <script>/* Studio Niko · helpers vague C */
 window.safeStorage = window.safeStorage || (function(){var mem=new Map(),ls=null;try{ls=window.localStorage;var t='__niko__';ls.setItem(t,'1');ls.removeItem(t);}catch(e){ls=null;}
-return{getItem:function(k){try{return ls?ls.getItem(k):(mem.has(k)?mem.get(k):null);}catch(e){return mem.has(k)?mem.get(k):null;}},
-setItem:function(k,v){try{if(ls){ls.setItem(k,String(v));return;}}catch(e){}mem.set(k,String(v));},
+return{getItem:function(k){if(mem.has(k))return mem.get(k);try{return ls?ls.getItem(k):null;}catch(e){return null;}},
+setItem:function(k,v){try{if(ls){ls.setItem(k,String(v));mem.delete(k);return true;}}catch(e){}mem.set(k,String(v));return false;},
 removeItem:function(k){try{if(ls)ls.removeItem(k);}catch(e){}mem.delete(k);},
 clear:function(){try{if(ls)ls.clear();}catch(e){}mem.clear();},
 key:function(i){try{if(ls)return ls.key(i);}catch(e){}var a=Array.from(mem.keys());return i<a.length?a[i]:null;},
@@ -981,6 +985,7 @@ function nikoRetryBtn(container, fn) {
 <script src="./field-kit.js"></script>
 <script src="./studio-stability-v18.js"></script>
 <script src="./mobile-v17.js"></script>
+<script src="./composition-pro.js"></script>
 <script>
 // ================================================================
 // THE LOVESTRONAUTES MACHINE — PRO LIVE ACT EDITION (2026)
@@ -1021,7 +1026,7 @@ let patterns = initPats();
 
 function projectState() {
     return {
-        version: 19,
+        version: 23,
         pat: patterns,
         lengths: trackLengths,
         chaos: trackChaos,
@@ -1051,7 +1056,8 @@ function projectState() {
         hardware: hardwareProjectState(),
         fieldkit: fieldkitProjectState(),
         grandmother: grandmotherProjectState(),
-        creator: creatorProjectState()
+        creator: creatorProjectState(),
+        composition: composeProjectState()
     };
 }
 
@@ -1104,12 +1110,17 @@ function applyProjectState(state, persist) {
     grandmotherRestoreState(state);
     loopsRestoreState(state);
     creatorRestoreState(state);
+    composeRestoreState(state);
+    composeSeedFromPatterns();
     matrix = patterns[curPat];
     if (persist !== false) saveLiveState();
 }
 
 function saveLiveState() {
-    safeStorage.setItem('lovestronautes_state', JSON.stringify(projectState()));
+    const persisted=safeStorage.setItem('lovestronautes_state', JSON.stringify(projectState()))!==false;
+    const hint=document.getElementById('cp-save-status');
+    if(hint)hint.textContent=persisted?'Sauvegarde navigateur à jour.':'Sauvegarde temporaire : stockage indisponible ou plein. Utilise SAUVER LE PROJET avant de fermer la page.';
+    return persisted;
 }
 // Scheduler changes no longer serialize 17 tracks to localStorage every audio step.
 let studioPendingLiveSave=null;
@@ -1127,23 +1138,35 @@ function loadLiveState() {
         if (raw) applyProjectState(JSON.parse(raw), false);
         else matrix = patterns[curPat];
     } catch(e) {
+        // A restore failure must be visible to developers instead of silently
+        // presenting the default composition as a successfully loaded project.
+        console.warn('Restauration du projet local impossible :', e);
         patterns = initPats();
         matrix = patterns[curPat];
     }
 }
-loadLiveState();
+// Restore only after every global audio state (including ctx) is initialized.
+// A previous call here ran before `let ctx` and hit the TDZ in
+// fieldkitRestoreState -> fieldkitApplyMix, silently discarding saved clips.
 
 const HISTORY_LIMIT = 32;
+const HISTORY_BYTES_LIMIT=8*1024*1024;
 let undoStack = [], redoStack = [];
+function trimHistoryStack(stack){
+    let bytes=stack.reduce((sum,s)=>sum+s.length*2,0);
+    while(stack.length>1&&(stack.length>HISTORY_LIMIT||bytes>HISTORY_BYTES_LIMIT))bytes-=stack.shift().length*2;
+}
 function snapshotProject() { return JSON.stringify(projectState()); }
 function updateHistoryUI() {
     const u = document.getElementById('undo-btn'), r = document.getElementById('redo-btn');
     if (u) u.disabled = undoStack.length === 0;
     if (r) r.disabled = redoStack.length === 0;
+    const cu=document.getElementById('cp-undo'),cr=document.getElementById('cp-redo');
+    if(cu)cu.disabled=undoStack.length===0;if(cr)cr.disabled=redoStack.length===0;
 }
 function pushUndo() {
     undoStack.push(snapshotProject());
-    if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+    trimHistoryStack(undoStack);
     redoStack.length = 0;
     updateHistoryUI();
 }
@@ -1152,15 +1175,19 @@ function restoreSnapshot(serialized) {
     syncProjectUI();
 }
 function undoProject() {
+    if(SEQ.playing||studioExportBusy){setStatus('ARRÊTE LA LECTURE AVANT ANNULER','al');return;}
     if (!undoStack.length) return;
     redoStack.push(snapshotProject());
+    trimHistoryStack(redoStack);
     restoreSnapshot(undoStack.pop());
     updateHistoryUI();
     setStatus('UNDO', 'ok');
 }
 function redoProject() {
+    if(SEQ.playing||studioExportBusy){setStatus('ARRÊTE LA LECTURE AVANT RÉTABLIR','al');return;}
     if (!redoStack.length) return;
     undoStack.push(snapshotProject());
+    trimHistoryStack(undoStack);
     restoreSnapshot(redoStack.pop());
     updateHistoryUI();
     setStatus('REDO', 'ok');
@@ -1559,14 +1586,14 @@ function sendMIDIVJ(type, val) {
 // ── SYNTHS (P-LOCKS & ENGINES) ───────────────────────────────────
 function _gate(dest, time, sus, rel, peak) { let g = ctx.createGain(); g.gain.setValueAtTime(0.001, time); g.gain.linearRampToValueAtTime(peak, time + 0.004); g.gain.setValueAtTime(peak, time + sus); g.gain.exponentialRampToValueAtTime(0.001, time + sus + rel); g.connect(dest); return g; }
 
-function triggerKick(time) {
+function triggerKick(time, velocity=1) {
     if (!ctx) return; let dur = 0.45; let o = ctx.createOscillator(); o.frequency.setValueAtTime(250, time); o.frequency.exponentialRampToValueAtTime(45, time + 0.08); o.frequency.linearRampToValueAtTime(30, time + dur);
-    let g = _gate(chanGain.kick, time, 0.001, dur, 1.2); o.connect(g); o.start(time); o.stop(time + dur + 0.1);
+    let g = _gate(chanGain.kick, time, 0.001, dur, 1.2*velocity); o.connect(g); o.start(time); o.stop(time + dur + 0.1);
     if (!isMultiOut && duckingGain) { duckingGain.gain.cancelScheduledValues(time); duckingGain.gain.setValueAtTime(duckingGain.gain.value, time); duckingGain.gain.linearRampToValueAtTime(tension > 0.5 ? 0.05 : 0.15, time + 0.005); duckingGain.gain.exponentialRampToValueAtTime(1.0, time + 0.35); }
 }
 
 function triggerAcid(note, vel, time, pLockMorph) {
-    if (!ctx) return; let f = hz(note), dur = (60 / (bpm * 4)) * 0.7;
+    if (!ctx) return; let f = hz(note), dur = composeDuration((60 / (bpm * 4)) * 0.7);
     let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
     let filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 18; 
     let localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount; // P-LOCK SUPPORT
@@ -1575,8 +1602,8 @@ function triggerAcid(note, vel, time, pLockMorph) {
     let g = _gate(chanGain.acid, time, dur * 0.2, dur * 0.8, vel * 0.9); o.connect(filt); filt.connect(g); o.start(time); o.stop(time + dur + 0.1);
 }
 
-function triggerFM(note, time, pLockMorph) {
-    if (!ctx) return; let f = hz(note), dur = (60 / (bpm * 4)) * 1.5; let g = _gate(chanGain.fm, time, dur * 0.3, dur * 0.7, 0.4); let detunes = [-12, 0, 15]; 
+function triggerFM(note, time, pLockMorph, velocity=1) {
+    if (!ctx) return; let f = hz(note), dur = composeDuration((60 / (bpm * 4)) * 1.5); let g = _gate(chanGain.fm, time, dur * 0.3, dur * 0.7, 0.4*velocity); let detunes = [-12, 0, 15];
     let localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount;
     detunes.forEach(function(det) { let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det + (localMorph * 50); o.connect(g); o.start(time); o.stop(time + dur + 0.1); });
 }
@@ -1585,7 +1612,7 @@ function triggerBiniou(note, time, vel=0.85, pLockMorph) {
     if (!ctx || !biniouInput) return;
     const pitchRatio = Math.pow(2, biniouParams.pitch / 12);
     const f = hz(note) * 2 * pitchRatio;
-    const dur = Math.max(0.22, (60 / (bpm * 4)) * (biniouParams.cyber ? 1.95 : 1.65));
+    const dur = composeDuration(Math.max(0.22, (60 / (bpm * 4)) * (biniouParams.cyber ? 1.95 : 1.65)));
     const level = Math.max(0.12, Math.min(1.15, vel));
     const localMorph = Number.isFinite(pLockMorph) ? pLockMorph : morphAmount;
 
@@ -1681,13 +1708,13 @@ function setBiniouDrone(active) {
     }
 }
 
-function triggerMetal(time) {
-    if (!ctx) return; let ratios = [1, 1.31, 1.85, 2.47, 3.1, 4.1], dur = 0.12; let g = _gate(chanGain.metal, time, 0.001, 0.12, 0.38);
+function triggerMetal(time, velocity=1) {
+    if (!ctx) return; let ratios = [1, 1.31, 1.85, 2.47, 3.1, 4.1], dur = 0.12; let g = _gate(chanGain.metal, time, 0.001, 0.12, 0.38*velocity);
     ratios.forEach(function(r) { let o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 220 * r * (0.97 + Math.random() * 0.06); o.connect(g); o.start(time); o.stop(time + dur + 0.02); });
 }
 
 // ── SCHEDULER & TURING ───────────────────────────────────────────
-let SEQ = { playing:false, masterStep:0, nextTime:0, timer:null, barCount:0 };
+let SEQ = { playing:false, masterStep:0, nextTime:0, timer:null, barCount:0, startTime:0, endTime:0 };
 let stepEls={}, displayStep=-1;
 let studioSeqPaintPending=false;
 function studioQueueSeqPaint(){
@@ -1699,6 +1726,7 @@ function studioQueueSeqPaint(){
     },studioEcoMode?400:170);
 }
 function scheduleStep(time) {
+    if(composeRun.active){composeScheduleStep(time);return;}
     let m = matrix; if (m.kick[trackSteps.kick]) studioSafeTrigger('kick',()=>{ (psyState.t8.enabled ? psyTriggerT8Kick(time) : triggerKick(time)); });
     
     let ac = m.acid[trackSteps.acid]; let tRate = trackChaos.acid + (morphAmount * 0.15); let gRate = trackChaos.acid * 0.4;
@@ -1766,6 +1794,16 @@ function schedulerTick() {
         SEQ.timer=setTimeout(schedulerTick,120);
         return;
     }
+    // A finite song ends on the audio clock, after the last scheduled note.
+    // Ending during lookahead would cut the final bar's synth envelopes early.
+    if(SEQ.endTime){
+        if(ctx.currentTime>=SEQ.endTime){
+            stopSeq(true);isPlaying=false;
+            const play=$id('play-btn');if(play){play.textContent='▶ PLAY';play.disabled=studioExportBusy;}
+            setStatus('MORCEAU TERMINÉ','ok');
+        }else SEQ.timer=setTimeout(schedulerTick,25);
+        return;
+    }
     // Les timers Android sont ralentis en arrière-plan : empêcher un rattrapage
     // de milliers de notes (et une saturation instantanée du CPU).
     if(SEQ.nextTime<ctx.currentTime-.10){
@@ -1783,6 +1821,8 @@ function schedulerTick() {
         SEQ.masterStep = (SEQ.masterStep + 1) % 16;
         if (SEQ.masterStep === 0) {
             SEQ.barCount++;
+            if(studioExportEndBar&&SEQ.barCount>=studioExportEndBar){SEQ.endTime=SEQ.nextTime;break;}
+            if(composeRun.active){if(!composeBoundary(SEQ.barCount,SEQ.nextTime))break;continue;}
             loopsAtBoundary(SEQ.barCount);
             if (!creatorSongBoundary(SEQ.barCount)) break;
             if (isPilot && aiTimeline.length > 0) {
@@ -1803,8 +1843,8 @@ function schedulerTick() {
     if (SEQ.playing) SEQ.timer = setTimeout(schedulerTick, 25);
 }
 
-function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, s1:0, taiga:0, mbase:0, solar:0, modfm:0, wing:0, fieldkit:0, grandmother:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; schedulerTick(); }
-function stopSeq() { SEQ.playing = false; clearTimeout(SEQ.timer); loopsOnStop(); if(typeof s1StopVoices==='function')s1StopVoices(); if(typeof taigaStopVoices==='function')taigaStopVoices(); hardwareStop(); fieldkitStopVoices(); fieldkitStopStream(); grandmotherStop(); if(creatorState.running)creatorStopSong(); }
+function startSeq() { if (!ctx) return; if(SEQ.playing)stopSeq(); SEQ.playing = true; SEQ.masterStep = 0; SEQ.barCount = 0; SEQ.endTime=0; trackSteps = { kick: 0, acid: 0, fm: 0, biniou: 0, metal: 0, snare: 0, hat: 0, sub: 0, theremin:0, speak:0, s1:0, taiga:0, mbase:0, solar:0, modfm:0, wing:0, fieldkit:0, grandmother:0, auto: 0 }; if (creatorState.running) { isPilot=false; isAiAuto=false; creatorLastSongSection=-1; creatorSelectSongBar(0); } SEQ.nextTime = ctx.currentTime + 0.06; SEQ.startTime=SEQ.nextTime; schedulerTick(); }
+function stopSeq(allowTail=false) { SEQ.playing = false; SEQ.endTime=0; clearTimeout(SEQ.timer); composeOnStop(); loopsOnStop(); if(!allowTail){if(typeof s1StopVoices==='function')s1StopVoices(); if(typeof taigaStopVoices==='function')taigaStopVoices(); hardwareStop(); fieldkitStopVoices(); fieldkitStopStream(); grandmotherStop();} if(creatorState.running)creatorStopSong(); }
 
 // Réécrire WaveShaper.curve à 60 Hz provoque du garbage collection sur mobile.
 let morphLastCurveAt=-Infinity,morphLastCurveValue=-1;
@@ -2100,11 +2140,13 @@ function syncProjectUI() {
     grandmotherSyncRack();
     loopsRefresh();
     creatorSyncUI();
+    composeRender();
     updateMasterEQ();
     updateHistoryUI();
 }
 
-buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall(); audioRepairInstall();
+loadLiveState();
+buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); composeInstall(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall(); audioRepairInstall();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
@@ -2156,6 +2198,8 @@ $id('bpm-input').addEventListener('change', function(e) {
     pushUndo();
     bpm = Math.round(next);
     e.target.value = bpm;
+    const composeTempo=$id('cp-tempo');if(composeTempo)composeTempo.value=bpm;
+    composeRefreshSummary();
     saveLiveState();
     setStatus('TEMPO: ' + bpm + ' BPM', 'ok');
 });
@@ -2173,6 +2217,8 @@ $id('tap-btn').addEventListener('click', function() {
             pushUndo();
             bpm = tapped;
             $id('bpm-input').value = bpm;
+            const composeTempo=$id('cp-tempo');if(composeTempo)composeTempo.value=bpm;
+            composeRefreshSummary();
             saveLiveState();
             setStatus('TAP: ' + bpm + ' BPM', 'ok');
         }
@@ -2218,6 +2264,7 @@ $id('clear-btn').addEventListener('click', function() {
 $id('play-btn').addEventListener('click',async function(){
     if (!await activateStudioAudio()) return;
     if (!isPlaying) {
+        if(document.querySelector('.nt.active')?.dataset.panel==='compose'){await composePlay('song');return;}
         creatorState.running=false;
         startSeq(); isPlaying=true; this.textContent='⏸ PAUSE';
         setStatus('ENGINE: RUNNING','ok');

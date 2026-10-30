@@ -162,7 +162,8 @@ function taigaTrigger(note,time,velocity=.82,live=false){
  const p=taigaState,t=Math.max(ctx.currentTime+.001,time);
  const freq=typeof hz==='function'?hz(note||'F3'):174.6;
  const step=60/(Math.max(40,bpm)*4);
- const gate=live?4:Math.max(.06,step*(.55+p.gate*1.45));
+ const ownGate=live?4:Math.max(.06,step*(.55+p.gate*1.45));
+ const gate=typeof composeDuration==='function'?composeDuration(ownGate):ownGate;
  const a1=Math.min(gate*.3,.002+p.eg1Attack*p.eg1Attack*1.35);
  const a2=Math.min(gate*.3,.002+p.eg2Attack*p.eg2Attack*1.35);
  const d1=Math.min(gate*.55,.012+p.eg1Decay*p.eg1Decay*.85);

@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -30,6 +34,9 @@ jobs:
 
       - name: Audio encoder tests
         run: node scripts/test-audio-exports.mjs
+
+      - name: Multi-bar composition and independent MIDI decoding
+        run: node scripts/test-composition-pro.mjs
 
       - name: Psy instruments tests
         run: node scripts/test-psy-machines.mjs
@@ -72,6 +79,21 @@ jobs:
 
       - name: Real Chromium user-interface smoke test
         run: node scripts/test-browser-smoke.mjs
+
+      - name: Install browser test driver
+        run: npm install --no-save playwright@1.56.1
+
+      - name: Composition editing and real PCM exports on phone and desktop viewports
+        run: node scripts/test-composition-browser.mjs
+
+      - name: Keep composition screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: composition-browser-screenshots
+          path: test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
 
   webkit-mobile-smoke:
     name: WebKit phone-sized browser check (Safari engine)

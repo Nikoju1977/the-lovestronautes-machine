@@ -188,7 +188,7 @@ function fieldkitSource(type,note,t,duration,idx){
 function fieldkitTrigger(note,time,velocity=.78){
  if(!ctx||ctx.state!=='running'||!chanGain.fieldkit||!fieldkitState.enabled)return false;
  if(!fieldkitEnsureGraph())return false;
- const t=Math.max(ctx.currentTime+.002,time),duration=.12+fieldkitState.decay*1.25;
+ const t=Math.max(ctx.currentTime+.002,time),duration=typeof composeDuration==='function'?composeDuration(.12+fieldkitState.decay*1.25):.12+fieldkitState.decay*1.25;
  const ampPeak=fieldkitClamp(velocity,.1,1,.78)*.41;
  // Four independent channel paths, one bounded event; no cross-routing.
  fieldkitStopVoices(t);

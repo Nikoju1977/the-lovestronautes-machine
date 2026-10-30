@@ -114,35 +114,35 @@ function drumEnvelope(target,time,peak,duration) {
   g.connect(target);
   return g;
 }
-function triggerSnare(time) {
+function triggerSnare(time,velocity=1) {
   if (!ctx || !chanGain.snare) return;
   const dur=0.19, snap=machineParams.snareSnap;
   const tone=ctx.createOscillator();
   tone.type='triangle';
   tone.frequency.setValueAtTime(190,time);
   tone.frequency.exponentialRampToValueAtTime(115,time+0.09);
-  tone.connect(drumEnvelope(chanGain.snare,time,0.38,dur));
+  tone.connect(drumEnvelope(chanGain.snare,time,0.38*velocity,dur));
   tone.start(time);tone.stop(time+dur+0.02);
   const noise=ctx.createBufferSource();
   noise.buffer=getDrumNoise();
   const hp=ctx.createBiquadFilter();
   hp.type='highpass'; hp.frequency.value=1100+snap*1800;
   noise.connect(hp);
-  hp.connect(drumEnvelope(chanGain.snare,time,0.24+snap*0.48,dur));
+  hp.connect(drumEnvelope(chanGain.snare,time,(0.24+snap*0.48)*velocity,dur));
   noise.start(time);noise.stop(time+dur+0.02);
 }
-function triggerHat(time) {
+function triggerHat(time,velocity=1) {
   if (!ctx || !chanGain.hat) return;
   const dur=0.055+machineParams.hatDecay*0.28;
   const hp=ctx.createBiquadFilter();
   hp.type='highpass';hp.frequency.value=6200;
-  hp.connect(drumEnvelope(chanGain.hat,time,0.52,dur));
+  hp.connect(drumEnvelope(chanGain.hat,time,0.52*velocity,dur));
   const noise=ctx.createBufferSource();
   noise.buffer=getDrumNoise();
   noise.connect(hp);noise.start(time);noise.stop(time+dur+0.015);
   [419,572,833].forEach(function(freq) {
     const osc=ctx.createOscillator();osc.type='square';osc.frequency.value=freq;
-    const level=ctx.createGain();level.gain.value=0.07;
+    const level=ctx.createGain();level.gain.value=0.07*velocity;
     osc.connect(level);level.connect(hp);
     osc.start(time);osc.stop(time+dur+0.015);
   });

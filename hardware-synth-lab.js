@@ -170,7 +170,7 @@ function solar50Trigger(note,t,velocity=.77){
  const p=hardwareState.solar,t0=Math.max(ctx.currentTime+.003,t||ctx.currentTime);
  hardwareSteal('solar',t0,typeof studioEcoMode!=='undefined'&&studioEcoMode?1:2);
  const base=typeof hz==='function'?hz(note||'F3'):174.6;
- const gate=.25+p.drone*1.3,release=.08+p.release*.80,end=t0+gate+release+.05;
+ const gate=typeof composeDuration==='function'?composeDuration(.25+p.drone*1.3):.25+p.drone*1.3,release=.08+p.release*.80,end=t0+gate+release+.05;
  const amp=ctx.createGain(),filter=ctx.createBiquadFilter(),nodes=[amp,filter],sources=[];
  const peak=.21*velocity*p.level;
  amp.gain.setValueAtTime(.0001,t0);
@@ -199,7 +199,7 @@ function modfmTrigger(note,t,velocity=.8){
  const p=hardwareState.modfm,t0=Math.max(ctx.currentTime+.003,t||ctx.currentTime);
  hardwareSteal('modfm',t0,typeof studioEcoMode!=='undefined'&&studioEcoMode?2:3);
  const hz0=typeof hz==='function'?hz(note||'C4'):261.63;
- const gate=.12+p.sustain*.20,release=.07+p.release*.46,end=t0+gate+release+.05;
+ const gate=typeof composeDuration==='function'?composeDuration(.12+p.sustain*.20):.12+p.sustain*.20,release=.07+p.release*.46,end=t0+gate+release+.05;
  const amp=ctx.createGain(),filter=ctx.createBiquadFilter(),nodes=[amp,filter],sources=[];
  const peak=.28*velocity*p.level,attack=.003+p.attack*.16;
  amp.gain.setValueAtTime(.0001,t0);
@@ -234,7 +234,7 @@ function wingTrigger(note,t,velocity=.78){
  const p=hardwareState.wing,t0=Math.max(ctx.currentTime+.003,t||ctx.currentTime);
  hardwareSteal('wing',t0,3);
  const freq0=typeof hz==='function'?hz(note||'G3'):196;
- const decay=.14+p.decay*1.1,end=t0+decay+.08;
+ const decay=typeof composeDuration==='function'?composeDuration(.14+p.decay*1.1):.14+p.decay*1.1,end=t0+decay+.08;
  const amp=ctx.createGain(),nodes=[amp],sources=[];
  const peak=.18*velocity*p.level;
  amp.gain.setValueAtTime(.0001,t0);amp.gain.linearRampToValueAtTime(peak,t0+.003);

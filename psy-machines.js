@@ -80,7 +80,7 @@ function psyEnvelope(time,peak,duration,destination,attack=.004){
 function psyTriggerTD3(note,velocity,time){
   if(!ctx||!chanGain.acid)return;
   const p=psyState.td3,base=hz(note||'C3'),step=60/(bpm*4);
-  const dur=.1+step*(.42+p.decay*2.0),accent=psyClamp(velocity,.1,1,.8);
+  const dur=typeof composeDuration==='function'?composeDuration(.1+step*(.42+p.decay*2.0)):.1+step*(.42+p.decay*2.0),accent=psyClamp(velocity,.1,1,.8);
   const accentBoost=accent>.8?1+p.accent*.45:1;
   const filter=ctx.createBiquadFilter();filter.type='lowpass';
   filter.Q.value=1+p.resonance*23;
@@ -106,7 +106,7 @@ function psyTriggerTD3(note,velocity,time){
 }
 function psyTriggerFM2(note,time,vel=.8){
   if(!ctx||!chanGain.fm)return;
-  const p=psyState.fm2,f=hz(note||'C4'),duration=.12+p.release*1.12;
+  const p=psyState.fm2,f=hz(note||'C4'),duration=typeof composeDuration==='function'?composeDuration(.12+p.release*1.12):.12+p.release*1.12;
   const lowpass=ctx.createBiquadFilter();lowpass.type='lowpass';
   lowpass.frequency.value=Math.min(ctx.sampleRate*.45,1500+p.brightness*14000);
   lowpass.Q.value=.55;
@@ -137,18 +137,18 @@ function psyTriggerFM2(note,time,vel=.8){
     o.start(time);o.stop(time+duration+.06);
   });
 }
-function psyTriggerT8Kick(time){
+function psyTriggerT8Kick(time,velocity=1){
   if(!ctx||!chanGain.kick)return;
   const p=psyState.t8,base=42+p.tune*22,dur=.26+p.punch*.24;
   const o=ctx.createOscillator();o.type='sine';
   o.frequency.setValueAtTime(base*(2.8+p.punch),time);
   o.frequency.exponentialRampToValueAtTime(base,time+.065);
   o.frequency.exponentialRampToValueAtTime(base*.88,time+dur);
-  o.connect(psyEnvelope(time,1.08,dur,chanGain.kick,.002));
+  o.connect(psyEnvelope(time,1.08*velocity,dur,chanGain.kick,.002));
   o.start(time);o.stop(time+dur+.02);
   const noise=ctx.createBufferSource();noise.buffer=getDrumNoise();
   const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=2800;
-  noise.connect(hp);hp.connect(psyEnvelope(time,.14+p.punch*.26,.025,chanGain.kick,.001));
+  noise.connect(hp);hp.connect(psyEnvelope(time,(.14+p.punch*.26)*velocity,.025,chanGain.kick,.001));
   noise.start(time);noise.stop(time+.03);
   if(!isMultiOut&&duckingGain){
     duckingGain.gain.cancelScheduledValues(time);
@@ -157,23 +157,23 @@ function psyTriggerT8Kick(time){
     duckingGain.gain.exponentialRampToValueAtTime(1,time+.27);
   }
 }
-function psyTriggerT8Snare(time){
-  triggerSnare(time);
+function psyTriggerT8Snare(time,velocity=1){
+  triggerSnare(time,velocity);
   if(!ctx||!chanGain.snare)return;
   const n=ctx.createBufferSource();n.buffer=getDrumNoise();
   const band=ctx.createBiquadFilter();band.type='bandpass';band.frequency.value=2100;band.Q.value=.7;
-  n.connect(band);band.connect(psyEnvelope(time,.12+psyState.t8.punch*.18,.095,chanGain.snare));
+  n.connect(band);band.connect(psyEnvelope(time,(.12+psyState.t8.punch*.18)*velocity,.095,chanGain.snare));
   n.start(time);n.stop(time+.12);
 }
-function psyTriggerT8Hat(time){
+function psyTriggerT8Hat(time,velocity=1){
   // Existing 808-inspired metallic model, expanded by T-8 decay control.
   const previous=machineParams.hatDecay;
   machineParams.hatDecay=psyState.t8.hatOpen;
-  try{triggerHat(time);}finally{machineParams.hatDecay=previous;}
+  try{triggerHat(time,velocity);}finally{machineParams.hatDecay=previous;}
 }
 function psyTriggerTheremin(note,time,velocity=.74){
   if(!ctx||!chanGain.theremin)return;
-  const p=psyState.theremin,base=hz(note||'C4'),duration=.23+p.glide*.32;
+  const p=psyState.theremin,base=hz(note||'C4'),duration=typeof composeDuration==='function'?composeDuration(.23+p.glide*.32):.23+p.glide*.32;
   const filter=ctx.createBiquadFilter();filter.type='lowpass';
   filter.frequency.value=580+p.tone*8900;
   const amp=psyEnvelope(time,p.volume*psyClamp(velocity,.1,1,.74)*.53,duration,chanGain.theremin,.025);

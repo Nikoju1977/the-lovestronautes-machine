@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
 const code=fs.readFileSync('studio-features.js','utf8');
-const features=vm.runInNewContext(code + '\n({studioWav,studioProjectState,studioChannels,restoreStudioState})',{Blob,Float32Array,ArrayBuffer,DataView,Math,Number});
+const features=vm.runInNewContext(code + '\n({studioWav,studioTrimPCM,studioProjectState,studioChannels,restoreStudioState})',{Blob,Float32Array,ArrayBuffer,DataView,Math,Number});
 const left=new Float32Array(1024),right=new Float32Array(1024);
 for(let i=0;i<left.length;i++){left[i]=Math.sin(2*Math.PI*i/64)*0.6;right[i]=-left[i];}
 const wav=features.studioWav([{left,right}],44100);
@@ -21,6 +21,31 @@ assert.equal(bytes.byteLength,44+1024*4);
 assert.equal(bytes.getInt16(4*16+44,true),Math.round(left[16]*32767));
 assert.equal(bytes.getInt16(4*16+46,true),Math.round(right[16]*32768));
 console.log('✓ PCM WAV stereo: header + signed samples');
+
+const hi=new Float32Array(1024),hr=new Float32Array(1024);
+hi[0]=-1;hi[1]=1;hi[2]=.123456;hi[3]=NaN;hr[0]=.5;
+const wav24=new DataView(await features.studioWav([{left:hi,right:hr}],48000,24).arrayBuffer());
+assert.equal(wav24.getUint16(34,true),24);assert.equal(wav24.getUint16(32,true),6);
+assert.equal(wav24.getUint32(28,true),48000*6);assert.equal(wav24.byteLength,44+1024*6);
+function signed24(at){let n=wav24.getUint8(at)|(wav24.getUint8(at+1)<<8)|(wav24.getUint8(at+2)<<16);return n&0x800000?n-0x1000000:n;}
+assert.equal(signed24(44),-8388608);assert.equal(signed24(50),8388607);
+assert.equal(signed24(47),4194304);assert.equal(signed24(56),Math.round(hi[2]*8388607));
+assert.equal(signed24(62),0,'Nonfinite PCM cannot corrupt the WAV');
+assert.throws(()=>features.studioWav([{left:hi,right:hr}],48000,32));
+const trimmed=features.studioTrimPCM([
+ {left:new Float32Array([0,1,2,3]),right:new Float32Array([0,1,2,3]),frame:100},
+ {left:new Float32Array([4,5,6,7]),right:new Float32Array([4,5,6,7]),frame:104}
+],100,1.02,1.07);
+assert.deepEqual(Array.from(trimmed,c=>Array.from(c.left)).flat(),[2,3,4,5,6],'PCM trimmed on exact clock frames across chunk boundaries');
+const fallback=features.studioTrimPCM([{left:hi,right:hr}],100,1.1,1.2,1);
+assert.equal(fallback[0].left.length,10);
+const missing=features.studioTrimPCM([
+ {left:new Float32Array([1,2]),right:new Float32Array([1,2]),frame:100},
+ {left:new Float32Array([3,4]),right:new Float32Array([3,4]),frame:104}
+],100,1,1.06);
+assert.deepEqual(Array.from(missing,c=>Array.from(c.left)).flat(),[1,2,0,0,3,4],'A missing quantum preserves timeline alignment');
+assert.throws(()=>features.studioTrimPCM([{left:hi,right:hr,frame:200}],100,1,2.5),/interrompue/,'Large gaps must fail honestly instead of manufacturing an audio export');
+console.log('✓ 24-bit PCM signed little-endian, finite samples and exact frame trimming');
 
 features.restoreStudioState({studio:{channels:{kick:{solo:true,pan:9,low:-20,high:3}},bars:16}});
 assert.equal(features.studioChannels.kick.solo,true);
@@ -45,6 +70,15 @@ assert.equal(workerMessages[0].type,'chunk');
 assert.equal(workerMessages[0].left.length,256);
 assert.equal(workerMessages[1].type,'done');
 console.log('✓ Worklet stereo capture and flush');
+workerMessages=[];
+const silenceRecorder=new processorType();
+silenceRecorder.process([[]],[[new Float32Array(128),new Float32Array(128)]]);
+silenceRecorder.port.onmessage({data:{type:'stop'}});
+silenceRecorder.process([[left.subarray(0,128),right.subarray(0,128)]],[[new Float32Array(128),new Float32Array(128)]]);
+assert.equal(workerMessages[0].left.length,256,'Empty input quantum must retain 128 silent frames');
+assert.ok(workerMessages[0].left.subarray(0,128).every(v=>v===0));
+assert.equal(workerMessages[0].left[144],left[16]);
+console.log('✓ Worklet records zero-channel quanta without moving later notes');
 
 const vendor=fs.readFileSync('vendor/lame.min.js','utf8');
 const encoderScript=fs.readFileSync('mp3-encoder-worker.js','utf8');
