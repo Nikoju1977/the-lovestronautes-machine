@@ -49,11 +49,40 @@ function studioNoteByMidi(n){
  if(index<12||index>108)return null;
  return STUDIO_CHROMATIC[index%12]+(Math.floor(index/12)-1);
 }
+// Ensure a live keyboard has an audible route even after restoring a muted or disabled patch.
+function studioKeyboardPrepare(mode){
+ const channel={fm2:'fm',td3:'acid'}[mode]||mode;
+ let changed=false;
+ const state=mode==='s1'?s1State:mode==='taiga'?taigaState:
+  mode==='fieldkit'?fieldkitState:mode==='grandmother'?grandmotherState:
+  ['mbase','solar','modfm','wing'].includes(mode)?hardwareState[mode]:null;
+ if(state&&state.enabled===false){state.enabled=true;changed=true;}
+ if(mode==='biniou'&&typeof biniouEnabled!=='undefined'&&!biniouEnabled){
+  biniouEnabled=true;changed=true;
+ }
+ const ch=typeof studioChannels!=='undefined'?studioChannels[channel]:null;
+ if(ch){
+  if(ch.mute){ch.mute=false;changed=true;}
+  if(Object.values(studioChannels).some(x=>x.solo)&&!ch.solo){ch.solo=true;changed=true;}
+ }
+ if(typeof studioPatchRoutes!=='undefined'&&studioPatchRoutes[channel]==='off'){
+  studioPatchRoutes[channel]=studioPatchDefault(channel);
+  if(typeof studioPatchReconnect==='function')studioPatchReconnect(channel);
+  changed=true;
+ }
+ if(changed){
+  if(typeof studioApplyMix==='function')studioApplyMix();
+  if(typeof studioSyncMixer==='function')studioSyncMixer();
+  if(typeof studioQueueLiveSave==='function')studioQueueLiveSave();
+ }
+ return channel;
+}
 function studioKeyboardSound(note,velocity,held,mode=studioKeyMode){
  if(!ctx||ctx.state!=='running')return false;
  const time=ctx.currentTime+.012;
  const v=Math.max(.2,Math.min(1,velocity||.82));
  try{
+  studioKeyboardPrepare(mode);
   if(mode==='taiga')return taigaTrigger(note,time,v,held);
   if(mode==='s1')return s1Trigger(note,time,v);
   if(mode==='fm2'){psyTriggerFM2(note,time,v);return true;}
@@ -63,17 +92,16 @@ function studioKeyboardSound(note,velocity,held,mode=studioKeyMode){
   if(mode==='fieldkit')return fieldkitTrigger(note,time,v);
   if(mode==='grandmother')return grandmotherTrigger(note,time,v,held);
   if(mode==='biniou'){
-   if(!biniouEnabled){
-    const label=document.getElementById('studio-key-feedback');
-    if(label)label.textContent='Active BINIOU E dans FX pour jouer le biniou.';
-    return false;
-   }
    triggerBiniou(note,time,v,morphAmount);return true;
   }
  }catch(error){
   const label=document.getElementById('studio-key-feedback');
   if(label)label.textContent='NOTE BLOQUÉE : '+(error.message||'Erreur Web Audio');
+  console.error('Clavier :',mode,note,error);
+  return false;
  }
+ const label=document.getElementById('studio-key-feedback');
+ if(label)label.textContent='AUCUN SON : '+mode+' · moteur indisponible.';
  return false;
 }
 function studioKeyboardReleaseSound(token){
@@ -110,19 +138,23 @@ async function studioKeyboardStart(note,velocity,map,id,held=true){
  if(prev)studioKeyboardRelease(prev,map,id);
  const token={note,velocity,mode:studioKeyMode,released:false,started:false,replaced:false};
  map.set(id,token);studioKeyboardPaint();
- const ready=await activateStudioAudio();
+ // Schedule immediately when Web Audio already runs; don't await a resolved promise
+ // on each Android pointerdown (pointerup may arrive before the microtask).
+ const ready=ctx&&ctx.state==='running'?true:await activateStudioAudio();
  if(!ready){
   const hint=document.getElementById('studio-key-feedback');
   if(hint)hint.textContent='Audio bloqué · touche ACTIVER LE SON.';
-  studioKeyboardRelease(token,map,id);return;
+  if(map.get(id)===token)studioKeyboardRelease(token,map,id);
+  return;
  }
+ if(token.replaced || (map.get(id)!==token && !token.released))return;
  const active=map.get(id)===token;
- if(!active&&token.replaced)return;
- // Fast taps that end while AudioContext is resuming still produce a note.
  const played=studioKeyboardSound(note,velocity,active&&held,token.mode);
  token.started=played;
  if(played&&active&&(token.mode==='taiga'||token.mode==='s1'||token.mode==='fieldkit'||token.mode==='grandmother'))
   studioKeyCurrentVoice=token;
+ const feedback=document.getElementById('studio-key-feedback');
+ if(feedback&&played)feedback.textContent='SON PROGRAMMÉ · '+note+' · '+token.mode.toUpperCase();
  studioKeyboardPaint();
 }
 function studioKeyboardFinish(map,id){
@@ -164,6 +196,28 @@ function studioKeyboardWireMain(root){
  });
  for(const type of ['pointerup','pointercancel','lostpointercapture'])
   root.addEventListener(type,event=>studioKeyboardFinish(studioKeyPointers,event.pointerId));
+ // TouchEvent fallback for older WebViews without full PointerEvent support.
+ if(typeof window!=='undefined'&&!window.PointerEvent){
+  root.addEventListener('touchstart',function(event){
+   for(const touch of event.changedTouches){
+    const key=touch.target.closest('[data-note]');
+    if(key)studioKeyboardStart(key.dataset.note,.82,studioKeyPointers,'touch-'+touch.identifier);
+   }
+   event.preventDefault();
+  },{passive:false});
+  root.addEventListener('touchmove',function(event){
+   for(const touch of event.changedTouches){
+    const old=studioKeyPointers.get('touch-'+touch.identifier);
+    if(!old)continue;
+    const next=studioKeyboardGlissNote(touch,root);
+    if(next&&next!==old.note){old.replaced=true;studioKeyboardStart(next,old.velocity,studioKeyPointers,'touch-'+touch.identifier);}
+   }
+   event.preventDefault();
+  },{passive:false});
+  for(const type of ['touchend','touchcancel'])root.addEventListener(type,event=>{
+   for(const touch of event.changedTouches)studioKeyboardFinish(studioKeyPointers,'touch-'+touch.identifier);
+  });
+ }
  // Native keyboard focus for assistive use (Space/Enter on a focused piano key).
  root.addEventListener('keydown',function(event){
   if(event.repeat||!['Enter',' '].includes(event.key))return;
