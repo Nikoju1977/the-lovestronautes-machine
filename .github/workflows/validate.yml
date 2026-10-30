@@ -74,6 +74,9 @@ jobs:
       - name: V22 continuous playback stability and fault isolation
         run: node scripts/test-playback-stability-v22.mjs
 
+      - name: V24 transient audio graph lifecycle and cleanup
+        run: node scripts/test-audio-lifecycle-v24.mjs
+
       - name: V20 patchbay routing regression
         run: node scripts/test-patchbay-v20.mjs
 
