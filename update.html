@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1718">
+<title>Réparer la version · Lovestronautes Machine</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#081212;color:#e7fff4}
+*{box-sizing:border-box}body{margin:0;padding:clamp(16px,5vw,32px);min-height:100dvh;display:grid;place-items:center}
+main{width:min(100%,560px);background:#112423;border:1px solid #356655;border-radius:18px;padding:clamp(20px,5vw,32px)}
+h1{font-size:clamp(24px,6vw,32px);line-height:1.17;margin:0 0 15px;color:#a1ffd1}
+p{line-height:1.5;color:#d3ecdf}strong{color:#b8ffd7}
+.status{border:1px solid #58826d;border-radius:10px;background:#1a3733;padding:12px;margin:16px 0;line-height:1.45;overflow-wrap:anywhere}
+button,a.action{font:800 15px/1.4 system-ui,sans-serif;display:block;width:100%;margin:10px 0;padding:14px;border-radius:10px;border:2px solid #8be1bd;text-align:center;cursor:pointer;touch-action:manipulation}
+button.primary{background:#83f7b5;color:#002612}button.secondary{background:#1b3633;color:white}
+button:disabled{opacity:.55;cursor:progress}a.action{background:#122827;color:#c1f5df;text-decoration:none}
+small{display:block;color:#a9c9b8;line-height:1.5;margin-top:18px}
+</style>
+</head>
+<body>
+<main>
+<h1>Réparer la version de Lovestronautes Machine</h1>
+<p>Si ton application affiche encore <strong>V23</strong>, cette page permet de récupérer la version publiée sur GitHub Pages, sans supprimer les compositions enregistrées dans ton navigateur.</p>
+<div class="status" role="status" aria-live="polite" id="repair-status">Vérification de la version en ligne…</div>
+<button type="button" class="secondary" id="backup">SAUVEGARDER MON PROJET EN JSON</button>
+<button type="button" class="primary" id="repair">RÉPARER LA VERSION INSTALLÉE</button>
+<a class="action" id="direct" href="./index.html?fresh=v25-direct">OUVRIR LA VERSION WEB</a>
+<small>La réparation supprime uniquement les anciens caches « lovestronautes » et désinscrit le service worker de cette application. Elle ne supprime pas localStorage, IndexedDB, tes réglages, tes projets, ni les fichiers importés. Une connexion Internet est nécessaire. Si un projet est important, télécharge sa sauvegarde avant de réparer.</small>
+</main>
+<script>
+(function(){
+'use strict';
+const status=document.getElementById('repair-status');
+const repair=document.getElementById('repair');
+const backup=document.getElementById('backup');
+const appUrl=new URL('./index.html',location.href);
+const scope=new URL('./',location.href);
+let available=false;
+function say(message){status.textContent=message;}
+async function check(){
+ try{
+  const url=new URL(appUrl.href);url.searchParams.set('verify',String(Date.now()));
+  const response=await fetch(url.href,{cache:'no-store'});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const html=await response.text();
+  const badge=html.match(/VERSION\s+V(\d+)\s*·/);
+  if(!badge||Number(badge[1])<25)throw Error('Version en ligne non vérifiée : impossible de confirmer V25');
+  available=true;
+  say('Version V'+badge[1]+' confirmée sur GitHub Pages. Tu peux réparer ton application maintenant.');
+ }catch(error){
+  available=false;repair.disabled=true;
+  say('Connexion à la nouvelle version impossible : '+error.message+'. Ouvre cette page dans Chrome avec Internet.');
+ }
+}
+document.getElementById('direct').href=appUrl.href+'?refresh='+Date.now();
+backup.addEventListener('click',function(){
+ let raw;
+ try{raw=localStorage.getItem('lovestronautes_state');}
+ catch(error){say('Sauvegarde bloquée par le navigateur : '+error.message);return;}
+ if(!raw){say('Aucun projet local détecté dans ce navigateur. Si tu utilises une autre application installée, exporte le projet depuis cette application avant la réparation.');return;}
+ try{
+  JSON.parse(raw);
+  const blob=new Blob([raw],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='lovestronautes-projet-sauvegarde.json';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  say('Sauvegarde JSON téléchargée. Tes données restent aussi dans le navigateur.');
+ }catch(error){say('Projet local invalide : '+error.message);}
+});
+repair.addEventListener('click',async function(){
+ if(!available){say('Connexion requise pour réparer sans risquer un ancien chargement.');return;}
+ repair.disabled=true;repair.textContent='RÉPARATION EN COURS…';
+ try{
+  if('serviceWorker' in navigator){
+   const registration=await navigator.serviceWorker.getRegistration(scope.href);
+   if(registration && registration.scope.startsWith(scope.href))await registration.unregister();
+  }
+  if('caches' in window){
+   const keys=await caches.keys();
+   await Promise.all(keys.filter(name=>name.startsWith('lovestronautes-')).map(name=>caches.delete(name)));
+  }
+  say('Anciens caches supprimés. Ouverture de la version en ligne…');
+  const target=new URL(appUrl.href);
+  target.searchParams.set('refresh',String(Date.now()));
+  location.replace(target.href);
+ }catch(error){
+  say('Réparation incomplète : '+error.message+'. Ferme puis rouvre Chrome.');
+  repair.disabled=false;repair.textContent='RÉESSAYER LA RÉPARATION';
+ }
+});
+check();
+})();
+</script>
+</body>
+</html>

@@ -127,6 +127,21 @@ try{
    assert.equal(await page.evaluate(()=>composeSelected().tracks.fm[0]?.note),'C4','Persistence mismatch: '+JSON.stringify({beforeReload,afterReload,errors}));
    assert.equal(await page.evaluate(()=>composeSelected().tracks.fm[28].note),'G4');
    assert.equal(await page.evaluate(()=>composeTotalBars()),2);
+   // Recover a genuinely stale PWA cache, preserving the current song and notes.
+   const preserved=await page.evaluate(()=>localStorage.getItem('lovestronautes_state'));
+   assert.ok(preserved&&preserved.includes('Phrase test'),'Recovery test requires an actual saved song');
+   await page.evaluate(async()=>{
+    const cache=await caches.open('lovestronautes-v23-composition-pro');
+    await cache.put(new Request('/stale-pwa-test'),new Response('V23'));
+   });
+   await page.goto('http://127.0.0.1:'+server.address().port+'/update.html',{waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>document.querySelector('#repair-status')?.textContent.includes('confirmée'),{timeout:15000});
+   await page.locator('#repair').click();
+   await page.waitForURL(/index\.html\?refresh=/,{timeout:15000});
+   assert.match(await page.locator('#studio-version-banner').innerText(),/VERSION V25/);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('lovestronautes_state')),preserved,'PWA recovery must not delete saved project');
+   assert.equal(await page.evaluate(async()=>(await caches.keys()).includes('lovestronautes-v23-composition-pro')),false,'V23 cache must be removed');
+   console.log('✓ PWA recovery: clears old V23 cache and reloads V25 without losing saved composition');
    assert.deepEqual(errors,[],'No uncaught JavaScript errors');
    console.log('✓ Chromium '+width+'px: note/velocity/gate editing, multi-bar phrases, Undo/Redo, copy/paste, finite playback PCM, MIDI and real WAV24 downloads, persistence and layout');
   }catch(error){await page.screenshot({path:path.join(artifacts,'failure-'+width+'.png'),fullPage:true}).catch(()=>{});throw error;}

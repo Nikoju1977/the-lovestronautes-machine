@@ -1,10 +1,11 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v25-mobile-keyboard-play';
+const CACHE_NAME = 'lovestronautes-v25-mobile-keyboard-play-recovery';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
   new URL('./index.html', scope).href,
+  new URL('./update.html', scope).href,
   new URL('./ui-v9.css', scope).href,
   new URL('./psy-track-creator.css', scope).href,
   new URL('./cwejman-s1.css', scope).href,
