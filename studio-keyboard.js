@@ -53,9 +53,11 @@ function studioNoteByMidi(n){
 function studioKeyboardPrepare(mode){
  const channel={fm2:'fm',td3:'acid'}[mode]||mode;
  let changed=false;
- const state=mode==='s1'?s1State:mode==='taiga'?taigaState:
-  mode==='fieldkit'?fieldkitState:mode==='grandmother'?grandmotherState:
-  ['mbase','solar','modfm','wing'].includes(mode)?hardwareState[mode]:null;
+ const state=mode==='s1'&&typeof s1State!=='undefined'?s1State:
+  mode==='taiga'&&typeof taigaState!=='undefined'?taigaState:
+  mode==='fieldkit'&&typeof fieldkitState!=='undefined'?fieldkitState:
+  mode==='grandmother'&&typeof grandmotherState!=='undefined'?grandmotherState:
+  ['mbase','solar','modfm','wing'].includes(mode)&&typeof hardwareState!=='undefined'?hardwareState[mode]:null;
  if(state&&state.enabled===false){state.enabled=true;changed=true;}
  if(mode==='biniou'&&typeof biniouEnabled!=='undefined'&&!biniouEnabled){
   biniouEnabled=true;changed=true;
