@@ -55,7 +55,7 @@ assert.equal(outputs.acid.edges[0].dest,duckingGain,'stereo restored without rel
 assert.equal(outputs.kick.edges[0].dest,distShaper,'kick route restored');
 assert(html.includes('studioPatchBuild();')&&html.includes('studioPatchReconnectAll();'));
 assert(html.includes('studioPatchInstall();'));
-assert(studio.includes('patchRoutes:studioPatchProjectState()'));
+assert(studio.includes("patchRoutes:typeof studioPatchProjectState==='function'"));
 assert(studio.includes('output:destination'));
 assert(sw.includes("studio-patchbay.js")&&sw.includes("studio-patchbay.css"));
 assert(mobile.includes("['patch','CÂBLES'"));
