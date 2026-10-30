@@ -125,6 +125,6 @@ assert.equal(health.halted,1,'Repeated audio failures stop the sequencer instead
 assert.ok(health.messages.some(s=>s.includes('AUDIO PAUSÉ')));
 console.log('✓ Audio fault circuit breaker stops after four consecutive synthesizer errors');
 assert.ok(stability.includes('function studioStabilityPausePlayback('));
-assert.ok(sw.includes('lovestronautes-v21-audio-repair')&&sw.includes('field-kit-import-v18.js'));
+assert.ok(sw.includes('lovestronautes-v22-playback-stable')&&sw.includes('field-kit-import-v18.js'));
 console.log('✓ V18 clock protection, audio Eco, mobile UI and offline cache integration');
 console.log('\nV18 importer / anti-crash regression: OK');
