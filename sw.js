@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v24-audio-lifecycle-visible';
+const CACHE_NAME = 'lovestronautes-v25-mobile-keyboard-play';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
