@@ -1138,11 +1138,16 @@ function loadLiveState() {
         if (raw) applyProjectState(JSON.parse(raw), false);
         else matrix = patterns[curPat];
     } catch(e) {
+        // A restore failure must be visible to developers instead of silently
+        // presenting the default composition as a successfully loaded project.
+        console.warn('Restauration du projet local impossible :', e);
         patterns = initPats();
         matrix = patterns[curPat];
     }
 }
-loadLiveState();
+// Restore only after every global audio state (including ctx) is initialized.
+// A previous call here ran before `let ctx` and hit the TDZ in
+// fieldkitRestoreState -> fieldkitApplyMix, silently discarding saved clips.
 
 const HISTORY_LIMIT = 32;
 const HISTORY_BYTES_LIMIT=8*1024*1024;
@@ -2140,6 +2145,7 @@ function syncProjectUI() {
     updateHistoryUI();
 }
 
+loadLiveState();
 buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); composeInstall(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall(); audioRepairInstall();
 
 // ── EVENTS ───────────────────────────────────────────────────────
