@@ -50,8 +50,9 @@ function studioPatchReconnect(name){
   const output=studioNodes[name].output;
   const route=studioPatchRoutes[name];
   let target=null;
-  if(isMultiOut&&channelMerger)target=channelMerger;
-  else if(route!=='off')target=studioPatchTarget(route)||duckingGain;
+  if(route==='off')target=null;
+  else if(isMultiOut&&channelMerger)target=channelMerger;
+  else target=studioPatchTarget(route)||duckingGain;
   // An unpatched channel is disconnected only at its unique, dedicated output.
   try{output.disconnect();}catch(error){}
   if(target){
@@ -102,6 +103,8 @@ function studioPatchRefresh(){
   panel.querySelectorAll('select[data-patch-track]').forEach(select=>{
     const name=select.dataset.patchTrack;
     select.value=studioPatchRoutes[name];
+    select.disabled=!!isMultiOut;
+    select.title=isMultiOut?'En mode sorties physiques 4CH, les bus internes sont indisponibles':'Destination audio de la piste';
     const badge=select.closest('.patchbay-row')?.querySelector('.patchbay-route');
     if(badge)badge.textContent='→ '+STUDIO_PATCH_BUSES[studioPatchRoutes[name]].label;
   });
