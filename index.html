@@ -778,6 +778,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 <link rel="stylesheet" href="./mobile-v17.css">
 <link rel="stylesheet" href="./mobile-v18.css">
 <link rel="stylesheet" href="./grandmother-synth.css">
+<link rel="stylesheet" href="./studio-patchbay.css">
   <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
@@ -854,7 +855,8 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         </div>
     </details>
 
-    <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 12 INSTRUMENTS NUMÉRIQUES</button>
+    <details id="studio-machine-shortcuts" class="studio-machine-shortcuts"><summary>INSTRUMENTS · ACCÈS RAPIDE (OUVRIR)</summary><div class="studio-shortcuts-body">
+     <button id="psy-open-rack" type="button" class="psy-open-rack">⚡ OUVRIR LES 12 INSTRUMENTS NUMÉRIQUES</button>
 
     <button id="s1-jump" type="button" class="s1-jump">🎹 NOUVEAU SYNTHÉ VINTAGE · S1 MK2 · OUVRIR</button>
 
@@ -864,6 +866,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 
     <button type="button" id="taiga-jump" class="s1-jump">◈ NOUVEAU · PITTSBURGH TAÏGA MODULAR · OUVRIR</button>
     <button type="button" id="studio-key-jump" class="studio-live-jump">🎹 CLAVIER LIVE · OCTAVES / GLISS / MULTITOUCH</button>
+     </div></details>
 
     <div class="pat-tabs" id="pat-tabs">
         <button class="pt active" data-pat="A"><span class="pl">A</span><span class="ps">INTRO</span></button>
@@ -963,6 +966,7 @@ function nikoRetryBtn(container, fn) {
 <script src="./mobile-compat.js"></script>
 <script src="./audio-extensions.js"></script>
 <script src="./studio-features.js"></script>
+<script src="./studio-patchbay.js"></script>
 <script src="./psy-machines.js"></script>
 <script src="./psy-track-creator.js"></script>
 <script src="./cwejman-s1.js"></script>
@@ -1286,18 +1290,30 @@ function initAudio() {
     let comp = ctx.createDynamicsCompressor(); comp.threshold.value = -8; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.12;
     studioMakeMaster(comp);
     
-    // Multi-Out Routing (Si Interface > 2 canaux)
+    // On phones use the normal stereo master. Physical 4CH only if supported.
     if (isMultiOut && ctx.destination.maxChannelCount >= 4) {
-        ctx.destination.channelCount = 4;
-        channelMerger = ctx.createChannelMerger(4);
-        channelMerger.connect(ctx.destination);
-        masterOutput.connect(channelMerger, 0, 0); // Preview / FX return on Ch 1
-    } else {
-        masterOutput.connect(ctx.destination);
-        if (typeof ctx.createMediaStreamDestination === 'function') {
-            recordingDest = ctx.createMediaStreamDestination();
-            masterOutput.connect(recordingDest);
+        try {
+            ctx.destination.channelCount = 4;
+            channelMerger = ctx.createChannelMerger(4);
+            channelMerger.connect(ctx.destination);
+            masterOutput.connect(channelMerger, 0, 0);
+        } catch (error) {
+            isMultiOut = false;
+            if(channelMerger){try{channelMerger.disconnect();}catch(ignore){} channelMerger=null;}
+            masterOutput.connect(ctx.destination);
         }
+    } else {
+        isMultiOut = false;
+        masterOutput.connect(ctx.destination);
+    }
+    if (typeof ctx.createMediaStreamDestination === 'function') {
+        recordingDest = ctx.createMediaStreamDestination();
+        masterOutput.connect(recordingDest);
+    }
+    const routingControl=$id('routing-btn');
+    if(routingControl){
+        routingControl.classList.toggle('on',isMultiOut);
+        routingControl.textContent=isMultiOut?'🎛️ SORTIES : 4CH':'🎛️ SORTIES : STÉRÉO';
     }
 
     analyserNode = ctx.createAnalyser(); analyserNode.fftSize = 256; analyserNode.smoothingTimeConstant = 0.75; analyserNode.connect(comp);
@@ -1339,6 +1355,7 @@ function initAudio() {
         else output.connect(duckingGain);
     });
     studioApplyMix();
+    if(typeof studioPatchReconnectAll==='function')studioPatchReconnectAll();
 
     ctx.addEventListener('statechange',function(){
         if(ctx.state==='running'){markStudioAudioReady();return;}
@@ -1366,14 +1383,57 @@ async function activateStudioAudio() {
 }
 
 $id('routing-btn').addEventListener('click', function() {
-    isMultiOut = !isMultiOut; this.classList.toggle('on', isMultiOut);
-    this.textContent = isMultiOut ? '🎛️ MULTI-OUT: 4CH' : '🎛️ MULTI-OUT: OFF';
-    saveLiveState();
-    if (audioReady) {
-        setStatus('ROUTING MODIFIÉ — REDÉMARRAGE AUDIO', 'al');
-        setTimeout(function(){ location.reload(); }, 250);
-    } else {
-        setStatus('ROUTING PRÊT POUR LE PROCHAIN ARMEMENT', 'ok');
+    if(!ctx||ctx.state!=='running'){
+        setStatus('ACTIVE D’ABORD LE SON','al');
+        $id('studio-audio-guide').textContent='Active le son pour détecter une interface audio multi-sorties. Le téléphone utilise la stéréo.';
+        return;
+    }
+    if(!isMultiOut&&ctx.destination.maxChannelCount<4){
+        setStatus('4 SORTIES NON DISPONIBLES','al');
+        $id('studio-audio-guide').textContent='Sortie stéréo détectée : impossible de brancher 4 canaux physiques sans interface compatible.';
+        return;
+    }
+    try {
+        if(!isMultiOut){
+            const merger=ctx.createChannelMerger(4);
+            ctx.destination.channelCount=4;
+            merger.connect(ctx.destination);
+            masterOutput.disconnect(ctx.destination);
+            masterOutput.connect(merger,0,0);
+            channelMerger=merger;
+            isMultiOut=true;
+        }else{
+            masterOutput.disconnect(channelMerger);
+            channelMerger.disconnect();
+            channelMerger=null;
+            try{ctx.destination.channelCount=2;}catch(error){}
+            masterOutput.connect(ctx.destination);
+            isMultiOut=false;
+        }
+        studioPatchReconnectAll();
+        this.classList.toggle('on',isMultiOut);
+        this.textContent=isMultiOut?'🎛️ SORTIES : 4CH':'🎛️ SORTIES : STÉRÉO';
+        $id('studio-audio-guide').textContent=isMultiOut?
+          '4 sorties physiques : le master enregistré ne contient pas les pistes envoyées directement aux autres sorties.':
+          'Mixage stéréo : les branchements PATCHBAY et les exports master sont actifs.';
+        saveLiveState();
+        setStatus(isMultiOut?'SORTIES 4CH CONNECTÉES':'STÉRÉO CONNECTÉE','ok');
+    } catch(error){
+        // Always recover the stereo monitor without reloading or dropping the recorder.
+        if(channelMerger){
+            try{masterOutput.disconnect(channelMerger);}catch(ignore){}
+            try{channelMerger.disconnect();}catch(ignore){}
+            channelMerger=null;
+        }
+        try{ctx.destination.channelCount=Math.min(2,ctx.destination.maxChannelCount||2);}catch(ignore){}
+        try{masterOutput.connect(ctx.destination);}catch(ignore){}
+        isMultiOut=false;
+        studioPatchReconnectAll();
+        this.classList.remove('on');
+        this.textContent='🎛️ SORTIES : STÉRÉO';
+        setStatus('STÉRÉO RÉTABLIE','al');
+        $id('studio-audio-guide').textContent='Cette interface a refusé le 4 canaux. Le routage stéréo a été rétabli.';
+        saveLiveState();
     }
 });
 
@@ -1868,6 +1928,7 @@ function buildMixer() {
         studioExtendChannel(name,ch);
     });
     p.appendChild(row);
+    if(typeof studioPatchBuild==='function')studioPatchBuild();
     studioSyncMixer();
 }
 
@@ -2012,7 +2073,7 @@ function syncProjectUI() {
     $id('swing-slider').value = swing.toFixed(2);
     $id('swing-val').textContent = Math.round(swing * 100) + '%';
     $id('routing-btn').classList.toggle('on', isMultiOut);
-    $id('routing-btn').textContent = isMultiOut ? '🎛️ MULTI-OUT: 4CH' : '🎛️ MULTI-OUT: OFF';
+    $id('routing-btn').textContent = isMultiOut ? '🎛️ SORTIES : 4CH' : '🎛️ SORTIES : STÉRÉO';
     document.querySelectorAll('.pt').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-pat') === curPat); });
     if (ctx) {
         studioApplyMix();
@@ -2033,7 +2094,7 @@ function syncProjectUI() {
     updateHistoryUI();
 }
 
-buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); mobileUIBuild(); studioStabilityInstall();
+buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
