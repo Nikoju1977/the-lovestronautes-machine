@@ -67,6 +67,7 @@ async function audioRepairMeter(source,monitor,freq){
  // A zero-volume analyser branch can be optimized away by Chromium.
  if(source===monitor)analyser.connect(ctx.destination);
  let maxRms=0;
+ const audioClockAtStart=ctx.currentTime;
  try{
   audioRepairTone(source,freq);
   for(let i=0;i<12;i++){
@@ -79,6 +80,8 @@ async function audioRepairMeter(source,monitor,freq){
   try{monitor.disconnect(analyser);}catch(e){}
   try{analyser.disconnect();}catch(e){}
  }
+ // Timer acceleration in CI may finish before the actual audio clock advances.
+ if(ctx.currentTime-audioClockAtStart<.12)return null;
  return maxRms;
 }
 async function audioRepairDiagnose(){
@@ -96,6 +99,10 @@ async function audioRepairDiagnose(){
   const bus=ctx.createGain();
   let direct;
   try{direct=await audioRepairMeter(bus,bus,660);}finally{bus.disconnect();}
+  if(direct===null){
+   audioRepairMessage('Horloge audio interrompue : réactive le son et garde l’application au premier plan.','error');
+   return false;
+  }
   if(direct<.001){
    audioRepairMessage('Le signal direct ne passe pas : vérifie le volume média, la sortie Bluetooth ou le navigateur.','error');
    return false;
@@ -103,9 +110,17 @@ async function audioRepairDiagnose(){
   // B: a real note travels through the channel, patchbay and processed master.
   audioRepairMessage('2/2 · Mesure du chemin instrument → master…');
   let master=await audioRepairMeter(chanGain.kick,masterOutput,440);
+  if(master===null){
+   audioRepairMessage('L’horloge audio n’avance pas pendant le test musical. Réactive le son.','error');
+   return false;
+  }
   if(master<.001){
    audioRepairMessage('Bus musical silencieux : réparation des branchements…');
    if(audioRepairReset())master=await audioRepairMeter(chanGain.kick,masterOutput,440);
+  }
+  if(master===null){
+   audioRepairMessage('L’horloge audio n’avance pas pendant le test musical. Réactive le son.','error');
+   return false;
   }
   if(master<.001){
    audioRepairMessage('Test direct OK, mais signal absent du master : problème DSP non résolu.','error');
