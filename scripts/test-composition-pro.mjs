@@ -130,3 +130,17 @@ tick();assert.equal(played,1);assert.equal(stopped,0);assert.equal(seq.endTime,1
 clock.currentTime=10.05;tick();assert.equal(played,1);assert.equal(stopped,0);
 clock.currentTime=10.13;tick();assert.equal(stopped,1);assert.equal(played,1,'No first note from the next loop in exported tails');
 console.log('✓ Production scheduler keeps the final step, stops on the audio clock and cannot record an extra loop');
+
+const trimSource=html.slice(html.indexOf('function trimHistoryStack('),html.indexOf('function snapshotProject('));
+const trim=vm.runInNewContext(trimSource+'\ntrimHistoryStack',{HISTORY_LIMIT:32,HISTORY_BYTES_LIMIT:1024});
+const history=Array.from({length:32},()=> 'x'.repeat(200));trim(history);
+assert.equal(history.length,2,'Large multi-bar projects have a byte-bounded history');
+const huge=['x'.repeat(2000)];trim(huge);assert.equal(huge.length,1,'Keep at least one undo snapshot');
+const storageSource=html.slice(html.indexOf('window.safeStorage ='),html.indexOf('window.nikoFetch ='));
+const values=new Map();let full=false;
+const fake={getItem:k=>values.get(k)||null,setItem(k,v){if(full)throw Error('quota');values.set(k,v);},removeItem:k=>values.delete(k)};
+const browser={localStorage:fake};vm.runInNewContext(storageSource,{window:browser,Map});
+assert.equal(browser.safeStorage.setItem('project','old'),true);full=true;
+assert.equal(browser.safeStorage.setItem('project','new'),false,'Report temporary storage instead of claiming persistence');
+assert.equal(browser.safeStorage.getItem('project'),'new','Temporary fallback must not read stale persistent data');
+console.log('✓ Mobile history memory bound and truthful local-storage quota fallback');
