@@ -53,6 +53,7 @@ function studioPatchReconnect(name){
   if(route==='off')target=null;
   else if(isMultiOut&&channelMerger)target=channelMerger;
   else target=studioPatchTarget(route)||duckingGain;
+  if(!target&&route!=='off')target=duckingGain||masterFilter||null;
   // An unpatched channel is disconnected only at its unique, dedicated output.
   try{output.disconnect();}catch(error){}
   if(target){
