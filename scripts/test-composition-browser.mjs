@@ -9,7 +9,7 @@ import {createRequire} from 'node:module';
 import {spawnSync} from 'node:child_process';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES?path.join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES,'playwright'):'playwright');
-const cwd=process.cwd(),artifacts=path.join(cwd,'.test-artifacts');fs.mkdirSync(artifacts,{recursive:true});
+const cwd=process.cwd(),artifacts=path.join(cwd,'test-artifacts');fs.mkdirSync(artifacts,{recursive:true});
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url||'/','http://localhost').pathname.slice(1)||'index.html';
  const file=path.resolve(cwd,decodeURIComponent(name));
@@ -38,6 +38,7 @@ try{
    await page.locator('#cp-note-vel').evaluate(el=>{el.value='70';el.dispatchEvent(new Event('change',{bubbles:true}));});
    await page.locator('#cp-note-gate').evaluate(el=>{el.value='2';el.dispatchEvent(new Event('change',{bubbles:true}));});
    const first=await page.evaluate(()=>composeSelected().tracks.fm[0]);
+   assert.ok(first,'First piano click must write a note: '+JSON.stringify({errors,view:await page.evaluate(()=>composeView),message:await page.locator('#cp-notice').innerText()}));
    assert.equal(first.note,'C4');assert.equal(first.vel,.7);assert.equal(first.gate,2);
    await page.locator('[data-cp-bar="1"]').click();
    await page.locator('#cp-roll [data-cp-pitch="67"][data-cp-step="12"]').click();

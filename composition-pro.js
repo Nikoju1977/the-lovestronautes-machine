@@ -91,13 +91,23 @@ function composeHit(cell,bar,track,step){
  n=Math.imul(n^(n>>>13),1274126177);n^=n>>>16;
  return ((n>>>0)/4294967296)<cell.probability;
 }
+function composeTrackEnabled(track){
+ switch(track){
+  case 'biniou':return biniouEnabled;
+  case 's1':return typeof s1State==='undefined'||s1State.enabled;
+  case 'taiga':return typeof taigaState==='undefined'||taigaState.enabled;
+  case 'fieldkit':return typeof fieldkitState==='undefined'||fieldkitState.enabled;
+  case 'grandmother':return typeof grandmotherState==='undefined'||grandmotherState.enabled;
+  default:return typeof hardwareState==='undefined'||!hardwareState[track]||hardwareState[track].enabled;
+ }
+}
 // Pure event plan: identical swing, probability, transpose and timing for audio/MIDI.
 function composeEvents(bar,step,mode='song',clipId=composeState.selected){
  const at=composeAtBar(bar,mode,clipId);if(!at)return [];
  const hasSolo=COMPOSE_TRACKS.some(t=>studioChannels[t].solo),events=[];
  COMPOSE_TRACKS.forEach((track,i)=>{
   if(!at.tracks.includes(track)||studioChannels[track].mute||(hasSolo&&!studioChannels[track].solo))return;
-  if(track==='biniou'&&!biniouEnabled)return;
+  if(!composeTrackEnabled(track))return;
   const cell=at.clip.tracks[track][at.local*16+step];
   if(!cell||!composeHit(cell,bar,i,step))return;
   const pitch=COMPOSE_DRUMS.has(track)?COMPOSE_DRUM_NOTES[track]:Math.round(composeClamp(composeMidi(cell.note)+at.transpose,12,119,60));
@@ -150,9 +160,9 @@ function composeCanEdit(){
  if(studioExportBusy||SEQ.playing||isPlaying){composeNotice('Arrête la lecture ou termine l’export avant de modifier la composition.');return false;}
  return true;
 }
-function composeCommit(change,message='Composition sauvegardée dans le navigateur.'){
+function composeCommit(change,message='Composition sauvegardée dans le navigateur.',render=true){
  if(!composeCanEdit()){composeRender();return false;}
- pushUndo();change();composeRender();saveLiveState();composeNotice(message);return true;
+ pushUndo();change();if(render)composeRender();saveLiveState();composeNotice(message);return true;
 }
 function composeNewClip(source=null,name='Nouveau clip',bars=4){
  if(composeState.clips.length>=COMPOSE_LIMITS.clips)return null;
@@ -377,11 +387,14 @@ function composeRenderSections(){
    const candidate=composeClone(composeState);candidate.sections[i][key]=next;
    const sanitized=composeSanitize(candidate);
    if(sanitized.sections.length!==candidate.sections.length){composeNotice('Arrangement limité à 1 024 mesures.');composeRenderSections();return;}
-   composeCommit(()=>{composeState.sections[i][key]=next;});
+   if(composeState.sections[i][key]===next)return;
+   if(composeCommit(()=>{composeState.sections[i][key]=next;},undefined,false)){
+    input.value=String(next);composeRefreshSummary();
+   }
   }));
-  row.querySelectorAll('[data-cp-lane]').forEach(input=>input.addEventListener('change',()=>composeCommit(()=>{
+  row.querySelectorAll('[data-cp-lane]').forEach(input=>input.addEventListener('change',()=>{composeCommit(()=>{
    const s=composeState.sections[i];s.tracks=input.checked?s.tracks.concat(input.dataset.cpLane):s.tracks.filter(t=>t!==input.dataset.cpLane);
-  })));
+  },undefined,false);composeRefreshSummary();}));
   row.querySelectorAll('[data-cp-move]').forEach(button=>button.addEventListener('click',()=>composeCommit(()=>{
    const target=i+Number(button.dataset.cpMove);[composeState.sections[i],composeState.sections[target]]=[composeState.sections[target],composeState.sections[i]];
   })));
@@ -390,6 +403,18 @@ function composeRenderSections(){
    if(composeState.sections.length>=COMPOSE_LIMITS.sections||composeTotalBars()+(composeState.clips.find(c=>c.id===composeState.sections[i].clip)?.bars||0)*composeState.sections[i].repeat>1024){composeNotice('Limite : 32 sections ou 1 024 mesures.');return;}
    composeCommit(()=>composeState.sections.splice(i+1,0,composeClone(composeState.sections[i])));
   });
+ });
+}
+function composeRefreshSummary(){
+ const bars=composeTotalBars(),seconds=bars*240/bpm,duration=document.getElementById('cp-duration');
+ if(duration)duration.textContent=bars+' mesures · '+Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0')+' · '+bpm+' BPM';
+ let start=1;
+ document.querySelectorAll('[data-cp-section]').forEach((row,i)=>{
+  const section=composeState.sections[i];if(!section)return;
+  const bars=(composeState.clips.find(c=>c.id===section.clip)?.bars||0)*section.repeat;
+  const label=row.querySelector('label');if(label?.firstChild)label.firstChild.nodeValue='SECTION '+(i+1)+' · M. '+start+'–'+(start+bars-1);
+  const summary=row.querySelector('summary');if(summary)summary.textContent=section.tracks.length+' / 18 pistes actives · choisir les instruments de cette section';
+  start+=bars;
  });
 }
 function composeRender(){
@@ -439,11 +464,18 @@ function composeInstall(){
   '<section class="cp-card"><h3>02 / Arrangement</h3><p>Chaque section répète un clip. Réordonne les sections, transpose les mélodies ou retire des instruments pour construire une intro, un break et un drop.</p><strong id="cp-duration"></strong><div id="cp-sections" class="cp-arrangement"></div><button type="button" id="cp-add-section">+ AJOUTER CE CLIP</button></section></div>'+
   '<section class="cp-card"><h3>03 / Exporter la composition</h3><div class="cp-tools"><label>SOURCE<select id="cp-export-source"><option value="song">Morceau entier</option><option value="clip">Clip sélectionné (un passage)</option></select></label><button type="button" id="cp-midi" class="cp-primary">MIDI · 18 PISTES</button><button type="button" id="cp-wav">WAV STÉRÉO 24 BITS</button><button type="button" id="cp-mp3">MP3 320 KB/S</button></div><p class="cp-export-note">MIDI : notes, vélocités, durées, swing, tempo et sections ; choisis ensuite tes instruments dans Ableton Live. WAV/MP3 : capture du son des synthés et du master en temps réel, à la fréquence du navigateur. Garde la page visible. Le mix Mute/Solo est respecté.</p><button type="button" id="cp-export-cancel" hidden>ANNULER L’EXPORT AUDIO</button><div id="cp-export-status" role="status" aria-live="polite"></div><progress id="cp-export-progress" value="0" max="100" aria-label="Progression export audio"></progress></section>';
  const bind=(id,event,fn)=>document.getElementById(id).addEventListener(event,fn);
- bind('cp-title','change',e=>composeCommit(()=>{composeState.title=composeText(e.target.value,60)||'Mon morceau';}));
- bind('cp-tempo','change',e=>composeCommit(()=>{bpm=Math.round(composeClamp(Number(e.target.value),40,220,128));document.getElementById('bpm-input').value=bpm;}));
+ bind('cp-title','change',e=>{const value=composeText(e.target.value,60)||'Mon morceau';if(value!==composeState.title)composeCommit(()=>{composeState.title=value;e.target.value=value;},undefined,false);});
+ bind('cp-tempo','change',e=>{const value=Math.round(composeClamp(Number(e.target.value),40,220,128));if(value!==bpm)composeCommit(()=>{bpm=value;e.target.value=bpm;document.getElementById('bpm-input').value=bpm;composeRefreshSummary();},undefined,false);});
  for(const key of ['root','scale'])bind('cp-'+key,'change',e=>composeCommit(()=>{composeState[key]=e.target.value;}));
  bind('cp-clip','change',e=>{composeState.selected=Number(e.target.value);composeView.bar=0;composeView.step=0;composeRender();saveLiveState();});
- bind('cp-clip-name','change',e=>composeCommit(()=>{composeSelected().name=composeText(e.target.value)||'Clip';}));
+ bind('cp-clip-name','change',e=>{
+  const clip=composeSelected(),name=composeText(e.target.value)||'Clip';if(name===clip.name)return;
+  composeCommit(()=>{
+   clip.name=name;e.target.value=name;
+   const option=document.querySelector('#cp-clip option[value="'+clip.id+'"]');if(option)option.textContent=name;
+   document.querySelectorAll('[data-cp-field="clip"] option[value="'+clip.id+'"]').forEach(o=>{o.textContent=name+' · '+clip.bars+' m.';});
+  },undefined,false);
+ });
  bind('cp-bars','change',e=>{
   const bars=Number(e.target.value),clip=composeSelected();
   const extra=composeState.sections.filter(s=>s.clip===clip.id).reduce((n,s)=>n+(bars-clip.bars)*s.repeat,0);

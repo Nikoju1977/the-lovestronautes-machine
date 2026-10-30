@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -87,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: composition-browser-screenshots
-          path: .test-artifacts/
+          path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7
 

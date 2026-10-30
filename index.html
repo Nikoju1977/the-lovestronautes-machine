@@ -2192,7 +2192,8 @@ $id('bpm-input').addEventListener('change', function(e) {
     pushUndo();
     bpm = Math.round(next);
     e.target.value = bpm;
-    composeRender();
+    const composeTempo=$id('cp-tempo');if(composeTempo)composeTempo.value=bpm;
+    composeRefreshSummary();
     saveLiveState();
     setStatus('TEMPO: ' + bpm + ' BPM', 'ok');
 });
@@ -2210,6 +2211,8 @@ $id('tap-btn').addEventListener('click', function() {
             pushUndo();
             bpm = tapped;
             $id('bpm-input').value = bpm;
+            const composeTempo=$id('cp-tempo');if(composeTempo)composeTempo.value=bpm;
+            composeRefreshSummary();
             saveLiveState();
             setStatus('TAP: ' + bpm + ' BPM', 'ok');
         }
