@@ -101,8 +101,24 @@ try{
    assert.ok(Math.abs(frames-expected)<=1,'Export has exact bar duration plus 1.6 s effect tail: '+JSON.stringify({frames,expected,sampleRate}));
    let peak=0;for(let i=44;i+2<wav.length;i+=6)peak=Math.max(peak,Math.abs(wav.readIntLE(i,3)));
    assert.ok(peak>100,'Downloaded 24-bit WAV contains actual composition audio');
+   const beforeReload=await page.evaluate(()=>{
+    const raw=localStorage.getItem('lovestronautes_state'),saved=raw?JSON.parse(raw):null;
+    return {selected:composeState.selected,current:composeSelected()?.tracks.fm.slice(0,32),
+      stored:!!raw,bytes:raw?.length,storedSelected:saved?.composition?.selected,
+      storedClip:saved?.composition?.clips?.find(c=>c.id===saved?.composition?.selected)?.tracks.fm.slice(0,32),
+      hint:document.getElementById('cp-save-status')?.textContent};
+   });
+   console.log('PERSIST BEFORE RELOAD '+JSON.stringify(beforeReload));
    await page.reload({waitUntil:'domcontentloaded'});await page.locator('#studio-compose-btn').click();
-   assert.equal(await page.evaluate(()=>composeSelected().tracks.fm[0].note),'C4');
+   const afterReload=await page.evaluate(()=>{
+    const raw=localStorage.getItem('lovestronautes_state'),saved=raw?JSON.parse(raw):null;
+    return {selected:composeState.selected,current:composeSelected()?.tracks.fm.slice(0,32),
+      stored:!!raw,storedSelected:saved?.composition?.selected,
+      storedClip:saved?.composition?.clips?.find(c=>c.id===saved?.composition?.selected)?.tracks.fm.slice(0,32),
+      hint:document.getElementById('cp-save-status')?.textContent};
+   });
+   console.log('PERSIST AFTER RELOAD '+JSON.stringify(afterReload));
+   assert.equal(await page.evaluate(()=>composeSelected().tracks.fm[0]?.note),'C4','Persistence mismatch: '+JSON.stringify({beforeReload,afterReload,errors}));
    assert.equal(await page.evaluate(()=>composeSelected().tracks.fm[28].note),'G4');
    assert.equal(await page.evaluate(()=>composeTotalBars()),2);
    assert.deepEqual(errors,[],'No uncaught JavaScript errors');
