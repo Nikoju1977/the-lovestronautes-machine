@@ -8,7 +8,7 @@ function mobileUIBuild(){
  dock.className='mobile-studio-dock';dock.setAttribute('aria-label','Transport et navigation du studio sur téléphone');
  const buttons=[
   ['sound','SON','unlock'],['play','PLAY','play-btn'],
-  ['seq','SEQ','seq'],['fieldkit','FIELD KIT','gear'],['mix','MIX','mix'],['loops','BOUCLES','loops']
+  ['seq','SEQ','seq'],['patch','CÂBLES','mix'],['gear','MACHINES','gear'],['loops','BOUCLES','loops']
  ];
  dock.innerHTML=buttons.map(([key,label])=>
   '<button type="button" data-mobile-action="'+key+'" aria-label="'+label+'"'+
@@ -25,11 +25,11 @@ function mobileUIBuild(){
   const key=button.dataset.mobileAction;
   if(key==='sound'){const el=document.getElementById('unlock');if(el)el.click();}
   else if(key==='play'){const el=document.getElementById('play-btn');if(el)el.click();}
-  else if(key==='fieldkit'){
-   goto('gear');
+  else if(key==='patch'){
+   goto('mix');
    requestAnimationFrame(function(){
-    const card=document.getElementById('fieldkit-rack');
-    if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
+    const patch=document.getElementById('studio-patchbay');
+    if(patch){patch.open=true;patch.scrollIntoView({behavior:'smooth',block:'start'});}
    });
   }else goto(key);
   mobileUISyncDock();
@@ -51,7 +51,7 @@ function mobileUISyncDock(){
  const dock=document.getElementById('mobile-studio-dock');if(!dock)return;
  const panel=document.querySelector('.nt.active')?.dataset.panel;
  dock.querySelectorAll('[data-mobile-action]').forEach(button=>{
-  const action=button.dataset.mobileAction,selected=action==='fieldkit'?panel==='gear':
+  const action=button.dataset.mobileAction,selected=action==='patch'?panel==='mix':
    action==='sound'?document.getElementById('unlock')?.getAttribute('aria-pressed')==='true':
    action==='play'?document.getElementById('play-btn')?.textContent.includes('PAUSE'):
    action===panel;
