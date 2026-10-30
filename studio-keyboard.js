@@ -346,18 +346,27 @@ function studioWireMiniKeyboard(card,selector,play,release){
  const paint=()=>{
   for(const key of keys)key.classList.toggle('pressed',[...active.values()].some(x=>x.key===key));
  };
+ const miniMode=selector.includes('taiga')?'taiga':'s1';
+ function playKey(key){
+  // The mini-keyboards used to bypass main-keyboard route/mute recovery.
+  studioKeyboardPrepare(miniMode);
+  return Promise.resolve(play(key.dataset.s1Note||key.dataset.taigaNote)).catch(error=>{
+   const feedback=document.getElementById('studio-key-feedback');
+   if(feedback)feedback.textContent='ERREUR CLAVIER '+miniMode.toUpperCase()+' : '+(error?.message||String(error));
+  });
+ }
  parent.addEventListener('pointerdown',event=>{
   const key=event.target.closest(selector);if(!key)return;
   event.preventDefault();
   try{parent.setPointerCapture(event.pointerId);}catch(e){}
   active.set(event.pointerId,{key});current=event.pointerId;
-  paint();Promise.resolve(play(key.dataset.s1Note||key.dataset.taigaNote)).catch(()=>{});
+  paint();playKey(key);
  });
  parent.addEventListener('pointermove',event=>{
   const previous=active.get(event.pointerId),key=noteFor(event);
   if(!previous||!key||previous.key===key)return;
   previous.key=key;current=event.pointerId;paint();
-  Promise.resolve(play(key.dataset.s1Note||key.dataset.taigaNote)).catch(()=>{});
+  playKey(key);
  });
  const finish=event=>{
   if(!active.has(event.pointerId))return;
@@ -369,7 +378,7 @@ function studioWireMiniKeyboard(card,selector,play,release){
   key.addEventListener('keydown',event=>{
    if(event.repeat||!['Enter',' '].includes(event.key))return;
    event.preventDefault();key.classList.add('pressed');
-   Promise.resolve(play(key.dataset.s1Note||key.dataset.taigaNote)).catch(()=>{});
+   playKey(key);
   });
   key.addEventListener('keyup',event=>{
    if(['Enter',' '].includes(event.key)){key.classList.remove('pressed');if(release)release();}
