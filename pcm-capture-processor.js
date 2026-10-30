@@ -14,11 +14,14 @@ class LovestronautesPCM extends AudioWorkletProcessor{
   }
   process(inputs,outputs){
     const input=inputs[0];
-    if(!this.closed && input && input.length){
-      const left=input[0],right=input.length>1?input[1]:left;
-      for(let i=0;i<left.length;i++){
+    if(!this.closed){
+      const left=input&&input[0],right=input&&input.length>1?input[1]:left;
+      // A temporarily silent/disconnected input can have zero channels. Keep
+      // its render quantum as silence instead of shortening the recording.
+      const frames=left?left.length:(outputs[0]?.[0]?.length||128);
+      for(let i=0;i<frames;i++){
         if(this.position===0)this.frame=typeof currentFrame==='number'?currentFrame+i:undefined;
-        this.left[this.position]=left[i];this.right[this.position]=right[i];
+        this.left[this.position]=left?left[i]:0;this.right[this.position]=right?right[i]:0;
         if(++this.position===4096)this.emit();
       }
     }

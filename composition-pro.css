@@ -25,6 +25,7 @@
 #panel-compose .cp-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:16px 0}
 #panel-compose .cp-lanes button{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:6px;padding:9px;font-size:12px}
 #panel-compose .cp-lanes small{font-size:11px;color:#b3c8d7}
+#panel-compose .cp-lanes span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 #panel-compose .cp-lanes button[aria-pressed=true]{border-color:var(--cp-accent);background:#1a3937}
 #panel-compose .cp-bar-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
 #panel-compose .cp-bar-tabs button[aria-pressed=true]{color:#092b23;background:var(--cp-accent)}

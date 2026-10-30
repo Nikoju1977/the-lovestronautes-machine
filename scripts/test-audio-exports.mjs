@@ -39,6 +39,12 @@ const trimmed=features.studioTrimPCM([
 assert.deepEqual(Array.from(trimmed,c=>Array.from(c.left)).flat(),[2,3,4,5,6],'PCM trimmed on exact clock frames across chunk boundaries');
 const fallback=features.studioTrimPCM([{left:hi,right:hr}],100,1.1,1.2,1);
 assert.equal(fallback[0].left.length,10);
+const missing=features.studioTrimPCM([
+ {left:new Float32Array([1,2]),right:new Float32Array([1,2]),frame:100},
+ {left:new Float32Array([3,4]),right:new Float32Array([3,4]),frame:104}
+],100,1,1.06);
+assert.deepEqual(Array.from(missing,c=>Array.from(c.left)).flat(),[1,2,0,0,3,4],'A missing quantum preserves timeline alignment');
+assert.throws(()=>features.studioTrimPCM([{left:hi,right:hr,frame:200}],100,1,2.5),/interrompue/,'Large gaps must fail honestly instead of manufacturing an audio export');
 console.log('✓ 24-bit PCM signed little-endian, finite samples and exact frame trimming');
 
 features.restoreStudioState({studio:{channels:{kick:{solo:true,pan:9,low:-20,high:3}},bars:16}});
@@ -64,6 +70,15 @@ assert.equal(workerMessages[0].type,'chunk');
 assert.equal(workerMessages[0].left.length,256);
 assert.equal(workerMessages[1].type,'done');
 console.log('✓ Worklet stereo capture and flush');
+workerMessages=[];
+const silenceRecorder=new processorType();
+silenceRecorder.process([[]],[[new Float32Array(128),new Float32Array(128)]]);
+silenceRecorder.port.onmessage({data:{type:'stop'}});
+silenceRecorder.process([[left.subarray(0,128),right.subarray(0,128)]],[[new Float32Array(128),new Float32Array(128)]]);
+assert.equal(workerMessages[0].left.length,256,'Empty input quantum must retain 128 silent frames');
+assert.ok(workerMessages[0].left.subarray(0,128).every(v=>v===0));
+assert.equal(workerMessages[0].left[144],left[16]);
+console.log('✓ Worklet records zero-channel quanta without moving later notes');
 
 const vendor=fs.readFileSync('vendor/lame.min.js','utf8');
 const encoderScript=fs.readFileSync('mp3-encoder-worker.js','utf8');

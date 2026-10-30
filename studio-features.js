@@ -322,13 +322,20 @@ async function studioCaptureStart(){
 }
 function studioTrimPCM(chunks,sampleRate,startTime,endTime,fallbackTime=0){
  const start=Math.round(startTime*sampleRate),end=Math.round(endTime*sampleRate),output=[];
- let cursor=Math.round(fallbackTime*sampleRate);
- for(const part of chunks){
-  const frame=Number.isFinite(part.frame)?part.frame:cursor;
-  const first=Math.max(0,start-frame),last=Math.min(part.left.length,end-frame);
-  if(last>first)output.push({left:part.left.subarray(first,last),right:part.right.subarray(first,last)});
-  cursor=frame+part.left.length;
+ let sourceCursor=Math.round(fallbackTime*sampleRate),cursor=start;
+ function gapTo(frame){
+  const count=Math.max(0,Math.min(end,frame)-cursor);if(!count)return;
+  if(count>sampleRate*.1)throw Error('Capture audio interrompue : réactive le son ou réduis les pistes.');
+  output.push({left:new Float32Array(count),right:new Float32Array(count)});cursor+=count;
  }
+ for(const part of chunks){
+  const frame=Number.isFinite(part.frame)?part.frame:sourceCursor;
+  if(frame<end)gapTo(frame);
+  const first=Math.max(0,cursor-frame),last=Math.min(part.left.length,end-frame);
+  if(last>first){output.push({left:part.left.subarray(first,last),right:part.right.subarray(first,last)});cursor=frame+last;}
+  sourceCursor=frame+part.left.length;
+ }
+ gapTo(end);
  return output;
 }
 function studioWav(chunks,sampleRate,bits=16){

@@ -214,7 +214,7 @@ function composeTransform(kind){
 async function composePlay(mode='song',forExport=false){
  if(studioExportBusy&&!forExport)return false;
  if(!composeSelected()||(mode==='song'&&!composeTotalBars())){composeNotice('Ajoute au moins une section à ton arrangement.');return false;}
- if(!await activateStudioAudio())return false;
+ if((!ctx||ctx.state!=='running')&&!await activateStudioAudio())return false;
  if(SEQ.playing||isPlaying){stopSeq();isPlaying=false;}
  creatorState.running=false;loopsState.running=false;
  composeRun.active=true;composeRun.mode=mode;composeRun.clip=composeState.selected;
@@ -362,7 +362,7 @@ function composeRenderNoteTools(){
  if(label)label.textContent=COMPOSE_LABELS[composeView.track]+' · mesure '+(composeView.bar+1)+' · pas '+(composeView.step+1)+' · '+(cell?cell.note:'silence');
  for(const [key,mult] of [['vel',100],['gate',1],['probability',100],['shift',1]]){
   const input=document.getElementById('cp-note-'+key);if(!input)continue;
-  input.disabled=!cell;input.value=cell?Math.round(cell[key]*mult*100)/100:(key==='gate'?1:key==='shift'?0:80);
+  input.disabled=!cell;input.value=cell?Math.round(cell[key]*mult*100)/100:(key==='gate'?1:key==='shift'?0:key==='probability'?100:80);
   input.nextElementSibling.textContent=input.value+(mult===100?' %':key==='shift'?' ms':' pas');
  }
 }
@@ -438,7 +438,7 @@ function composeRender(){
  lanes.querySelectorAll('[data-cp-track]').forEach(button=>button.addEventListener('click',()=>{
   composeView.track=button.dataset.cpTrack;
   const note=clip?.tracks[composeView.track].find(Boolean);
-  if(note&&!COMPOSE_DRUMS.has(composeView.track))composeView.octave=Math.max(0,Math.min(6,Math.floor(composeMidi(note.note)/12)-1));
+  if(note&&!COMPOSE_DRUMS.has(composeView.track))composeView.octave=Math.max(0,Math.min(6,Math.floor(composeMidi(note.note)/12)-2));
   composeRender();
  }));
  const tabs=document.getElementById('cp-bar-tabs');
