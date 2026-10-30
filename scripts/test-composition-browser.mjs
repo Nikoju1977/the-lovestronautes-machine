@@ -81,11 +81,24 @@ try{
    assert.equal(signal.state,'running');assert.equal(signal.playing,false);assert.equal(signal.bar,2);
    assert.ok(signal.peak>.00002&&signal.active>=4,'Actual composition audio reaches the master: '+JSON.stringify(signal));
    await page.locator('#cp-export-source').selectOption('clip');
+   await page.evaluate(()=>{
+    const trim=studioTrimPCM;
+    studioTrimPCM=function(chunks,rate,start,end,fallback){
+     const output=trim(chunks,rate,start,end,fallback);
+     window.__captureTrace={rate,start,end,fallback,input:chunks.map(c=>({frame:c.frame,frames:c.left.length})),output:output.reduce((n,c)=>n+c.left.length,0)};
+     return output;
+    };
+   });
    const wavDownload=page.waitForEvent('download',{timeout:25000});await page.locator('#cp-wav').click();
    const wav=fs.readFileSync(await (await wavDownload).path());
    assert.equal(wav.subarray(0,4).toString(),'RIFF');assert.equal(wav.readUInt16LE(34),24);assert.equal(wav.readUInt16LE(22),2);
    const sampleRate=wav.readUInt32LE(24),frames=wav.readUInt32LE(40)/6;
-   assert.ok(Math.abs(frames-Math.round((2*240/220+1.6)*sampleRate))<=1,'Export has exact bar duration plus 1.6 s effect tail');
+   const expected=Math.round((2*240/220+1.6)*sampleRate);
+   if(Math.abs(frames-expected)>1){
+    fs.writeFileSync(path.join(artifacts,'export-failure-'+width+'.wav'),wav);
+    console.log('CAPTURE TRACE '+JSON.stringify(await page.evaluate(()=>window.__captureTrace)));
+   }
+   assert.ok(Math.abs(frames-expected)<=1,'Export has exact bar duration plus 1.6 s effect tail: '+JSON.stringify({frames,expected,sampleRate}));
    let peak=0;for(let i=44;i+2<wav.length;i+=6)peak=Math.max(peak,Math.abs(wav.readIntLE(i,3)));
    assert.ok(peak>100,'Downloaded 24-bit WAV contains actual composition audio');
    await page.reload({waitUntil:'domcontentloaded'});await page.locator('#studio-compose-btn').click();
