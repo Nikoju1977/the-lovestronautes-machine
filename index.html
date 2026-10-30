@@ -1355,7 +1355,7 @@ function initAudio() {
         else output.connect(duckingGain);
     });
     studioApplyMix();
-    studioPatchReconnectAll();
+    if(typeof studioPatchReconnectAll==='function')studioPatchReconnectAll();
 
     ctx.addEventListener('statechange',function(){
         if(ctx.state==='running'){markStudioAudioReady();return;}
@@ -1915,7 +1915,7 @@ function buildMixer() {
         studioExtendChannel(name,ch);
     });
     p.appendChild(row);
-    studioPatchBuild();
+    if(typeof studioPatchBuild==='function')studioPatchBuild();
     studioSyncMixer();
 }
 
@@ -2081,7 +2081,7 @@ function syncProjectUI() {
     updateHistoryUI();
 }
 
-buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); studioPatchInstall(); mobileUIBuild(); studioStabilityInstall();
+buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
