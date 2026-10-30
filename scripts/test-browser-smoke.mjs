@@ -85,6 +85,9 @@ function browserHarness(){
     }
     masterOutput.disconnect(audioProbe);
     check(observedPeak>.0002,'Real synthesized kick reaches master PCM ('+observedPeak.toFixed(5)+')');
+    const repairDiagnostic=await audioRepairDiagnose();
+    check(repairDiagnostic,'V21 speaker and instrument diagnostic detects real PCM');
+    check(document.getElementById('audio-repair-result')?.dataset.state==='success','Diagnostic provides visible successful result');
     check(!!chanGain.taiga,'Taiga bus connected');
     check(!!chanGain.fieldkit,'Field Kit connected to master audio');
     check(!!chanGain.grandmother,'Grandmother bus connected to master audio');
