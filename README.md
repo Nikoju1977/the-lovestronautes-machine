@@ -11,6 +11,12 @@
 
 **Démo** : [nikoju1977.github.io/the-lovestronautes-machine](https://nikoju1977.github.io/the-lovestronautes-machine/)
 
+## V24 — Lecture mobile et anti-coupures (30 octobre 2026)
+- Nettoyage des graphes audio temporaires à la fin des notes (percussions, sub, FM, acid, voix, theremin, biniou), sans couper le mixage.
+- Correction de l'algorithme ECO : un seul retard du scheduler ne met plus tous les instruments secondaires en sourdine pendant 1,6 seconde.
+- Tests automatisés de désallocation des nœuds et essai prolongé du moteur WebKit mobile.
+- Une validation dans un navigateur de CI ne garantit pas le fonctionnement sur tous les téléphones Android et iOS. Après mise à jour, relancer la PWA pour forcer son nouveau cache V24.
+
 ## V23 — Composition Pro
 
 Le bouton **COMPOSER UN MORCEAU** ouvre un espace de composition relié aux 18 synthés et au mixeur existants. [Guide pratique](COMPOSITION_GUIDE.md).
