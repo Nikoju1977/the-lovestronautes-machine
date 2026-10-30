@@ -1,0 +1,43 @@
+/* LOVESTRONAUTES V20 — readable touch-first controls, patchbay, fewer stacked launch buttons. */
+.studio-machine-shortcuts{margin:3px 10px 7px;border:1px solid rgba(130,215,173,.35);border-radius:12px;background:#0a1b19;overflow:hidden;flex-shrink:0}
+.studio-machine-shortcuts summary{list-style:none;cursor:pointer;padding:13px 14px;color:#ddffec;font:800 14px system-ui,sans-serif;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px}
+.studio-machine-shortcuts summary::-webkit-details-marker{display:none}
+.studio-machine-shortcuts summary::after{content:'▾';color:#8beabb;font-size:20px}
+.studio-machine-shortcuts[open] summary::after{content:'▴'}
+.studio-shortcuts-body{padding:6px 9px 11px;display:grid;gap:8px}
+.studio-shortcuts-body>button{width:100%;margin:0!important;min-height:48px!important;padding:10px!important;letter-spacing:.02em!important;font:800 13px system-ui,sans-serif!important;line-height:1.35!important;border-radius:9px!important}
+.studio-patchbay{width:100%;background:#0b1f1c;border:1px solid #41816c;border-radius:14px;color:#e2f8ee;overflow:hidden;flex-shrink:0}
+.studio-patchbay>summary{list-style:none;padding:16px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:5px;cursor:pointer;background:#123329;min-height:60px}
+.studio-patchbay>summary::-webkit-details-marker{display:none}
+.studio-patchbay>summary span{font:900 15px system-ui,sans-serif;color:#ceffdf}
+.studio-patchbay>summary small{font:600 12px system-ui,sans-serif;color:#8fe0b9}
+.studio-patchbay[open]>summary{border-bottom:1px solid #347961}
+.patchbay-content{padding:14px;display:grid;gap:13px}
+.patchbay-content p{font:500 13px/1.5 system-ui,sans-serif;color:#b7dccc}
+.patchbay-signal{background:#071712;border:1px solid #285b49;border-radius:10px;padding:12px;color:#acecc7;font:700 12px/1.6 system-ui,sans-serif;letter-spacing:.025em}
+.patchbay-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.patchbay-actions button{background:#1a4838;color:#e6fff1;border:1px solid #70ab8b;border-radius:9px;min-height:47px;padding:8px;font:800 12px system-ui,sans-serif;touch-action:manipulation;cursor:pointer}
+.patchbay-actions button:last-child{background:#253129;color:#ffecc7;border-color:#a49a75}
+#patchbay-status{padding:9px 10px;color:#9fe7c2;background:#122a22;border-radius:9px;font:700 12px/1.5 system-ui,sans-serif}
+.patchbay-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:8px}
+.patchbay-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:11px;background:#091916;border:1px solid #284e43;border-radius:10px;min-width:0}
+.patchbay-row strong{font:900 13px system-ui,sans-serif;color:#f0fff5;letter-spacing:.05em}
+.patchbay-row select{appearance:auto;width:100%;min-width:0;min-height:47px;background:#193c30;border:1px solid #76a991;border-radius:9px;color:#f1fff5;padding:8px 10px;font:700 14px system-ui,sans-serif}
+.patchbay-row select:disabled{opacity:.6}
+.patchbay-row small{font:600 12px system-ui,sans-serif;color:#88b89e;line-height:1.35}
+.patchbay-row.patchbay-fixed{border-style:dashed}
+.patchbay-row.patchbay-fixed>span{font:800 13px system-ui,sans-serif;color:#d8dcb8}
+.patchbay-content .patchbay-hint{color:#b2c8bc}
+.studio-patchbay :is(button,select,summary):focus-visible,.studio-machine-shortcuts :is(summary,button):focus-visible{outline:3px solid #ffcf93;outline-offset:2px}
+@media(max-width:1023px){
+  .studio-machine-shortcuts{margin:4px 8px 7px}
+  .studio-patchbay{scroll-margin-top:65px}
+  .patchbay-content{padding:11px;gap:11px}
+  .patchbay-rows{grid-template-columns:1fr}
+  .patchbay-row{grid-template-columns:1fr;gap:8px;padding:13px}
+  .patchbay-row select{min-height:52px}
+  .studio-quickbar{gap:8px!important}
+  .nav-tabs{scroll-snap-type:x proximity}
+}
+@media(max-width:390px){.patchbay-actions{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.studio-patchbay,.studio-machine-shortcuts{scroll-behavior:auto}}
