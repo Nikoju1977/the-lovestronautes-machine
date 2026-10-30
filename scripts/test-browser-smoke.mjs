@@ -16,7 +16,7 @@ function browserHarness(){
  window.addEventListener('unhandledrejection',e=>failures.push('Promise: '+String(e.reason).slice(0,100)));
  setTimeout(async function(){
   try{
-   check(document.querySelector('.live-badge')?.textContent.includes('V19'),'V19 badge');
+   check(document.querySelector('.live-badge')?.textContent.includes('V21'),'V21 badge');
    check(typeof taigaTrigger==='function','Taiga synth engine');
    check(!!document.getElementById('taiga-rack'),'Taiga rack rendered');
    check(document.querySelectorAll('#panel-seq .tcard').length===18,'18 step sequencer lanes');
@@ -42,6 +42,8 @@ function browserHarness(){
    check(typeof fieldkitImportLargeFile==='function'&&FIELDKIT_IMPORT_MAX===104857600,'100MB importer engine registered');
    check(!!document.getElementById('fieldkit-envelope'),'Microphone envelope follower UI');
    check(!!document.getElementById('mobile-studio-dock'),'Mobile touch navigation mounted');
+   check(!!document.getElementById('studio-audio-repair'),'Audio diagnosis visible');
+   check(typeof audioRepairDiagnose==='function'&&typeof audioRepairReset==='function','One-tap audio repair loaded');
    check(!!document.getElementById('eq-preset'),'Master EQ presets visible');
    check(!!document.querySelector('#panel-mix .studio-eq-details'),'Mobile collapsible channel EQ');
    check(document.querySelectorAll('#panel-mix .mxch[data-studio-track="fieldkit"]').length===1,'Field Kit mixer channel');
@@ -67,6 +69,30 @@ function browserHarness(){
    catch(error){failures.push('Audio unlock: '+error.message);}
    check(ready&&ctx.state==='running','AudioContext running');
    if(ready){
+    // Numerical audio assertion: unlike a UI trigger, this proves that
+    // a generated note reaches the real master audio bus.
+    const audioProbe=ctx.createAnalyser();audioProbe.fftSize=512;
+    masterOutput.connect(audioProbe);
+    const audioSamples=new Float32Array(512);
+    let observedPeak=0;
+    const kickAt=ctx.currentTime+.025;
+    psyTriggerT8Kick(kickAt);
+    for(let i=0;i<12;i++){
+      await new Promise(r=>setTimeout(r,35));
+      audioProbe.getFloatTimeDomainData(audioSamples);
+      const rms=Math.sqrt(audioSamples.reduce((sum,v)=>sum+v*v,0)/audioSamples.length);
+      observedPeak=Math.max(observedPeak,rms);
+    }
+    masterOutput.disconnect(audioProbe);
+    check(observedPeak>.0002,'Real synthesized kick reaches master PCM ('+observedPeak.toFixed(5)+')');
+    const repairDiagnostic=await audioRepairDiagnose();
+    const repairMessage=document.getElementById('audio-repair-result')?.textContent||'';
+    // Chromium's --virtual-time-budget fast-forwards JS timers but not the audio
+    // hardware clock. A guarded, explicit "clock stalled" result is acceptable
+    // here; PCM kick delivery is independently asserted above.
+    check(repairDiagnostic||repairMessage.includes('Horloge audio'),'V21 diagnostic handles accelerated headless timers without false speaker claim: '+repairMessage);
+    check(audioRepairReset(),'V21 recovery restores the stereo graph and mix');
+    check(studioPatchRoutes.kick==='drive'&&!isMultiOut,'V21 recovery restores default patchbay route');
     check(!!chanGain.taiga,'Taiga bus connected');
     check(!!chanGain.fieldkit,'Field Kit connected to master audio');
     check(!!chanGain.grandmother,'Grandmother bus connected to master audio');

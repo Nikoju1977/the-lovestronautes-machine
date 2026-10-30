@@ -779,6 +779,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 <link rel="stylesheet" href="./mobile-v18.css">
 <link rel="stylesheet" href="./grandmother-synth.css">
 <link rel="stylesheet" href="./studio-patchbay.css">
+<link rel="stylesheet" href="./studio-audio-repair-v21.css">
   <meta name="description" content="Lovestronautes Machine — studio psytrance avec 5 machines numériques, synthèse FM, bassline acid, theremin, vocoder et export WAV MP3.">
   <meta name="author" content="Nicolas Julienne — Studio Niko Design">
   <meta name="theme-color" content="#ff0080">
@@ -803,7 +804,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V19 · GRANDMOTHER / 18 PISTES</span></div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V21 · DIAGNOSTIC AUDIO / 18 PISTES</span></div>
                 <div class="wm-sub">18 PISTES · GRANDMOTHER · FIELD KIT 100 MO · WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
@@ -817,7 +818,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
-            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V19 · GRANDMOTHER ANALOG LAB</span></div>
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V21 · SORTIE AUDIO & CÂBLAGE</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
                 <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
@@ -967,6 +968,7 @@ function nikoRetryBtn(container, fn) {
 <script src="./audio-extensions.js"></script>
 <script src="./studio-features.js"></script>
 <script src="./studio-patchbay.js"></script>
+<script src="./studio-audio-repair-v21.js"></script>
 <script src="./psy-machines.js"></script>
 <script src="./psy-track-creator.js"></script>
 <script src="./cwejman-s1.js"></script>
@@ -2094,7 +2096,7 @@ function syncProjectUI() {
     updateHistoryUI();
 }
 
-buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall();
+buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall(); audioRepairInstall();
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
@@ -2131,16 +2133,7 @@ $id('studio-demo-btn').addEventListener('click', async function() {
     $id('studio-audio-guide').textContent = 'DÉMO PSY en lecture : pattern C / DROP. Modifie les sons dans MACHINES et FX / WAV.';
     setStatus('DÉMO PSY : C DROP', 'ok');
 });
-$id('studio-test-btn').addEventListener('click', async function() {
-    if (!await activateStudioAudio()) return;
-    try {
-        const t = ctx.currentTime + 0.035;
-        psyTriggerT8Kick(t);
-        psyTriggerFM2('C4', t + 0.12, 0.8);
-        $id('studio-audio-guide').textContent = 'TEST SON : kick T-8 puis synthé FM2. Si tu n’entends rien, vérifie le volume du téléphone.';
-        setStatus('TEST AUDIO : KICK + FM', 'ok');
-    } catch (error) { studioAudioError(error); }
-});
+$id('studio-test-btn').addEventListener('click', audioRepairDiagnose);
 $id('studio-fx-btn').addEventListener('click', function() {
     const tab = document.querySelector('.nt[data-panel="fx"]');
     if (tab) tab.click();
