@@ -123,6 +123,12 @@ console.log('✓ 18 synth dispatchers, gate cleanup on errors and finite-song lo
 
 // Execute the production scheduler with a simulated audio clock at the final step.
 const html=fs.readFileSync('index.html','utf8');
+const audioGlobals=html.indexOf('let ctx = null');
+const restoreCall=html.lastIndexOf('loadLiveState();');
+const appBootstrap=html.indexOf('buildFX(); buildPsyRack();');
+assert.ok(audioGlobals>0 && restoreCall>audioGlobals && restoreCall<appBootstrap,
+  'Local project restore must run after audio globals initialize (avoids fieldkit TDZ) and before UI bootstrap');
+console.log('✓ Saved project restore is ordered after Web Audio globals and before startup');
 const scheduler=html.slice(html.indexOf('function schedulerTick()'),html.indexOf('function startSeq()'));
 let played=0,stopped=0;
 const seq={playing:true,nextTime:10,masterStep:15,barCount:0,endTime:0};
