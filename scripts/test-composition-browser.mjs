@@ -30,6 +30,12 @@ try{
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
    await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
+   const version=page.locator('#studio-version-banner');
+   assert.equal(await version.isVisible(),true,'Version must be visible on phone and desktop');
+   assert.match(await version.innerText(),/VERSION V24/);
+   const fontPx=await version.evaluate(el=>Number.parseFloat(getComputedStyle(el).fontSize));
+   assert.ok(fontPx>=14,'Version banner must be legible, got '+fontPx+' px');
+   assert.equal(await page.locator('#studio-refresh-btn').isVisible(),true,'Non-destructive version refresh control visible');
    await page.locator('#studio-compose-btn').click();
    await page.locator('#cp-new').click();
    await page.locator('#cp-clip-name').fill('Phrase test');await page.locator('#cp-clip-name').dispatchEvent('change');
