@@ -76,6 +76,25 @@ Les tests automatisés vérifient la durée de la voix, la capture PCM simulée,
 
 **Limite :** les tests de code ne remplacent pas un essai du micro et du haut-parleur sur le téléphone concerné. Le micro nécessite HTTPS, une permission accordée et une capture audio compatible.
 
+## V19 — GRANDMOTHER · Studio analogique semi-modulaire
+
+Le synthétiseur **Moog Grandmother** a inspiré ce module **numérique indépendant, non officiel**, disponible gratuitement sur Android Chrome, iPhone/iPad Safari et navigateurs de bureau. Il complète le studio, qui possède désormais **18 pistes**.
+
+- **Deux VCO monophoniques** : triangle, dent de scie, carré et impulsion, choix d'octave, accordage oscillateur 2, PWM simplifiée, mixage de bruit blanc et préamplification.
+- **Filtre style ladder 24 dB/octave** : deux biquads 12 dB en cascade (approximation numérique, pas un modèle physique des transistors Moog), résonance, filtre passe-haut et enveloppe de filtre.
+- **ADSR, LFO et glide** : enveloppe de volume, modulation vers pitch, cutoff ou les deux, portamento et synchronisation harmonique simulée.
+- **Réverbération façon ressort** : double ligne de retard avec amortissement et faible feedback, volontairement limitée en CPU ; ce n'est pas une réverbération à ressort analogique réelle.
+- **Cinq patches** : Deep Ladder Bass, Acid Modular Lead, Dark Vintage Drone, Cosmic Analog Keys, Rave Pulse 140.
+- **ARP autonome à huit notes** : synchronisé au BPM de Lovestronautes, avec START/STOP explicites et arrêt à la fermeture. Le Grandmother physique offre un arpégiateur et un séquenceur 256 pas ; notre module inclut un **arpège fixe de huit notes et la piste 16 pas commune**, pas une émulation 256 pas.
+- **Piste 18, mixeur et exports** : séquenceur A/B/C/D, volumes, EQ 4 bandes, pan, mute/solo, enregistrement et export WAV/MP3, clips BOUCLES et Melody Lab 64 pas.
+- **Clavier LIVE tactile et MIDI** : sélection Grandmother, sustain tant qu'une touche est maintenue, note-off à la fin du toucher et relâchement des voix. Safari iOS ne prend pas nativement en charge Web MIDI.
+- **Sauvegardes rétrocompatibles** : les anciens projets restent valables. La nouvelle piste commence silencieuse par défaut pour ne pas modifier les morceaux déjà enregistrés. Les paramètres sont enregistrés dans le JSON et le cache PWA.
+- **Mode mobile** : un maximum d'une voix à la fois, un seul AudioContext partagé, pas de chargement de sample pour ce synthé, rack de réglages à colonnes adaptatives.
+
+Pour jouer : **ACTIVER LE SON → GRANDMOTHER · OUVRIR → PATCH → TEST SYNTHÉ**. Choisir **GRANDMOTHER** dans le clavier LIVE pour jouer au doigt ou avec un contrôleur MIDI compatible, ou dessiner des notes sur la piste 18 du séquenceur.
+
+**Limites :** le module ne reproduit ni les circuits analogiques originaux, ni les 41 prises patch CV, ni la réverbération mécanique, ni les trois mémoires 256 pas du Grandmother réel. Il ne communique pas avec le matériel Moog. Les tests automatisés Chromium/WebKit restent distincts d'un essai audio physique sur un vrai téléphone.
+
 ## V18 — Import audio 100 Mo, moteur anti-coupures et interface mobile
 
 Cette version améliore la stabilité du **Field Kit** et de la **Lovestronautes Machine à 17 pistes**, sans nécessiter de serveur.

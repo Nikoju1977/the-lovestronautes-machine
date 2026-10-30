@@ -16,15 +16,23 @@ function browserHarness(){
  window.addEventListener('unhandledrejection',e=>failures.push('Promise: '+String(e.reason).slice(0,100)));
  setTimeout(async function(){
   try{
-   check(document.querySelector('.live-badge')?.textContent.includes('V18'),'V18 badge');
+   check(document.querySelector('.live-badge')?.textContent.includes('V19'),'V19 badge');
    check(typeof taigaTrigger==='function','Taiga synth engine');
    check(!!document.getElementById('taiga-rack'),'Taiga rack rendered');
-   check(document.querySelectorAll('#panel-seq .tcard').length===17,'17 step sequencer lanes');
-   check(document.querySelectorAll('#panel-mix .mxch').length===17,'17 channel strips');
+   check(document.querySelectorAll('#panel-seq .tcard').length===18,'18 step sequencer lanes');
+   check(document.querySelectorAll('#panel-mix .mxch').length===18,'18 channel strips');
    check(document.querySelectorAll('#taiga-rack [data-taiga-param]').length>20,'Taiga analog controls');
    check(document.querySelectorAll('#taiga-preset option').length===5,'Taiga presets');
    check(!!document.querySelector('#panel-loops #loops-play'),'Loop Studio transport');
    check(!!document.getElementById('fieldkit-rack'),'Field Kit electroacoustic rack rendered');
+   check(!!document.getElementById('grandmother-rack'),'Grandmother semi-modular rack rendered');
+   check(document.querySelectorAll('#grandmother-rack [data-grandmother-key]').length>=20,'Grandmother sound parameters are available');
+   check(document.querySelectorAll('#grandmother-preset option').length===6,'Five Grandmother patches plus custom mode');
+   check(!!document.querySelector('#panel-seq .tcard[data-studio-track="grandmother"]'),'Grandmother 18th sequencer track');
+   check(!!document.querySelector('#panel-mix .mxch[data-studio-track="grandmother"]'),'Grandmother mixer channel');
+   check(!!document.querySelector('#creator-edit-track option[value="grandmother"]'),'Grandmother editable Melody Lab');
+   check(!!document.querySelector('#studio-key-instrument option[value="grandmother"]'),'Grandmother live keyboard and MIDI');
+   check(patterns.C.grandmother.every(v=>v===null),'Grandmother starts silent in old projects');
    check(document.querySelectorAll('#fieldkit-rack .fieldkit-channel').length===4,'Field Kit 4 independent mixer inputs');
    check(document.querySelectorAll('#fieldkit-preset option').length===5,'Field Kit presets available');
    check(!!document.getElementById('fieldkit-record')&&!!document.getElementById('fieldkit-file'),'Field recording and import on mobile');
@@ -48,7 +56,7 @@ function browserHarness(){
    check(['mbase','solar','modfm','wing'].every(k=>!!document.querySelector('#panel-seq .tcard[data-studio-track="'+k+'"]')),'New instrument sequencer lanes');
    check(['mbase','solar','modfm','wing'].every(k=>!!document.querySelector('#panel-mix .mxch[data-studio-track="'+k+'"]')),'New instrument mixer channels');
    check(patterns.C.mbase.filter(Boolean).length===0,'Extra kick is silent by default');
-   check(document.querySelectorAll('#studio-key-instrument option').length>=10,'Instrument selection on piano');
+   check(document.querySelectorAll('#studio-key-instrument option').length>=12,'Instrument selection on piano');
    check(!!document.querySelector('#creator-edit-track option[value="taiga"]'),'Taiga Melody Lab');
    check(document.querySelectorAll('#kbd .studio-piano-key.white').length===8,'Piano white keys');
    check(document.querySelectorAll('#kbd .studio-piano-key.black').length===5,'Piano black keys');
@@ -61,6 +69,12 @@ function browserHarness(){
    if(ready){
     check(!!chanGain.taiga,'Taiga bus connected');
     check(!!chanGain.fieldkit,'Field Kit connected to master audio');
+    check(!!chanGain.grandmother,'Grandmother bus connected to master audio');
+    check(grandmotherTrigger('C3',ctx.currentTime+.06,.78,true),'Grandmother real Web Audio oscillator runs');
+    check(grandmotherVoice&&!grandmotherVoice.released,'Grandmother held note sustains');
+    check(grandmotherRelease('C3'),'Grandmother note-off releases touch/MIDI voice');
+    check(grandmotherTrigger('F3',ctx.currentTime+.08,.77,false),'Grandmother preset sequencer note triggers');
+    grandmotherStop();
     check(fieldkitTrigger('F3',ctx.currentTime+.09,.68),'Field Kit starts four-channel audio');
     check(fieldkitVoices.length<=1,'Field Kit mobile voice limit');
     fieldkitStopVoices();
@@ -112,7 +126,7 @@ function browserHarness(){
   }catch(e){failures.push('Exception: '+e.message);}
   const pre=document.createElement('pre');
   pre.id='browser-smoke-result';
-  pre.textContent='V18_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
+  pre.textContent='V19_CHROME_SMOKE_RESULT_'+(failures.length?'FAIL':'PASS')+'|'+passed.length+'|'+failures.join(' ; ');
   document.body.appendChild(pre);
  },100);
 }
@@ -151,7 +165,7 @@ try{
  const timeout=setTimeout(()=>process.kill('SIGKILL'),60000);
  const code=await new Promise(resolve=>process.on('close',resolve));
  clearTimeout(timeout);
- const result=stdout.match(/V18_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
+ const result=stdout.match(/V19_CHROME_SMOKE_RESULT_(PASS|FAIL)\|(\d+)\|([^<]*)/);
  if(!result)throw Error('Browser test did not finish (code '+code+', DOM bytes '+stdout.length+'): '+stderr.slice(-1000)+' DOM tail '+stdout.slice(-600));
  console.log('Chromium UI assertions passed: '+result[2]);
  if(result[1]!=='PASS')throw Error('Browser errors: '+result[3]);

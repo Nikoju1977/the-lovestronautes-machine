@@ -10,6 +10,7 @@ const STUDIO_KEYBOARD_MODES=[
  ['wing','WING PINGER'],
  ['mbase','MBASE 11 · KICK'],
  ['fieldkit','FIELD KIT · ELECTRO'],
+ ['grandmother','GRANDMOTHER · MOOG-STYLE'],
  ['s1','S1 MK2 · ANALOG'],
  ['fm2','VOLCA FM2'],
  ['td3','TD-3 · ACID'],
@@ -60,6 +61,7 @@ function studioKeyboardSound(note,velocity,held,mode=studioKeyMode){
   if(mode==='theremin'){psyTriggerTheremin(note,time,v);return true;}
   if(['mbase','solar','modfm','wing'].includes(mode))return hardwareTrigger(mode,note,time,v);
   if(mode==='fieldkit')return fieldkitTrigger(note,time,v);
+  if(mode==='grandmother')return grandmotherTrigger(note,time,v,held);
   if(mode==='biniou'){
    if(!biniouEnabled){
     const label=document.getElementById('studio-key-feedback');
@@ -79,6 +81,7 @@ function studioKeyboardReleaseSound(token){
   if(token.mode==='taiga'&&typeof taigaStopVoices==='function')taigaStopVoices();
   if(token.mode==='s1'&&typeof s1StopVoices==='function')s1StopVoices();
   if(token.mode==='fieldkit'&&typeof fieldkitStopVoices==='function')fieldkitStopVoices();
+  if(token.mode==='grandmother'&&typeof grandmotherRelease==='function')grandmotherRelease(token.note);
   studioKeyCurrentVoice=null;
  }
 }
@@ -118,7 +121,7 @@ async function studioKeyboardStart(note,velocity,map,id,held=true){
  // Fast taps that end while AudioContext is resuming still produce a note.
  const played=studioKeyboardSound(note,velocity,active&&held,token.mode);
  token.started=played;
- if(played&&active&&(token.mode==='taiga'||token.mode==='s1'||token.mode==='fieldkit'))
+ if(played&&active&&(token.mode==='taiga'||token.mode==='s1'||token.mode==='fieldkit'||token.mode==='grandmother'))
   studioKeyCurrentVoice=token;
  studioKeyboardPaint();
 }
@@ -132,6 +135,7 @@ function studioKeyboardOffAll(){
  for(const [id,token] of [...studioKeyMidi])studioKeyboardRelease(token,studioKeyMidi,id);
  if(typeof taigaStopVoices==='function')taigaStopVoices();
  if(typeof s1StopVoices==='function')s1StopVoices();
+ if(typeof grandmotherStop==='function')grandmotherStop();
  if(typeof fieldkitStopVoices==='function')fieldkitStopVoices();
  studioKeyCurrentVoice=null;
 }

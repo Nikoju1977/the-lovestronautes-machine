@@ -2,7 +2,7 @@
    This extension is loaded before the sequencer's main inline script. */
 'use strict';
 
-const STUDIO_TRACKS=['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit'];
+const STUDIO_TRACKS=['kick','snare','hat','sub','acid','fm','biniou','metal','theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit','grandmother'];
 const STUDIO_EQ=[
   ['low',90,'lowshelf'],['mid',650,'peaking'],
   ['presence',3200,'peaking'],['high',9600,'highshelf']
@@ -22,13 +22,13 @@ const STUDIO_EQ_FREQUENCIES={
  biniou:[115,820,3000,9600],speak:[135,1000,3400,10800],
  s1:[95,660,3000,9800],taiga:[110,690,3700,10200],
  solar:[72,550,2750,9400],modfm:[105,950,4000,10800],
- wing:[125,960,4700,10500],theremin:[115,920,3900,10200],fieldkit:[100,840,3300,10000]
+ wing:[125,960,4700,10500],theremin:[115,920,3900,10200],fieldkit:[100,840,3300,10000],grandmother:[75,620,2400,8700]
 };
 const STUDIO_EQ_RECOMMENDED={
  kick:'punch',mbase:'punch',sub:'sub',snare:'clarity',hat:'air',metal:'air',
  acid:'warmth',fm:'clarity',biniou:'warmth',speak:'clarity',
  s1:'punch',taiga:'warmth',solar:'warmth',modfm:'clarity',wing:'air',
- theremin:'clarity',fieldkit:'warmth'
+ theremin:'clarity',fieldkit:'warmth',grandmother:'warmth'
 };
 function studioEqFrequencies(name,rate){
  const defs=STUDIO_EQ_FREQUENCIES[name]||STUDIO_EQ.map(b=>b[1]);

@@ -58,6 +58,9 @@ jobs:
       - name: V18 safe 100 MB import and anti-crash regression
         run: node scripts/test-v18-import-stability.mjs
 
+      - name: Grandmother monophonic synthesis and MIDI compatibility
+        run: node scripts/test-grandmother-v19.mjs
+
       - name: iOS Safari and Android audio compatibility regressions
         run: node scripts/test-platform-compat.mjs
 
