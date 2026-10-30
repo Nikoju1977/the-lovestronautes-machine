@@ -3,6 +3,17 @@
    Script loads before the existing main sequencer script. */
 'use strict';
 
+// Standalone synth tests and older integrations may load this module without
+// the shared audio-extensions helper; the release still needs to work.
+function psyAutoRelease(source,nodes){
+ if(typeof studioAutoRelease==='function')return studioAutoRelease(source,nodes);
+ if(!source||typeof source.addEventListener!=='function')return;
+ source.addEventListener('ended',()=>{
+  for(const node of nodes)if(node&&typeof node.disconnect==='function'){
+   try{node.disconnect();}catch(ignore){}
+  }
+ },{once:true});
+}
 const PSY_TRACKS=['theremin','speak'];
 const PSY_DEFAULTS={
   td3:{enabled:true,cutoff:.48,resonance:.64,env:.58,decay:.49,accent:.64,slide:.36},
@@ -91,6 +102,7 @@ function psyTriggerTD3(note,velocity,time){
   filter.frequency.exponentialRampToValueAtTime(cutoff,time+dur);
   const amp=psyEnvelope(time,.43*accent*accentBoost,dur+.015,chanGain.acid);
   filter.connect(amp);
+  const nodes=[filter,amp],voices=[];
   [ ['sawtooth',.52],['square',.16] ].forEach(function(def){
     const o=ctx.createOscillator();o.type=def[0];
     const from=psyPreviousAcid && (time-psyPreviousAcid.at)<.35
@@ -100,8 +112,9 @@ function psyTriggerTD3(note,velocity,time){
       o.frequency.exponentialRampToValueAtTime(base,time+.01+p.slide*.105);
     }
     const g=ctx.createGain();g.gain.value=def[1];o.connect(g);g.connect(filter);
-    o.start(time);o.stop(time+dur+.06);
+    nodes.push(g,o);voices.push(o);o.start(time);o.stop(time+dur+.06);
   });
+  psyAutoRelease(voices[voices.length-1],nodes);
   psyPreviousAcid={hz:base,at:time};
 }
 function psyTriggerFM2(note,time,vel=.8){
@@ -111,7 +124,7 @@ function psyTriggerFM2(note,time,vel=.8){
   lowpass.frequency.value=Math.min(ctx.sampleRate*.45,1500+p.brightness*14000);
   lowpass.Q.value=.55;
   const out=psyEnvelope(time,psyClamp(vel,.1,1,.8)*.35,duration,chanGain.fm,.012);
-  lowpass.connect(out);
+  lowpass.connect(out);const nodes=[lowpass,out];
   const carriers=[ctx.createOscillator(),ctx.createOscillator()];
   const mod=[ctx.createOscillator(),ctx.createOscillator(),ctx.createOscillator(),ctx.createOscillator()];
   const ratios=[1,2,1.01,3,4,6];
@@ -119,7 +132,7 @@ function psyTriggerFM2(note,time,vel=.8){
   carriers.forEach(function(o,i){
     o.type='sine';o.frequency.value=f*ratios[i];
     const level=ctx.createGain();level.gain.value=i===0?.76:(algo===1?.15:.36);
-    o.connect(level);level.connect(lowpass);
+    o.connect(level);level.connect(lowpass);nodes.push(level);
   });
   mod.forEach(function(o,i){o.type='sine';o.frequency.value=f*ratios[i+2];});
   const routes=algo===0
@@ -129,13 +142,14 @@ function psyTriggerFM2(note,time,vel=.8){
   mod.forEach(function(o,i){
     const depth=ctx.createGain();
     depth.gain.value=f*(.08+p.index*2.45)*(i===0?1+p.feedback*2:.2+i*.15);
-    o.connect(depth);depth.connect(routes[i].frequency);
+    o.connect(depth);depth.connect(routes[i].frequency);nodes.push(depth);
   });
   const all=carriers.concat(mod);
   psyLimitVoices('fm',all,out,time,time+duration+.06,2);
   all.forEach(function(o){
     o.start(time);o.stop(time+duration+.06);
   });
+  psyAutoRelease(all[all.length-1],nodes.concat(all));
 }
 function psyTriggerT8Kick(time,velocity=1){
   if(!ctx||!chanGain.kick)return;
@@ -144,11 +158,13 @@ function psyTriggerT8Kick(time,velocity=1){
   o.frequency.setValueAtTime(base*(2.8+p.punch),time);
   o.frequency.exponentialRampToValueAtTime(base,time+.065);
   o.frequency.exponentialRampToValueAtTime(base*.88,time+dur);
-  o.connect(psyEnvelope(time,1.08*velocity,dur,chanGain.kick,.002));
+  const toneEnv=psyEnvelope(time,1.08*velocity,dur,chanGain.kick,.002);
+  o.connect(toneEnv);studioAutoRelease(o,[o,toneEnv]);
   o.start(time);o.stop(time+dur+.02);
   const noise=ctx.createBufferSource();noise.buffer=getDrumNoise();
   const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=2800;
-  noise.connect(hp);hp.connect(psyEnvelope(time,(.14+p.punch*.26)*velocity,.025,chanGain.kick,.001));
+  const noiseEnv=psyEnvelope(time,(.14+p.punch*.26)*velocity,.025,chanGain.kick,.001);
+  noise.connect(hp);hp.connect(noiseEnv);studioAutoRelease(noise,[noise,hp,noiseEnv]);
   noise.start(time);noise.stop(time+.03);
   if(!isMultiOut&&duckingGain){
     duckingGain.gain.cancelScheduledValues(time);
@@ -162,7 +178,8 @@ function psyTriggerT8Snare(time,velocity=1){
   if(!ctx||!chanGain.snare)return;
   const n=ctx.createBufferSource();n.buffer=getDrumNoise();
   const band=ctx.createBiquadFilter();band.type='bandpass';band.frequency.value=2100;band.Q.value=.7;
-  n.connect(band);band.connect(psyEnvelope(time,(.12+psyState.t8.punch*.18)*velocity,.095,chanGain.snare));
+  const snareEnv=psyEnvelope(time,(.12+psyState.t8.punch*.18)*velocity,.095,chanGain.snare);
+  n.connect(band);band.connect(snareEnv);studioAutoRelease(n,[n,band,snareEnv]);
   n.start(time);n.stop(time+.12);
 }
 function psyTriggerT8Hat(time,velocity=1){
@@ -186,6 +203,7 @@ function psyTriggerTheremin(note,time,velocity=.74){
   const depth=ctx.createGain();depth.gain.value=base*p.vibrato*.013;
   vib.connect(depth);depth.connect(o.frequency);depth.connect(harm.frequency);
   [o,harm,vib].forEach(node=>{node.start(time);node.stop(time+duration+.04);});
+  psyAutoRelease(vib,[o,harm,vib,hgain,depth,filter,amp]);
 }
 function psyStopLiveTheremin(){
   const v=psyThereminLive;
@@ -194,6 +212,7 @@ function psyStopLiveTheremin(){
   v.amp.gain.cancelScheduledValues(now);
   v.amp.gain.setTargetAtTime(.0001,now,.025);
   v.nodes.forEach(function(o){try{o.stop(now+.15);}catch(e){}});
+  psyAutoRelease(v.lfo,v.nodes.concat(v.depth,v.hgain,v.tone,v.amp));
   psyThereminLive=null;
 }
 function psyStartLiveTheremin(x,y){
@@ -209,7 +228,7 @@ function psyStartLiveTheremin(x,y){
   const depth=ctx.createGain();depth.gain.value=0;lfo.connect(depth);
   depth.connect(osc.frequency);depth.connect(harm.frequency);
   [osc,harm,lfo].forEach(o=>o.start(t));
-  psyThereminLive={osc,harm,lfo,depth,amp,nodes:[osc,harm,lfo]};
+  psyThereminLive={osc,harm,lfo,depth,hgain,tone,amp,nodes:[osc,harm,lfo]};
   psyMoveLiveTheremin(x,y);
 }
 function psyMoveLiveTheremin(x,y){
@@ -243,6 +262,7 @@ function psyTriggerSpeak(time,velocity=.86,force=false){
   voiceGain.gain.setValueAtTime(level*(loaded?.83:.59),time+Math.max(.012,duration-.055));
   voiceGain.gain.linearRampToValueAtTime(.0001,time+duration);
   voiceGain.connect(chanGain.speak);
+  const privateNodes=[voiceGain];
   if(loaded){
     const source=ctx.createBufferSource();
     source.buffer=psyVoiceBuffer;source.playbackRate.value=rate;
@@ -250,32 +270,36 @@ function psyTriggerSpeak(time,velocity=.86,force=false){
     const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=95;
     const lp=ctx.createBiquadFilter();lp.type='lowpass';
     lp.frequency.value=11000-p.robot*3600;lp.Q.value=.7;
-    source.connect(hp);hp.connect(lp);
+    source.connect(hp);hp.connect(lp);privateNodes.push(source,hp,lp);
     const dry=ctx.createGain();dry.gain.value=.95-p.robot*.24;
-    lp.connect(dry);dry.connect(voiceGain);
+    lp.connect(dry);dry.connect(voiceGain);privateNodes.push(dry);
     if(p.robot>.03){
       const wet=ctx.createGain();wet.gain.value=.20+p.robot*.13;
       lp.connect(wet);wet.connect(voiceGain);
       const mod=ctx.createOscillator();mod.frequency.value=24+p.robot*88;
       const depth=ctx.createGain();depth.gain.value=p.robot*.13;
-      mod.connect(depth);depth.connect(wet.gain);
+      mod.connect(depth);depth.connect(wet.gain);privateNodes.push(wet,mod,depth);
+      psyAutoRelease(source,privateNodes);
       psyLimitVoices('speak',[source,mod],voiceGain,time,time+duration,1);
       source.start(time);source.stop(time+duration);
       mod.start(time);mod.stop(time+duration);
     }else{
+      psyAutoRelease(source,privateNodes);
       psyLimitVoices('speak',[source],voiceGain,time,time+duration,1);
       source.start(time);source.stop(time+duration);
     }
   }else{
     // Démo synthétique distincte : elle n'est pas une prise du microphone.
     const source=ctx.createOscillator();source.type='sawtooth';
+    privateNodes.push(source);
     source.frequency.value=hz('C3')*rate;
     [560+p.robot*290,1180+p.robot*650].forEach(function(freq,i){
       const filter=ctx.createBiquadFilter();filter.type='bandpass';
       filter.frequency.value=freq;filter.Q.value=1.3+p.robot*2.2;
       const gain=ctx.createGain();gain.gain.value=i===0?1:.53;
-      source.connect(filter);filter.connect(gain);gain.connect(voiceGain);
+      source.connect(filter);filter.connect(gain);gain.connect(voiceGain);privateNodes.push(filter,gain);
     });
+    psyAutoRelease(source,privateNodes);
     psyLimitVoices('speak',[source],voiceGain,time,time+duration,1);
     source.start(time);source.stop(time+duration);
   }

@@ -28,7 +28,9 @@ const sandbox={ctx,chanGain,machineParams:params,bpm:145,isMultiOut:false,duckin
   hz:(note)=>note==='C3'?130.813:note==='C4'?261.626:220,
   getDrumNoise:()=>({duration:.45}),
   triggerSnare:()=>{started++;},triggerHat:()=>{started++;},
-  initAudio:()=>{},document:{querySelector:()=>null},
+  // Existing isolated synth tests have no finished-audio event implementation.
+  // The V24 lifecycle test separately verifies true ended-event teardown.
+  studioAutoRelease:()=>{},initAudio:()=>{},document:{querySelector:()=>null},
   Math,Float32Array,ArrayBuffer,Number,JSON,Array,Object};
 const vmc=vm.createContext(sandbox);
 const obj=vm.runInContext(source+'\n({psyEnsurePatterns,psyRestoreState,psyProjectState,psyState,psyTriggerTD3,psyTriggerFM2,psyTriggerT8Kick,psyTriggerT8Snare,psyTriggerT8Hat,psyTriggerTheremin,psyTriggerSpeak,psyStartLiveTheremin,psyMoveLiveTheremin,psyStopLiveTheremin})',vmc);

@@ -38,7 +38,7 @@ try{
    waitUntil:'domcontentloaded',timeout:30000
  });
  await page.waitForSelector('#studio-key-instrument',{timeout:20000});
- assert.match(await page.locator('.live-badge').innerText(),/V23/);
+ assert.match(await page.locator('.live-badge').innerText(),/V24/);
  assert.equal(await page.locator('#panel-seq .tcard').count(),18);
  assert.equal(await page.locator('#panel-mix .mxch').count(),18);
  assert.equal(await page.locator('#panel-gear .hardware-rack').count(),4);
@@ -96,23 +96,23 @@ try{
    const samples=new Float32Array(512);
    let peak=0;
    try{
-    for(let i=0;i<24;i++){
+    for(let i=0;i<110;i++){
      await new Promise(resolve=>setTimeout(resolve,120));
      probe.getFloatTimeDomainData(samples);
      let power=0;for(const n of samples)power+=n*n;
      peak=Math.max(peak,Math.sqrt(power/samples.length));
     }
     return {playing:SEQ.playing,bars:SEQ.barCount,step:SEQ.masterStep,
-      audio:ctx.state,peak,faults:studioAudioFaults};
+      audio:ctx.state,peak,faults:studioAudioFaults,clock:ctx.currentTime};
    }finally{try{masterOutput.disconnect(probe);}catch(ignore){}}
   });
   assert.equal(playback.playing,true,'Full demo must keep playing without an audio crash');
-  assert.ok(playback.bars>=1,'More than one bar must be scheduled in real time: '+JSON.stringify(playback));
+  assert.ok(playback.bars>=5,'Sustained multi-bar playback must advance beyond the first ~3 seconds: '+JSON.stringify(playback));
   assert.equal(playback.audio,'running','AudioContext must remain running during playback');
   assert.ok(playback.peak>.00002,'Sequenced instruments must produce non-silent master PCM: '+JSON.stringify(playback));
   await page.locator('#play-btn').click();
   assert.equal(await page.evaluate(()=>SEQ.playing),false);
-  console.log('✓ WebKit: sustained 18-track playback, beat advance and audible-path PCM ('+playback.peak.toFixed(5)+')');
+  console.log('✓ WebKit: 13-second 18-track playback, beat advance and audible-path PCM ('+playback.peak.toFixed(5)+')');
   await page.locator('.nt[data-panel="gear"]').click();
   await page.locator('#fieldkit-preset').selectOption('antenna');
   await page.locator('#fieldkit-test').click();
