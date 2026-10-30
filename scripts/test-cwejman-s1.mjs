@@ -119,7 +119,7 @@ assert.ok(html.includes("s1EnsurePatterns(bank, true)")&&html.includes("s1Restor
 assert.ok(html.includes("const s1Step=m.s1")&&html.includes("s1Trigger("));
 assert.ok(html.includes("studioInitChannel(t,g,output)"));
 assert.ok(html.includes("s1BuildRack()")&&html.includes('id="s1-jump"'));
-assert.ok(studio.includes("'speak','s1','taiga','mbase','solar','modfm','wing','fieldkit']"),'S1 remains connected to full 12-track mix bus');
+assert.ok(studio.includes("'speak','s1','taiga','mbase','solar','modfm','wing','fieldkit','grandmother']"),'S1 remains connected to full 12-track mix bus');
 assert.ok(creator.includes("creatorEditTrack")&&creator.includes('<option value="s1">'));
 assert.ok(creator.includes("p.s1[step]")||creator.includes("p.s1[0]"));
 console.log('✓ Wiring into sequencer, mix, patterns, Song Mode and piano roll');
