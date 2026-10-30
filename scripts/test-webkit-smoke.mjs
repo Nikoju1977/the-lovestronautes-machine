@@ -87,6 +87,32 @@ try{
  // report that rather than claiming playback was heard on an iPhone.
  if(audio.state==='running'){
   console.log('✓ WebKit AudioContext RUNNING after user tap');
+  // Real-time playback regression: prior smoke only tested a single triggered note.
+  // Exercise the full 18-lane scheduler for more than one musical bar.
+  await page.locator('#studio-demo-btn').click();
+  const playback=await page.evaluate(async()=>{
+   const probe=ctx.createAnalyser();probe.fftSize=512;
+   masterOutput.connect(probe);
+   const samples=new Float32Array(512);
+   let peak=0;
+   try{
+    for(let i=0;i<24;i++){
+     await new Promise(resolve=>setTimeout(resolve,120));
+     probe.getFloatTimeDomainData(samples);
+     let power=0;for(const n of samples)power+=n*n;
+     peak=Math.max(peak,Math.sqrt(power/samples.length));
+    }
+    return {playing:SEQ.playing,bars:SEQ.barCount,step:SEQ.masterStep,
+      audio:ctx.state,peak,faults:studioAudioFaults};
+   }finally{try{masterOutput.disconnect(probe);}catch(ignore){}}
+  });
+  assert.equal(playback.playing,true,'Full demo must keep playing without an audio crash');
+  assert.ok(playback.bars>=1,'More than one bar must be scheduled in real time: '+JSON.stringify(playback));
+  assert.equal(playback.audio,'running','AudioContext must remain running during playback');
+  assert.ok(playback.peak>.00002,'Sequenced instruments must produce non-silent master PCM: '+JSON.stringify(playback));
+  await page.locator('#play-btn').click();
+  assert.equal(await page.evaluate(()=>SEQ.playing),false);
+  console.log('✓ WebKit: sustained 18-track playback, beat advance and audible-path PCM ('+playback.peak.toFixed(5)+')');
   await page.locator('.nt[data-panel="gear"]').click();
   await page.locator('#fieldkit-preset').selectOption('antenna');
   await page.locator('#fieldkit-test').click();
