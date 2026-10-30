@@ -167,7 +167,8 @@ function s1Trigger(note,time,velocity=.82){
   const t=Math.max(ctx.currentTime+.001,time);
   const freq=s1Hz(note||'F3');
   const step=60/(Math.max(40,bpm)*4);
-  const gateTime=Math.max(.052,step*(.65+p.gate*1.2));
+  const ownGate=Math.max(.052,step*(.65+p.gate*1.2));
+  const gateTime=typeof composeDuration==='function'?composeDuration(ownGate):ownGate;
   const attack=Math.min(gateTime*.38,.003+Math.pow(p.attack,2)*.75);
   const decay=Math.min(gateTime*.50,.012+Math.pow(p.decay,2)*.8);
   const release=.025+Math.pow(p.release,2)*1.1;

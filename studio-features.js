@@ -47,9 +47,11 @@ STUDIO_TRACKS.forEach(n=>studioChannels[n]={
 });
 const studioNodes={};
 let studioExportBars=8,studioExportBusy=false,studioExportCancel=false;
+let studioExportWavBits=24;
+let studioExportEndBar=0;
 let masterOutput=null,masterLimiter=null;
 function studioSafe(v,min,max,otherwise){return Number.isFinite(v)?Math.min(max,Math.max(min,v)):otherwise;}
-function studioProjectState(){return {channels:JSON.parse(JSON.stringify(studioChannels)),bars:studioExportBars,patchRoutes:typeof studioPatchProjectState==='function'?studioPatchProjectState():{}};}
+function studioProjectState(){return {channels:JSON.parse(JSON.stringify(studioChannels)),bars:studioExportBars,wavBits:studioExportWavBits,patchRoutes:typeof studioPatchProjectState==='function'?studioPatchProjectState():{}};}
 function restoreStudioState(state){
   const saved=state && state.studio && typeof state.studio==='object'?state.studio:{};
   const tracks=saved.channels && typeof saved.channels==='object'?saved.channels:{};
@@ -62,6 +64,7 @@ function restoreStudioState(state){
     STUDIO_EQ.forEach(function(b){ch[b[0]]=studioSafe(src[b[0]],-9,9,0);});
   });
   studioExportBars=[-1,1,2,4,8,16,32].includes(saved.bars)?saved.bars:8;
+  studioExportWavBits=[16,24].includes(saved.wavBits)?saved.wavBits:24;
   if(typeof studioPatchRestore==='function')studioPatchRestore(saved.patchRoutes);
 }
 function studioInitChannel(name,input,destination){
@@ -209,7 +212,7 @@ function studioExportCard(){
   card.id='studio-export-card';
   card.innerHTML='<div class="fxtitle">STUDIO EXPORT // WAV + MP3</div>'+
   '<p class="biniou-hint">Capture en temps réel du master stéréo traité (EQ, mix, compresseur, limiteur et effets). Gardez cette page active. Le séquenceur démarre au premier pas du pattern, ou suit toute la timeline en mode MORCEAU ENTIER.</p>'+
-  '<div class="studio-export-opts"><label for="studio-bars">MESURES</label><select id="studio-bars"><option>1</option><option>2</option><option>4</option><option>8</option><option>16</option><option>32</option><option value="-1">MORCEAU ENTIER</option></select><span>WAV PCM 16 bits · MP3 320 kb/s</span></div>'+
+  '<div class="studio-export-opts"><label for="studio-bars">MESURES</label><select id="studio-bars"><option>1</option><option>2</option><option>4</option><option>8</option><option>16</option><option>32</option><option value="-1">MORCEAU ENTIER</option></select><label for="studio-wav-bits">WAV PCM</label><select id="studio-wav-bits"><option value="24">24 bits</option><option value="16">16 bits</option></select><span>Stéréo · fréquence du navigateur · MP3 320 kb/s</span></div>'+
   '<div class="studio-export-actions"><button type="button" class="dbtn g" id="studio-export-wav">EXPORT WAV</button>'+
   '<button type="button" class="dbtn m" id="studio-export-mp3">EXPORT MP3</button>'+
   '<button type="button" class="dbtn a" id="studio-export-stop" disabled>ARRÊTER</button></div>'+
@@ -218,6 +221,8 @@ function studioExportCard(){
   panel.prepend(card);
   const select=document.getElementById('studio-bars');select.value=String(studioExportBars);
   select.addEventListener('change',function(){studioExportBars=Number(select.value);saveLiveState();});
+  const bits=document.getElementById('studio-wav-bits');bits.value=String(studioExportWavBits);
+  bits.addEventListener('change',()=>{studioExportWavBits=Number(bits.value);saveLiveState();});
   document.getElementById('studio-export-wav').addEventListener('click',()=>studioExport('wav'));
   document.getElementById('studio-export-mp3').addEventListener('click',()=>studioExport('mp3'));
   document.getElementById('studio-export-stop').addEventListener('click',()=>{studioExportCancel=true;});
@@ -225,10 +230,13 @@ function studioExportCard(){
 function studioProgress(msg,pct){
   const label=document.getElementById('studio-export-message'),progress=document.getElementById('studio-export-progress');
   if(label)label.textContent=msg;if(progress && Number.isFinite(pct))progress.value=Math.min(100,Math.max(0,pct));
+  const cp=document.getElementById('cp-export-status'),cpProgress=document.getElementById('cp-export-progress');
+  if(cp)cp.textContent=msg;if(cpProgress&&Number.isFinite(pct))cpProgress.value=Math.min(100,Math.max(0,pct));
 }
 function studioButtons(busy){
-  ['studio-export-wav','studio-export-mp3','studio-bars'].forEach(function(id){const el=document.getElementById(id);if(el)el.disabled=busy;});
+  ['studio-export-wav','studio-export-mp3','studio-bars','studio-wav-bits','cp-wav','cp-mp3','cp-export-source','cp-play-song','cp-play-clip','bpm-input','tap-btn','swing-slider','play-btn','studio-demo-btn','creator-song-play','loops-play','rec-btn'].forEach(function(id){const el=document.getElementById(id);if(el)el.disabled=busy;});
   const stop=document.getElementById('studio-export-stop');if(stop)stop.disabled=!busy;
+  const cancel=document.getElementById('cp-export-cancel');if(cancel)cancel.hidden=!busy;
 }
 function studioSleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 // Chaque AudioContext n'enregistre le processor qu'une fois. Une seconde
@@ -259,6 +267,7 @@ async function studioReady(){
 }
 async function studioCaptureStart(){
   const chunks=[];
+  const startedAt=ctx.currentTime;
   let node,silent,worklet=false;
   if(await studioEnsurePCMWorklet()){
     try{
@@ -268,7 +277,7 @@ async function studioCaptureStart(){
       });
       worklet=true;
       node.port.onmessage=function(e){
-        if(e.data&&e.data.type==='chunk')chunks.push({left:e.data.left,right:e.data.right});
+        if(e.data&&e.data.type==='chunk')chunks.push({left:e.data.left,right:e.data.right,frame:e.data.frame});
       };
     }catch(error){
       // Safari may load the module but reject construction; use the PCM fallback.
@@ -281,20 +290,20 @@ async function studioCaptureStart(){
     node.onaudioprocess=function(e){
       const input=e.inputBuffer;
       chunks.push({left:new Float32Array(input.getChannelData(0)),
-        right:new Float32Array(input.getChannelData(input.numberOfChannels>1?1:0))});
+        right:new Float32Array(input.getChannelData(input.numberOfChannels>1?1:0)),frame:Math.round(e.playbackTime*ctx.sampleRate)});
     };
   }
   if(!node)throw Error('Capture PCM non supportée par ce navigateur. Essaie REC MASTER.');
   silent=ctx.createGain();silent.gain.value=0;
   masterOutput.connect(node);node.connect(silent);silent.connect(ctx.destination);
   return {
-    chunks,
+    chunks,startedAt,
     async finish(){
       if(worklet){
         await new Promise(function(resolve,reject){
           const timer=setTimeout(()=>reject(Error('Finalisation PCM expirée')),3000);
           node.port.onmessage=function(e){
-            if(e.data.type==='chunk')chunks.push({left:e.data.left,right:e.data.right});
+            if(e.data.type==='chunk')chunks.push({left:e.data.left,right:e.data.right,frame:e.data.frame});
             else if(e.data.type==='done'){clearTimeout(timer);resolve();}
           };
           node.port.postMessage({type:'stop'});
@@ -311,24 +320,45 @@ async function studioCaptureStart(){
     }
   };
 }
-function studioWav(chunks,sampleRate){
+function studioTrimPCM(chunks,sampleRate,startTime,endTime,fallbackTime=0){
+ const start=Math.round(startTime*sampleRate),end=Math.round(endTime*sampleRate),output=[];
+ let cursor=Math.round(fallbackTime*sampleRate);
+ for(const part of chunks){
+  const frame=Number.isFinite(part.frame)?part.frame:cursor;
+  const first=Math.max(0,start-frame),last=Math.min(part.left.length,end-frame);
+  if(last>first)output.push({left:part.left.subarray(first,last),right:part.right.subarray(first,last)});
+  cursor=frame+part.left.length;
+ }
+ return output;
+}
+function studioWav(chunks,sampleRate,bits=16){
+  if(![16,24].includes(bits))throw Error('Résolution WAV invalide');
+  const frameBytes=bits/8*2;
   const frames=chunks.reduce((n,part)=>n+part.left.length,0);
   if(frames<512)throw Error('Capture audio vide');
-  if(frames*4+44>0xffffffff)throw Error('Enregistrement WAV trop long');
+  if(frames*frameBytes+44>0xffffffff)throw Error('Enregistrement WAV trop long');
   const header=new ArrayBuffer(44),v=new DataView(header);
   function tag(p,s){for(let i=0;i<s.length;i++)v.setUint8(p+i,s.charCodeAt(i));}
-  tag(0,'RIFF');v.setUint32(4,frames*4+36,true);tag(8,'WAVE');
+  tag(0,'RIFF');v.setUint32(4,frames*frameBytes+36,true);tag(8,'WAVE');
   tag(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);
   v.setUint16(22,2,true);v.setUint32(24,sampleRate,true);
-  v.setUint32(28,sampleRate*4,true);v.setUint16(32,4,true);v.setUint16(34,16,true);
-  tag(36,'data');v.setUint32(40,frames*4,true);
+  v.setUint32(28,sampleRate*frameBytes,true);v.setUint16(32,frameBytes,true);v.setUint16(34,bits,true);
+  tag(36,'data');v.setUint32(40,frames*frameBytes,true);
   const parts=[header];
   chunks.forEach(function(c){
-    const out=new ArrayBuffer(c.left.length*4),view=new DataView(out);
+    const out=new ArrayBuffer(c.left.length*frameBytes),view=new DataView(out);
     for(let i=0;i<c.left.length;i++){
-      const l=Math.min(1,Math.max(-1,c.left[i])),r=Math.min(1,Math.max(-1,c.right[i]));
-      view.setInt16(4*i,Math.round(l*(l<0?32768:32767)),true);
-      view.setInt16(4*i+2,Math.round(r*(r<0?32768:32767)),true);
+      const l=Number.isFinite(c.left[i])?Math.min(1,Math.max(-1,c.left[i])):0,r=Number.isFinite(c.right[i])?Math.min(1,Math.max(-1,c.right[i])):0;
+      if(bits===16){
+       view.setInt16(4*i,Math.round(l*(l<0?32768:32767)),true);
+       view.setInt16(4*i+2,Math.round(r*(r<0?32768:32767)),true);
+      }else{
+       for(let channel=0;channel<2;channel++){
+        const value=channel===0?l:r;
+        const sample=Math.round(value*(value<0?8388608:8388607)),at=6*i+channel*3;
+        view.setUint8(at,sample&255);view.setUint8(at+1,(sample>>8)&255);view.setUint8(at+2,(sample>>16)&255);
+       }
+      }
     }
     parts.push(out);
   });
@@ -347,54 +377,71 @@ function studioMp3(chunks,sampleRate){
     encoder.onerror=function(e){clearTimeout(timeout);encoder.terminate();reject(Error('Erreur MP3 : '+e.message));};
     const transferable=[];
     const data=chunks.map(function(c){
-      transferable.push(c.left.buffer,c.right.buffer);
-      return {left:c.left.buffer,right:c.right.buffer};
+      const left=c.left.byteLength===c.left.buffer.byteLength?c.left:c.left.slice();
+      const right=c.right.byteLength===c.right.buffer.byteLength?c.right:c.right.slice();
+      transferable.push(left.buffer,right.buffer);
+      return {left:left.buffer,right:right.buffer};
     });
     encoder.postMessage({chunks:data,sampleRate,bitRate:320},transferable);
   });
 }
-async function studioExport(format){
+async function studioExport(format,options={}){
   if(studioExportBusy)return;
   if(isPlaying || SEQ.playing){studioProgress('Arrêtez PLAY pour exporter depuis le début.',0);return;}
   if(isMultiOut){studioProgress('Désactivez MULTI-OUT 4CH et rechargez pour exporter en stéréo.',0);return;}
   if(mediaRecorder && mediaRecorder.state==='recording'){studioProgress('Arrêtez REC MASTER avant export.',0);return;}
   studioExportBusy=true;studioExportCancel=false;studioButtons(true);
   let tap=null,started=false;
-  const exportSong=studioExportBars===-1;
-  const previous={pat:curPat,morph:morphAmount};
+  const composition=['song','clip'].includes(options.composition),exportSong=!composition&&studioExportBars===-1;
+  const previous={pat:curPat,morph:morphAmount,bpm};
   const play=document.getElementById('play-btn');
   try{
     studioProgress('Armement audio…',0);await studioReady();
+    const barCount=composition?(options.composition==='song'?composeTotalBars():composeSelected()?.bars||0):exportSong?creatorTotalBars():studioExportBars;
+    if(barCount<1||barCount>1024)throw Error('Durée du morceau invalide');
+    const duration=barCount*240/(exportSong?creatorState.tempo:bpm);
+    if((duration+2)*ctx.sampleRate*8>180*1048576)throw Error('Export trop long pour la mémoire du navigateur. Exporte des sections plus courtes.');
     tap=await studioCaptureStart();
     if(studioExportCancel)throw Error('Export annulé');
-    const barCount=exportSong?creatorTotalBars():studioExportBars;
-    if(barCount<1||barCount>1024)throw Error('Durée du morceau invalide');
-    const duration=barCount*240/(exportSong?creatorState.tempo:bpm),at=ctx.currentTime;
     if(exportSong){
       bpm=creatorState.tempo;
       const bpmInput=document.getElementById('bpm-input');if(bpmInput)bpmInput.value=bpm;
       creatorState.running=true;creatorLastSongSection=-1;
     }
-    startSeq();isPlaying=true;started=true;
+    if(composition){if(!await composePlay(options.composition,true))throw Error('Lecture de la composition impossible');}
+    else{
+      composeRun.active=false;
+      startSeq();isPlaying=true;
+    }
+    started=true;
+    const at=SEQ.startTime;
+    // Pattern export must also stop scheduling before the next loop's first note.
+    if(!composition&&!exportSong)studioExportEndBar=barCount;
     if(play){play.textContent='⏸ EXPORT';play.disabled=true;}
     while(ctx.currentTime-at<duration){
       if(studioExportCancel)throw Error('Export annulé');
       if(ctx.state!=='running')throw Error('Audio interrompu');
+      if(document.hidden)throw Error('Export interrompu : garde la page au premier plan.');
       const amount=Math.min(1,(ctx.currentTime-at)/duration);
       studioProgress('Enregistrement '+format.toUpperCase()+' · '+Math.floor(amount*barCount)+' / '+barCount+' mesures',amount*92);
       await studioSleep(80);
     }
-    stopSeq();isPlaying=false;started=false;
+    stopSeq(true);isPlaying=false;started=false;
     if(play)play.textContent='▶ PLAY';
     studioProgress('Queue des effets…',94);
-    await studioSleep(1600);
+    while(ctx.currentTime<at+duration+1.6){
+      if(studioExportCancel)throw Error('Export annulé');
+      if(ctx.state!=='running'||document.hidden)throw Error('Audio interrompu pendant la fin des effets.');
+      await studioSleep(60);
+    }
     if(studioExportCancel)throw Error('Export annulé');
-    const pcm=await tap.finish();tap.close();tap=null;
+    const captured=await tap.finish();
+    const pcm=studioTrimPCM(captured,ctx.sampleRate,at,at+duration+1.6,tap.startedAt);tap.close();tap=null;
     if(!pcm.length)throw Error('Capture audio vide');
     studioProgress('Encodage '+format.toUpperCase()+'…',97);
-    const output=format==='wav'?studioWav(pcm,ctx.sampleRate):await studioMp3(pcm,ctx.sampleRate);
+    const output=format==='wav'?studioWav(pcm,ctx.sampleRate,options.wavBits||studioExportWavBits):await studioMp3(pcm,ctx.sampleRate);
     if(output.size<128)throw Error('Fichier audio vide');
-    downloadBlob(output,'lovestronautes-'+(exportSong?'song-'+barCount+'bars':curPat+'-'+barCount+'bars')+'-'+new Date().toISOString().slice(0,10)+'.'+format);
+    downloadBlob(output,'lovestronautes-'+(composition?'composition-'+options.composition:exportSong?'song-'+barCount+'bars':curPat+'-'+barCount+'bars')+'-'+new Date().toISOString().slice(0,10)+'.'+format);
     studioProgress('Fichier '+format.toUpperCase()+' créé · '+(output.size/1048576).toFixed(1)+' Mo',100);
     setStatus('STUDIO '+format.toUpperCase()+' EXPORT OK','ok');
   }catch(error){
@@ -403,9 +450,11 @@ async function studioExport(format){
     if(started){stopSeq();isPlaying=false;}
     if(play){play.textContent='▶ PLAY';play.disabled=false;}
     if(tap)tap.close();
+    studioExportEndBar=0;
     if(exportSong){
       creatorStopSong();
       curPat=previous.pat;matrix=patterns[curPat];applyMorph(previous.morph,false);
+      bpm=previous.bpm;const input=document.getElementById('bpm-input');if(input)input.value=bpm;
       buildSeq();
       document.querySelectorAll('.pt').forEach(b=>b.classList.toggle('active',b.dataset.pat===curPat));
     }

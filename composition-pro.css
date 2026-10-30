@@ -1,0 +1,57 @@
+/* V23: scoped composition workspace; touch targets stay usable on a phone. */
+#panel-compose{--cp-accent:#7ef2ce;--cp-card:#111c28;--cp-line:#304658;--cp-muted:#abc0d0;color:#edf6fc;font:15px/1.5 system-ui,sans-serif;max-width:1440px;margin:auto}
+#panel-compose *{box-sizing:border-box}
+#panel-compose h2{font-size:clamp(25px,4vw,38px);line-height:1.15;letter-spacing:-1px;margin:6px 0 12px}
+#panel-compose h3{font-size:18px;margin:0 0 12px;color:#edf6fc;letter-spacing:0}
+#panel-compose p{margin:6px 0 14px;color:var(--cp-muted);font-size:14px;line-height:1.6}
+#panel-compose label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--cp-muted);font-weight:600;min-width:0}
+#panel-compose :is(button,input,select){font:inherit;letter-spacing:0}
+#panel-compose :is(button,select,input[type=number],input[type=text]){min-height:44px;min-width:0;border:1px solid #425c70;border-radius:8px;background:#0c1621;color:#f0f7fc;padding:8px 12px;max-width:100%}
+#panel-compose button{cursor:pointer;font-size:13px;font-weight:650;touch-action:manipulation}
+#panel-compose button:hover{border-color:var(--cp-accent)}
+#panel-compose button:disabled{opacity:.4;cursor:default}
+#panel-compose :focus-visible{outline:2px solid var(--cp-accent);outline-offset:3px}
+#panel-compose .cp-primary{background:var(--cp-accent);color:#082820;border-color:var(--cp-accent)}
+#panel-compose .cp-danger{color:#ffb4b4}
+#panel-compose .cp-head{padding:24px;background:linear-gradient(120deg,#173c3b,#152333 70%);border:1px solid #2d5f60;border-radius:14px;margin-bottom:16px}
+#panel-compose .cp-eyebrow{font-size:11px;letter-spacing:2px;color:var(--cp-accent);font-weight:750}
+#panel-compose .cp-card{background:var(--cp-card);border:1px solid var(--cp-line);border-radius:12px;padding:20px;margin:16px 0;min-width:0}
+#panel-compose .cp-tools{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+#panel-compose .cp-tools label{flex:1 1 120px}
+#panel-compose .cp-tools label.cp-wide{flex:3 1 240px}
+#panel-compose .cp-tools input[type=range]{width:100%;min-height:36px;accent-color:var(--cp-accent)}
+#panel-compose .cp-transport{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+#panel-compose #cp-position{font-variant-numeric:tabular-nums;color:var(--cp-accent);font-size:14px;min-height:24px;margin-top:12px}
+#panel-compose .cp-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:16px 0}
+#panel-compose .cp-lanes button{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:6px;padding:9px;font-size:12px}
+#panel-compose .cp-lanes small{font-size:11px;color:#b3c8d7}
+#panel-compose .cp-lanes button[aria-pressed=true]{border-color:var(--cp-accent);background:#1a3937}
+#panel-compose .cp-bar-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
+#panel-compose .cp-bar-tabs button[aria-pressed=true]{color:#092b23;background:var(--cp-accent)}
+#panel-compose .cp-roll-scroll{max-height:440px;overflow:auto;border:1px solid #3b5263;border-radius:8px;overscroll-behavior:contain}
+#panel-compose .cp-roll{display:grid;grid-template-columns:52px repeat(16,minmax(30px,1fr));min-width:560px;gap:1px;background:#29404e}
+#panel-compose .cp-pitch{background:#162635;font-size:11px;display:flex;align-items:center;justify-content:center;position:sticky;left:0;z-index:1;min-height:23px;color:#b6c9d6}
+#panel-compose .cp-pitch.root{color:var(--cp-accent)}
+#panel-compose .cp-roll button.cp-cell{border:0;border-radius:0;min-height:23px;padding:0;background:#0c1925;position:relative;font-size:11px}
+#panel-compose .cp-roll button.cp-cell.accidental{background:#101f2e}
+#panel-compose .cp-roll button.cp-cell.beat{border-left:2px solid #4d6979}
+#panel-compose .cp-roll button.cp-cell.on{background:#4edeb1;box-shadow:inset 0 -4px 0 #1e9c81}
+#panel-compose .cp-roll button.cp-cell.selected{outline:2px solid #fff;outline-offset:-2px;z-index:1}
+#panel-compose .cp-roll .cp-step-head{background:#1a2e3f;text-align:center;font-size:11px;padding:6px 0;position:sticky;top:0;z-index:2}
+#panel-compose .cp-note-tools{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:12px;margin:16px 0}
+#panel-compose .cp-note-tools input{accent-color:var(--cp-accent);width:100%}
+#panel-compose #cp-selection{font-size:13px;color:var(--cp-accent);margin:12px 0 4px}
+#panel-compose .cp-arrangement{display:grid;gap:10px;margin:16px 0}
+#panel-compose .cp-section{background:#0b1722;border:1px solid #324b60;border-left:4px solid var(--cp-accent);border-radius:8px;padding:12px}
+#panel-compose .cp-section.playing{box-shadow:0 0 0 2px var(--cp-accent)}
+#panel-compose .cp-section-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:end}
+#panel-compose .cp-section-actions{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1}
+#panel-compose .cp-section-actions button{padding:8px;min-width:44px}
+#panel-compose .cp-section summary{font-size:12px;color:#b7cddd;padding-top:10px;cursor:pointer}
+#panel-compose .cp-track-checks{display:flex;flex-wrap:wrap;gap:8px 14px;padding:12px 0 0}
+#panel-compose .cp-track-checks label{flex-direction:row;align-items:center;min-height:32px;gap:6px}
+#panel-compose .cp-track-checks input{accent-color:var(--cp-accent);width:18px;height:18px}
+#panel-compose #cp-notice{font-size:13px;line-height:1.5;margin-top:16px;border-left:3px solid var(--cp-accent);padding:10px 12px;background:#0d2928;min-height:42px}
+#panel-compose .cp-export-note{font-size:12px;color:#b7cddd;margin-top:12px}
+@media(min-width:1100px){#panel-compose .cp-workspace{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(350px,1fr);gap:16px;align-items:start}#panel-compose .cp-workspace>.cp-card{margin-top:0}}
+@media(max-width:700px){#panel-compose .cp-head,#panel-compose .cp-card{padding:16px}#panel-compose .cp-section-fields{grid-template-columns:1fr 1fr}#panel-compose .cp-section-actions{grid-column:1/-1}#panel-compose .cp-note-tools{grid-template-columns:1fr 1fr}#panel-compose .cp-lanes{grid-template-columns:repeat(3,minmax(0,1fr))}#panel-compose .cp-lanes button{font-size:10px;min-height:44px}#panel-compose .cp-roll-scroll{max-height:350px}#panel-compose .cp-transport>button{flex:1 1 140px}}

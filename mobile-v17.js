@@ -8,7 +8,7 @@ function mobileUIBuild(){
  dock.className='mobile-studio-dock';dock.setAttribute('aria-label','Transport et navigation du studio sur téléphone');
  const buttons=[
   ['sound','SON','unlock'],['play','PLAY','play-btn'],
-  ['seq','SEQ','seq'],['patch','CÂBLES','mix'],['gear','MACHINES','gear'],['loops','BOUCLES','loops']
+  ['compose','COMPOSER','compose'],['seq','SEQ','seq'],['patch','CÂBLES','mix'],['gear','MACHINES','gear']
  ];
  dock.innerHTML=buttons.map(([key,label])=>
   '<button type="button" data-mobile-action="'+key+'" aria-label="'+label+'"'+

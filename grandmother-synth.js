@@ -176,7 +176,7 @@ function grandmotherTrigger(note,time,velocity=.78,held=false){
  grandmotherReleaseAll();
  const base=grandmotherFrequency(note||'C3');
  if(!Number.isFinite(base)||base<20||base>8000)return false;
- const gate=.13+p.decay*.35,attack=.003+p.attack*.9,decay=.028+p.decay*1.05,
+ const gate=typeof composeDuration==='function'?composeDuration(.13+p.decay*.35):.13+p.decay*.35,attack=.003+p.attack*.9,decay=.028+p.decay*1.05,
        rel=.035+p.release*1.4,peak=grandmotherClamp(velocity,.08,1,.78)*.51;
  const amp=ctx.createGain(),pre=ctx.createGain(),filter1=ctx.createBiquadFilter(),
        filter2=ctx.createBiquadFilter(),hp=ctx.createBiquadFilter();

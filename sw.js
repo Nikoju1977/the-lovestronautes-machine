@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v22-playback-stable';
+const CACHE_NAME = 'lovestronautes-v23-composition-pro';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
@@ -21,6 +21,8 @@ const APP_SHELL = [
   new URL('./mobile-compat.js', scope).href,
   new URL('./audio-extensions.js', scope).href,
   new URL('./studio-features.js', scope).href,
+  new URL('./composition-pro.js', scope).href,
+  new URL('./composition-pro.css', scope).href,
   new URL('./studio-patchbay.js', scope).href,
   new URL('./studio-audio-repair-v21.js', scope).href,
   new URL('./psy-machines.js', scope).href,

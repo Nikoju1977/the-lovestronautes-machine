@@ -155,14 +155,14 @@ assert(fieldkitCss.includes('.fieldkit-channels') && mobileCss.includes('.mobile
 assert(studio.includes('const STUDIO_EQ_PRESETS=') && studio.includes('const STUDIO_EQ_FREQUENCIES='), 'EQ 4 bandes par instrument');
 assert(studio.includes('function studioEqTrim(') && studio.includes('function studioApplyEqPreset('), 'EQ : headroom, presets et bypass');
 assert(ext.includes('const MASTER_EQ_PRESETS=') && ext.includes('function masterEqHeadroom(') && ext.includes('function masterEqPreset('), 'Master EQ cinq bandes : profils et compensation');
-assert(ext.includes('function triggerSnare(time)') && ext.includes('function triggerHat(time)') && ext.includes('function triggerSub('), 'moteurs Snare, Hat et Sub');
+assert(ext.includes('function triggerSnare(time,velocity=1)') && ext.includes('function triggerHat(time,velocity=1)') && ext.includes('function triggerSub('), 'moteurs Snare, Hat et Sub');
 assert(ext.includes("name:'AIR'") && ext.includes("name:'SUB'"), 'EQ 5 bandes présent');
 assert(studio.includes('function studioMakeMaster(input)') && html.includes('studioMakeMaster(comp)'), 'limiteur master');
 assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') && html.includes('data-panel="gear"'), 'rack cinq instruments visible');
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v22-playback-stable') && ['studio-patchbay.js','studio-patchbay.css','studio-audio-repair-v21.js','studio-audio-repair-v21.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
+assert(sw.includes('lovestronautes-v23-composition-pro') && ['studio-patchbay.js','studio-patchbay.css','studio-audio-repair-v21.js','studio-audio-repair-v21.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
 assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
 assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
 assert(psy.includes('async function psyCaptureMicroPCM(') && psy.includes('psyVoiceLoaded(audio'), 'Capture voix PCM directement depuis microphone');
@@ -183,7 +183,7 @@ assert(html.includes('id="studio-demo-btn"') && html.includes('id="studio-test-b
 assert(html.includes('<details class="studio-advanced"'), 'commandes avancées repliables sur mobile');
 assert(!html.includes('<div id="unlock">'), 'ancienne fenêtre audio bloquante supprimée');
 assert(html.includes('studio: studioProjectState()') && html.includes('restoreStudioState(state)'), 'persistance mix studio');
-assert(studio.includes('function studioWav(chunks,sampleRate)') && studio.includes("tag(0,'RIFF')"), 'WAV PCM stéréo');
+assert(studio.includes('function studioWav(chunks,sampleRate,bits=16)') && studio.includes("tag(0,'RIFF')"), 'WAV PCM stéréo');
 assert(mp3.includes('new lamejs.Mp3Encoder(2,sampleRate,bitRate)'), 'MP3 stéréo');
 assert(capture.includes('registerProcessor('), 'AudioWorklet PCM');
 assert(html.includes('studioInitChannel(t,g,output)') && html.includes('studioInitChannel("biniou",biniouInput,biniouDrive)'), 'EQ/pan onze pistes');
@@ -209,3 +209,7 @@ for (const file of shellFiles) assert(fs.existsSync(file), 'asset présent: ' + 
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log('\nValidation Lovestronautes: OK');
+
+const composition=fs.readFileSync('composition-pro.js','utf8');
+try{new Function(composition);ok('Composition Pro : syntaxe');}catch(error){fail(error.message);}
+assert(html.includes('panel-compose')&&html.includes('./composition-pro.js')&&sw.includes('./composition-pro.js')&&sw.includes('./composition-pro.css'),'Composition Pro : navigation et cache PWA');

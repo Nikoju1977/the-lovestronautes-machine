@@ -11,11 +11,31 @@
 
 **Démo** : [nikoju1977.github.io/the-lovestronautes-machine](https://nikoju1977.github.io/the-lovestronautes-machine/)
 
+## V23 — Composition Pro
+
+Le bouton **COMPOSER UN MORCEAU** ouvre un espace de composition relié aux 18 synthés et au mixeur existants. [Guide pratique](COMPOSITION_GUIDE.md).
+
+| Travail musical | Fonctionnement |
+| --- | --- |
+| Phrases | Jusqu’à 16 clips indépendants de 1, 2, 4 ou 8 mesures ; copie de mesures et duplication de clips |
+| Piano roll | Notes, vélocité, durée, probabilité et décalage ±20 ms ; une note par pas et par piste |
+| Harmonie | Six gammes, accordage des notes et transposition ; les percussions restent fixes |
+| Structure | Jusqu’à 32 sections, répétitions, ordre, transposition et choix des pistes actives ; 1 024 mesures maximum |
+| Ableton / autres DAW | MIDI type 1, 18 pistes nommées + piste tempo et marqueurs, 480 PPQ, swing et durées |
+| Audio | WAV PCM stéréo 16/24 bits et MP3 320 kb/s, fréquence réelle du navigateur, capture en temps réel |
+| Projet | Sauvegarde locale, import/export JSON, historique Annuler/Rétablir ; migration des anciens projets |
+
+Les clips sont initialisés à partir de copies des patterns A–D. Les modifications de clips et de patterns sont ensuite indépendantes. L’export suit le même plan de notes que la lecture ; Mute/Solo et les pistes de section sont respectés. La durée des synthés à enveloppe ADSR inclut leur relâchement. Les percussions et les extraits audio gardent leur propre durée acoustique.
+
+La fin d’un morceau attend désormais l’horloge audio au lieu de couper les dernières notes pendant l’anticipation du séquenceur. Les exports sont recadrés sur les trames PCM et comprennent 1,6 seconde de fin d’effets, sans premier pas supplémentaire de la boucle suivante. Les exports longs sont bornés à 180 Mo de PCM pour limiter la pression mémoire. Garder la page visible est nécessaire. Le MIDI contient les notes ; les sons des synthés, les effets et les échantillons ne sont pas incorporés dans le `.mid`.
+
+Validation : tests de clips/sections, décodage MIDI indépendant, WAV 24 bits, recadrage PCM, régressions des instruments et tests navigateur dans GitHub Actions. Le test Chromium de composition édite les notes, utilise Annuler/Rétablir, mesure le signal du master et contrôle les fichiers réellement téléchargés sur deux formats d’écran. Les tests WebKit ne remplacent pas une écoute sur un iPhone physique.
+
 ## Fonctionnalités
 
 - 🥁 Séquenceur pas-à-pas Web Audio, sans samples externes
 - 🎚️ BPM éditable + Tap Tempo, **swing 50–75 %**, morphing et automation live
-- 🎛️ Mixeur 12 pistes, chaos pad, claviers tactiles et oscilloscope temps réel
+- 🎛️ Mixeur 18 pistes, chaos pad, claviers tactiles et oscilloscope temps réel
 - 🎚️ **Égaliseur master 5 bandes** (80, 250, 1 000, 4 000, 10 000 Hz), ±12 dB, bypass, reset et mémorisation
 - 🥁 **Trois nouvelles machines** : 909 Snare, 808 Hi-Hat et Sub Bass, séquenceurs 16 pas et paramètres de synthèse réglables
 - ⚡ **PSY V8 : cinq instruments jouables** TD-3, Volca FM2, Roland T-8, Theremin et PO-35 Speak dans un nouveau rack, deux pistes supplémentaires
@@ -29,8 +49,8 @@
 - ↶ **Undo/Redo** sur les éditions de performance principales
 - ⇩ **Export / import JSON** du projet complet
 - ● **Enregistrement du master** en WebM/Ogg selon le navigateur (mode stéréo)
-- 🎛️ **Studio Pro** : mute, solo, pan et EQ 3 bandes ±9 dB par piste
-- 💿 **Export WAV PCM stéréo 16 bits et MP3 320 kb/s** depuis le master traité, avec AudioWorklet + encodeur en Worker utilisable hors ligne
+- 🎛️ **Studio Pro** : mute, solo, pan et EQ 4 bandes ±9 dB par piste
+- 💿 **Export WAV PCM stéréo 16/24 bits et MP3 320 kb/s** depuis le master traité, avec AudioWorklet + encodeur en Worker utilisable hors ligne
 - 🔊 Limiteur de sécurité master, options 4/8/16/32 mesures, progression et annulation
 - 🔌 Web MIDI In/Out et routage audio 4 canaux
 - 🧠 Ghost Pilot Mistral optionnel
