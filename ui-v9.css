@@ -5,6 +5,8 @@
 #studio-refresh-btn:disabled{opacity:.65;cursor:progress}
 .live-badge{font-size:12px!important;letter-spacing:0!important;line-height:1.35}
 .studio-build{font-size:12px!important;line-height:1.35}
+.studio-playback-health{display:block;width:100%;padding:9px 12px;font:800 12px/1.4 system-ui,sans-serif;color:#a8f6ca;background:#13291c;border:1px solid #367655;border-radius:9px;text-align:center;letter-spacing:.3px}
+.studio-playback-health[data-warning="true"]{color:#ffcf83;border-color:#b67c3e;background:#322316}
 .studio-quickbar{display:flex;flex-direction:column;gap:8px;padding:7px 0 3px}
 .studio-quick-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .studio-quick-title strong{font-family:var(--hd);font-weight:900;color:#e6fff2;letter-spacing:1.4px;font-size:.95rem}
