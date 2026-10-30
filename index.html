@@ -1768,7 +1768,10 @@ function schedulerTick() {
     }
     // Les timers Android sont ralentis en arrière-plan : empêcher un rattrapage
     // de milliers de notes (et une saturation instantanée du CPU).
-    if(SEQ.nextTime<ctx.currentTime-.10)SEQ.nextTime=ctx.currentTime+.025;
+    if(SEQ.nextTime<ctx.currentTime-.10){
+        if(typeof studioStabilityReportLateStep==='function')studioStabilityReportLateStep();
+        SEQ.nextTime=ctx.currentTime+.025;
+    }
     let budget=0;
     while(ctx && SEQ.playing && SEQ.nextTime<ctx.currentTime+.14 && budget++<8){
         try{scheduleStep(SEQ.nextTime);}
