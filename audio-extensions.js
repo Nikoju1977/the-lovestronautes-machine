@@ -98,6 +98,17 @@ function initMasterEQ(input, output) {
   last.connect(output);
   updateMasterEQ();
 }
+// Release private, per-note nodes once their source ends. Disconnecting only
+// the note's own graph prevents silent AudioNode chains accumulating on phones.
+// Keep shared channel/master buses connected for the lifetime of AudioContext.
+function studioAutoRelease(source, nodes) {
+  if(!source || typeof source.addEventListener !== 'function')return;
+  source.addEventListener('ended', function(){
+    for(const node of nodes)if(node && typeof node.disconnect==='function'){
+      try{node.disconnect();}catch(ignore){}
+    }
+  }, {once:true});
+}
 function getDrumNoise() {
   if (!drumNoiseBuffer) {
     drumNoiseBuffer = ctx.createBuffer(1,Math.round(ctx.sampleRate * 0.45),ctx.sampleRate);
@@ -121,14 +132,16 @@ function triggerSnare(time,velocity=1) {
   tone.type='triangle';
   tone.frequency.setValueAtTime(190,time);
   tone.frequency.exponentialRampToValueAtTime(115,time+0.09);
-  tone.connect(drumEnvelope(chanGain.snare,time,0.38*velocity,dur));
+  const toneEnv=drumEnvelope(chanGain.snare,time,0.38*velocity,dur);
+  tone.connect(toneEnv);studioAutoRelease(tone,[tone,toneEnv]);
   tone.start(time);tone.stop(time+dur+0.02);
   const noise=ctx.createBufferSource();
   noise.buffer=getDrumNoise();
   const hp=ctx.createBiquadFilter();
   hp.type='highpass'; hp.frequency.value=1100+snap*1800;
   noise.connect(hp);
-  hp.connect(drumEnvelope(chanGain.snare,time,(0.24+snap*0.48)*velocity,dur));
+  const noiseEnv=drumEnvelope(chanGain.snare,time,(0.24+snap*0.48)*velocity,dur);
+  hp.connect(noiseEnv);studioAutoRelease(noise,[noise,hp,noiseEnv]);
   noise.start(time);noise.stop(time+dur+0.02);
 }
 function triggerHat(time,velocity=1) {
@@ -136,31 +149,37 @@ function triggerHat(time,velocity=1) {
   const dur=0.055+machineParams.hatDecay*0.28;
   const hp=ctx.createBiquadFilter();
   hp.type='highpass';hp.frequency.value=6200;
-  hp.connect(drumEnvelope(chanGain.hat,time,0.52*velocity,dur));
+  const env=drumEnvelope(chanGain.hat,time,0.52*velocity,dur);
+  hp.connect(env);
+  const privateNodes=[hp,env];
   const noise=ctx.createBufferSource();
   noise.buffer=getDrumNoise();
-  noise.connect(hp);noise.start(time);noise.stop(time+dur+0.015);
+  noise.connect(hp);privateNodes.push(noise);noise.start(time);noise.stop(time+dur+0.015);
   [419,572,833].forEach(function(freq) {
     const osc=ctx.createOscillator();osc.type='square';osc.frequency.value=freq;
     const level=ctx.createGain();level.gain.value=0.07*velocity;
-    osc.connect(level);level.connect(hp);
+    osc.connect(level);level.connect(hp);privateNodes.push(osc,level);
     osc.start(time);osc.stop(time+dur+0.015);
   });
+  studioAutoRelease(noise,privateNodes);
 }
 function triggerSub(note,time,velocity) {
   if (!ctx || !chanGain.sub) return;
   const base=hz(note||'C2'),dur=0.18+machineParams.subDecay*0.65;
   const lowpass=ctx.createBiquadFilter();
   lowpass.type='lowpass';lowpass.frequency.value=220;lowpass.Q.value=0.6;
-  lowpass.connect(drumEnvelope(chanGain.sub,time,extClamp(velocity,0.1,1,0.8)*0.8,dur));
+  const env=drumEnvelope(chanGain.sub,time,extClamp(velocity,0.1,1,0.8)*0.8,dur);
+  lowpass.connect(env);
+  const privateNodes=[lowpass,env];let finalOsc=null;
   [['sine',1,0.8],['triangle',2,0.12]].forEach(function(part) {
     const osc=ctx.createOscillator();osc.type=part[0];
     osc.frequency.setValueAtTime(base*part[1]*1.08,time);
     osc.frequency.exponentialRampToValueAtTime(base*part[1],time+0.045);
     const mix=ctx.createGain();mix.gain.value=part[2];
-    osc.connect(mix);mix.connect(lowpass);
+    osc.connect(mix);mix.connect(lowpass);privateNodes.push(osc,mix);finalOsc=osc;
     osc.start(time);osc.stop(time+dur+0.025);
   });
+  studioAutoRelease(finalOsc,privateNodes);
 }
 function buildExtendedFX() {
   const panel=document.getElementById('panel-fx');
