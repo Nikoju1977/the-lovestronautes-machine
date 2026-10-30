@@ -1,0 +1,8 @@
+/* LOVESTRONAUTES V21 — clear audio diagnosis on small screens */
+#studio-audio-repair{border:1px solid #649d82;background:#10261f;border-radius:10px;padding:11px;display:grid;gap:9px}
+#audio-repair-result{margin:0;color:#d1ffe5;font:600 13px/1.45 system-ui,sans-serif}
+#audio-repair-result[data-state=error]{color:#ffbcab}
+#audio-repair-result[data-state=success]{color:#a9ffd0}
+#audio-repair-reset{cursor:pointer;border:1px solid #83d3a9;background:#224936;color:#e3ffee;border-radius:8px;min-height:44px;padding:8px 10px;font:800 12px system-ui,sans-serif;letter-spacing:0}
+#audio-repair-reset:focus-visible,#studio-test-btn:focus-visible{outline:3px solid #ffe5b6;outline-offset:2px}
+@media(max-width:1023px){#studio-audio-repair{padding:9px}#audio-repair-result{font-size:12px}#audio-repair-reset{min-height:49px}}
