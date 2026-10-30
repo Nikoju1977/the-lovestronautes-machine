@@ -38,24 +38,29 @@ try{
    waitUntil:'domcontentloaded',timeout:30000
  });
  await page.waitForSelector('#studio-key-instrument',{timeout:20000});
- assert.match(await page.locator('.live-badge').innerText(),/V18/);
- assert.equal(await page.locator('#panel-seq .tcard').count(),17);
- assert.equal(await page.locator('#panel-mix .mxch').count(),17);
+ assert.match(await page.locator('.live-badge').innerText(),/V19/);
+ assert.equal(await page.locator('#panel-seq .tcard').count(),18);
+ assert.equal(await page.locator('#panel-mix .mxch').count(),18);
  assert.equal(await page.locator('#panel-gear .hardware-rack').count(),4);
  assert.equal(await page.locator('#panel-gear .fieldkit-rack').count(),1);
  assert.equal(await page.locator('#fieldkit-rack .fieldkit-channel').count(),4);
+ assert.equal(await page.locator('#grandmother-rack').count(),1);
+ assert.equal(await page.locator('#grandmother-preset option').count(),6);
+ assert.equal(await page.locator('#panel-seq .tcard[data-studio-track="grandmother"]').count(),1);
+ assert.equal(await page.locator('#panel-mix .mxch[data-studio-track="grandmother"]').count(),1);
+ assert.equal(await page.locator('#studio-key-instrument option[value="grandmother"]').count(),1);
  assert.equal(await page.locator('#fieldkit-stream-play').count(),1);
  assert.equal(await page.locator('#studio-stability-toggle').count(),1);
  assert.ok(await page.locator('#fieldkit-import-status').count());
  assert.equal(await page.locator('#mobile-studio-dock button').count(),6);
- assert.equal(await page.locator('#panel-mix .studio-eq-details').count(),17);
+ assert.equal(await page.locator('#panel-mix .studio-eq-details').count(),18);
  assert.ok(await page.locator('#eq-preset').count());
 
  assert.ok(await page.locator('#panel-loops #loops-play').count());
  assert.equal(await page.locator('#loops-bars option').count(),6);
  assert.equal(await page.locator('#kbd .studio-piano-key.white').count(),8);
  assert.equal(await page.locator('#kbd .studio-piano-key.black').count(),5);
- console.log('✓ WebKit: all 17 tracks, Field Kit and four other synths, loops and piano keys render on phone viewport');
+ console.log('✓ WebKit: all 18 tracks, Field Kit and four other synths, loops and piano keys render on phone viewport');
 
  const result=await page.evaluate(()=>({
   WebAudio:!!(window.AudioContext||window.webkitAudioContext),
@@ -88,6 +93,16 @@ try{
   const msg=await page.locator('#fieldkit-status').innerText();
   assert.match(msg,/SON PROGRAMMÉ/);
   console.log('✓ WebKit Field Kit four-channel audio audition successful');
+  await page.locator('#grandmother-preset').selectOption('bass');
+  await page.locator('#grandmother-test').click();
+  assert.match(await page.locator('#grandmother-status').innerText(),/SON PROGRAMMÉ/);
+  assert.equal(await page.evaluate(()=>!!grandmotherVoice),true);
+  console.log('✓ WebKit Grandmother stereo master, 2 VCO and ladder-like filter schedule on touch');
+  await page.locator('#grandmother-arp').click();
+  assert.equal(await page.evaluate(()=>grandmotherArpActive),true);
+  await page.locator('#grandmother-arp').click();
+  assert.equal(await page.evaluate(()=>grandmotherArpActive),false);
+  console.log('✓ WebKit Grandmother 8-note arp starts and stops');
   await page.locator('.nt[data-panel="fx"]').click();
   await page.locator('#eq-preset').selectOption('field');
   assert.equal(await page.evaluate(()=>eqState.preset),'field');
