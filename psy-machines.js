@@ -3,6 +3,17 @@
    Script loads before the existing main sequencer script. */
 'use strict';
 
+// Standalone synth tests and older integrations may load this module without
+// the shared audio-extensions helper; the release still needs to work.
+function psyAutoRelease(source,nodes){
+ if(typeof studioAutoRelease==='function')return studioAutoRelease(source,nodes);
+ if(!source||typeof source.addEventListener!=='function')return;
+ source.addEventListener('ended',()=>{
+  for(const node of nodes)if(node&&typeof node.disconnect==='function'){
+   try{node.disconnect();}catch(ignore){}
+  }
+ },{once:true});
+}
 const PSY_TRACKS=['theremin','speak'];
 const PSY_DEFAULTS={
   td3:{enabled:true,cutoff:.48,resonance:.64,env:.58,decay:.49,accent:.64,slide:.36},
@@ -103,7 +114,7 @@ function psyTriggerTD3(note,velocity,time){
     const g=ctx.createGain();g.gain.value=def[1];o.connect(g);g.connect(filter);
     nodes.push(g,o);voices.push(o);o.start(time);o.stop(time+dur+.06);
   });
-  studioAutoRelease(voices[voices.length-1],nodes);
+  psyAutoRelease(voices[voices.length-1],nodes);
   psyPreviousAcid={hz:base,at:time};
 }
 function psyTriggerFM2(note,time,vel=.8){
@@ -138,7 +149,7 @@ function psyTriggerFM2(note,time,vel=.8){
   all.forEach(function(o){
     o.start(time);o.stop(time+duration+.06);
   });
-  studioAutoRelease(all[all.length-1],nodes.concat(all));
+  psyAutoRelease(all[all.length-1],nodes.concat(all));
 }
 function psyTriggerT8Kick(time,velocity=1){
   if(!ctx||!chanGain.kick)return;
@@ -192,7 +203,7 @@ function psyTriggerTheremin(note,time,velocity=.74){
   const depth=ctx.createGain();depth.gain.value=base*p.vibrato*.013;
   vib.connect(depth);depth.connect(o.frequency);depth.connect(harm.frequency);
   [o,harm,vib].forEach(node=>{node.start(time);node.stop(time+duration+.04);});
-  studioAutoRelease(vib,[o,harm,vib,hgain,depth,filter,amp]);
+  psyAutoRelease(vib,[o,harm,vib,hgain,depth,filter,amp]);
 }
 function psyStopLiveTheremin(){
   const v=psyThereminLive;
@@ -201,7 +212,7 @@ function psyStopLiveTheremin(){
   v.amp.gain.cancelScheduledValues(now);
   v.amp.gain.setTargetAtTime(.0001,now,.025);
   v.nodes.forEach(function(o){try{o.stop(now+.15);}catch(e){}});
-  studioAutoRelease(v.lfo,v.nodes.concat(v.depth,v.hgain,v.tone,v.amp));
+  psyAutoRelease(v.lfo,v.nodes.concat(v.depth,v.hgain,v.tone,v.amp));
   psyThereminLive=null;
 }
 function psyStartLiveTheremin(x,y){
@@ -268,12 +279,12 @@ function psyTriggerSpeak(time,velocity=.86,force=false){
       const mod=ctx.createOscillator();mod.frequency.value=24+p.robot*88;
       const depth=ctx.createGain();depth.gain.value=p.robot*.13;
       mod.connect(depth);depth.connect(wet.gain);privateNodes.push(wet,mod,depth);
-      studioAutoRelease(source,privateNodes);
+      psyAutoRelease(source,privateNodes);
       psyLimitVoices('speak',[source,mod],voiceGain,time,time+duration,1);
       source.start(time);source.stop(time+duration);
       mod.start(time);mod.stop(time+duration);
     }else{
-      studioAutoRelease(source,privateNodes);
+      psyAutoRelease(source,privateNodes);
       psyLimitVoices('speak',[source],voiceGain,time,time+duration,1);
       source.start(time);source.stop(time+duration);
     }
@@ -287,7 +298,7 @@ function psyTriggerSpeak(time,velocity=.86,force=false){
       const gain=ctx.createGain();gain.gain.value=i===0?1:.53;
       source.connect(filter);filter.connect(gain);gain.connect(voiceGain);privateNodes.push(filter,gain);
     });
-    studioAutoRelease(source,privateNodes);
+    psyAutoRelease(source,privateNodes);
     psyLimitVoices('speak',[source],voiceGain,time,time+duration,1);
     source.start(time);source.stop(time+duration);
   }
