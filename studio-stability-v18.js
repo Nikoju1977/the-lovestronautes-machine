@@ -7,6 +7,48 @@ let studioEcoMode=typeof window!=='undefined'&&
  typeof window.matchMedia==='function'&&window.matchMedia('(pointer: coarse)').matches;
 let studioAudioFaults=0,studioFaultAt=0;
 let studioStabilityMounted=false;
+// Track-local circuit breaker: one defective synth must not stop all 18 tracks.
+const studioTrackFailureState=Object.create(null);
+// Enter a short degradation window only when Android/iOS timer delivery is late.
+// Rhythmic core stays audible; optional high-CPU textures can miss a few notes.
+let studioAudioPressureUntil=0,studioAudioPressureNotice=0;
+const studioOptionalTracks=new Set(['biniou','theremin','speak','s1','taiga','solar','modfm','wing','fieldkit','grandmother']);
+function studioStabilityReportLateStep(){
+ if(!studioEcoMode)return;
+ const now=Date.now();
+ studioAudioPressureUntil=now+1600;
+ if(now-studioAudioPressureNotice>6500){
+  studioAudioPressureNotice=now;
+  if(typeof setStatus==='function')setStatus('AUDIO STABILISÉ · TEXTURES ALLÉGÉES TEMPORAIREMENT','al');
+ }
+}
+function studioSafeTrigger(track,trigger){
+ const now=Date.now();
+ const state=studioTrackFailureState[track]||
+  (studioTrackFailureState[track]={failures:0,last:0,muteUntil:0});
+ if(now<state.muteUntil)return false;
+ if(studioEcoMode && now<studioAudioPressureUntil && studioOptionalTracks.has(track))return false;
+ try{
+  trigger();
+  state.failures=0;
+  return true;
+ }catch(error){
+  if(now-state.last>6000)state.failures=0;
+  state.last=now;
+  state.failures++;
+  if(state.failures>=3){
+   state.muteUntil=now+4000;
+   state.failures=0;
+   console.error('Piste '+track+' désactivée 4 s après erreurs répétées',error);
+   if(typeof setStatus==='function')setStatus('PISTE '+track.toUpperCase()+' EN PROTECTION · AUTRES PISTES ACTIVES','al');
+   const hint=document.getElementById('studio-audio-guide');
+   if(hint)hint.textContent='Piste '+track.toUpperCase()+' temporairement isolée (4 s). Les autres instruments continuent. Recharge si le problème persiste.';
+  }else{
+   console.warn('Piste '+track+' : note ignorée',error);
+  }
+  return false;
+ }
+}
 function studioStabilityPaint(){
  const el=document.getElementById('studio-stability-toggle');
  if(el){

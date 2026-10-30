@@ -16,7 +16,7 @@ function browserHarness(){
  window.addEventListener('unhandledrejection',e=>failures.push('Promise: '+String(e.reason).slice(0,100)));
  setTimeout(async function(){
   try{
-   check(document.querySelector('.live-badge')?.textContent.includes('V21'),'V21 badge');
+   check(document.querySelector('.live-badge')?.textContent.includes('V22'),'V22 badge');
    check(typeof taigaTrigger==='function','Taiga synth engine');
    check(!!document.getElementById('taiga-rack'),'Taiga rack rendered');
    check(document.querySelectorAll('#panel-seq .tcard').length===18,'18 step sequencer lanes');

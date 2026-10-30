@@ -102,7 +102,7 @@ assert(html.includes('initMasterEQ(masterFilter, analyserNode)'), 'EQ 5 bandes c
 assert(s1.includes('function s1Trigger(') && s1.includes('function s1StopVoices(') && s1.includes('function s1BuildRack('), 'moteur audio S1 MK2 et rack tactile');
 assert(s1.includes('function s1EnsurePatterns(') && s1.includes('function s1RestoreState(') && s1.includes('function s1ProjectState('), 'pattern, paramètres et sauvegarde S1 MK2');
 assert(html.includes('s1EnsurePatterns(bank, true)') && html.includes('s1EnsurePatterns(patterns, false)') && html.includes('s1: s1ProjectState()') && html.includes('s1RestoreState(state)'), '11e piste S1 MK2 persistée et rétrocompatible');
-assert(html.includes('const s1Step=m.s1') && html.includes('if(s1Step)s1Trigger(') && html.includes('s1BuildRack()'), 'synthé S1 MK2 relié au séquenceur musical');
+assert(html.includes('const s1Step=m.s1') && (html.includes('if(s1Step)s1Trigger(') || html.includes("if(s1Step)studioSafeTrigger('s1'")) && html.includes('s1BuildRack()'), 'synthé S1 MK2 relié au séquenceur musical');
 assert(html.includes("['theremin','speak','s1','taiga','mbase','solar','modfm','wing','fieldkit','grandmother'].forEach") && studio.includes("'speak','s1','taiga','mbase','solar','modfm','wing','fieldkit','grandmother']"), 'Quatre nouvelles machines reliées au bus master et à WAV/MP3');
 assert(creator.includes('p.s1[step]') || creator.includes('p.s1[0]'), 'Melody Lab 64 pas S1 MK2');
 assert(creator.includes('<option value="s1">'), 'éditeur piano roll sélection S1');
@@ -162,7 +162,7 @@ assert(html.includes('buildPsyRack()') && html.includes('id="psy-open-rack"') &&
 assert(psy.includes('function psyTriggerTD3(') && psy.includes('function psyTriggerFM2(') && psy.includes('function psyTriggerT8Kick('), 'TD-3, FM2 et T8 synthétisés');
 assert(psy.includes('function psyTriggerTheremin(') && psy.includes('function psyTriggerSpeak('), 'Theremin et Speak synthétisés');
 assert(psy.includes('async function psyRecordVoice()') && psy.includes('async function psyLoadVoiceFile('), 'enregistrement micro et import audio');
-assert(sw.includes('lovestronautes-v21-audio-repair') && ['studio-patchbay.js','studio-patchbay.css','studio-audio-repair-v21.js','studio-audio-repair-v21.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
+assert(sw.includes('lovestronautes-v22-playback-stable') && ['studio-patchbay.js','studio-patchbay.css','studio-audio-repair-v21.js','studio-audio-repair-v21.css','taiga-modular.js','taiga-modular.css','studio-keyboard.js','studio-keyboard.css','cwejman-s1.js','cwejman-s1.css','psy-machines.js'].every(file=>sw.includes("new URL('./"+file+"', scope).href")), 'PWA V13 : tous les instruments et nouveaux claviers disponibles hors ligne');
 assert(sw.includes("url.pathname.endsWith('.css')"), 'mise à jour CSS réseau prioritaire');
 assert(cssV9.includes('.panel.active{display:flex!important') && cssV9.includes('grid-template-columns:repeat(8,'), 'interface mobile déroulante et séquenceur tactile');
 assert(psy.includes('async function psyCaptureMicroPCM(') && psy.includes('psyVoiceLoaded(audio'), 'Capture voix PCM directement depuis microphone');

@@ -120,6 +120,6 @@ assert.ok(keyboard.includes("if(mode==='grandmother')return grandmotherTrigger(n
 assert.ok(keyboard.includes("grandmotherRelease(token.note)"));
 assert.ok(creator.includes('<option value="grandmother">'));
 assert.ok(css.includes('.grandmother-modules')&&css.includes('@media(max-width:680px)'));
-assert.ok(sw.includes('lovestronautes-v21-audio-repair')&&sw.includes("new URL('./grandmother-synth.js', scope).href"));
+assert.ok(sw.includes('lovestronautes-v22-playback-stable')&&sw.includes("new URL('./grandmother-synth.js', scope).href"));
 console.log('✓ Keyboard/MIDI, FX, sequencer, Melody Lab, JSON and PWA all wired');
 console.log('\nGrandmother V19 functional regression: OK');

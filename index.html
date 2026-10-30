@@ -804,7 +804,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
     <div class="hud">
         <div class="hud-r1">
             <div>
-                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V21 · DIAGNOSTIC AUDIO / 18 PISTES</span></div>
+                <div class="wm-main">LOVESTRONAUTES MACHINE <span class="live-badge">V22 · LECTURE STABLE / 18 PISTES</span></div>
                 <div class="wm-sub">18 PISTES · GRANDMOTHER · FIELD KIT 100 MO · WAV / MP3</div>
             </div>
             <div class="scope-wrap"><canvas id="scope"></canvas></div>
@@ -818,7 +818,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <span id="status" role="status" aria-live="polite">READY</span>
         </div>
         <section class="studio-quickbar" aria-label="Commandes de démarrage">
-            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V21 · SORTIE AUDIO & CÂBLAGE</span></div>
+            <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION PSYTRANCE</strong><span class="studio-build">V22 · MOTEUR AUDIO STABILISÉ</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
                 <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
@@ -1308,10 +1308,8 @@ function initAudio() {
         isMultiOut = false;
         masterOutput.connect(ctx.destination);
     }
-    if (typeof ctx.createMediaStreamDestination === 'function') {
-        recordingDest = ctx.createMediaStreamDestination();
-        masterOutput.connect(recordingDest);
-    }
+    // Do not render an extra MediaStream mix for every playing note. On phones,
+    // build the recording bus only while recording, then release it on STOP.
     const routingControl=$id('routing-btn');
     if(routingControl){
         routingControl.classList.toggle('on',isMultiOut);
@@ -1464,15 +1462,18 @@ function toggleMasterRecording() {
         setTimeout(function(){ if (audioReady) toggleMasterRecording(); }, 300);
         return;
     }
-    if (!window.MediaRecorder || !recordingDest) { setStatus('REC MASTER NON SUPPORTÉ', 'al'); return; }
+    if (!window.MediaRecorder || typeof ctx.createMediaStreamDestination !== 'function') { setStatus('REC MASTER NON SUPPORTÉ', 'al'); return; }
     const mime = bestRecordingMime();
     try {
+        recordingDest = ctx.createMediaStreamDestination();
+        masterOutput.connect(recordingDest);
         recordChunks = [];
         mediaRecorder = mime ? new MediaRecorder(recordingDest.stream, {mimeType:mime}) : new MediaRecorder(recordingDest.stream);
         mediaRecorder.ondataavailable = function(e){ if (e.data && e.data.size) recordChunks.push(e.data); };
         mediaRecorder.onerror = function(e){
             const reason=e && e.error && e.error.message ? e.error.message : 'MediaRecorder interrompu';
             setStatus('REC MASTER : '+reason+' · UTILISE EXPORT WAV', 'al');
+            if(recordingDest){try{masterOutput.disconnect(recordingDest);}catch(ignore){}recordingDest=null;}
             if(btn){btn.classList.remove('on');btn.textContent='● REC MASTER';}
         };
         mediaRecorder.onstop = function() {
@@ -1481,13 +1482,17 @@ function toggleMasterRecording() {
             const blob = new Blob(recordChunks, {type:type});
             if (blob.size) downloadBlob(blob, 'lovestronautes-master-' + new Date().toISOString().replace(/[:.]/g,'-') + '.' + ext);
             else setStatus('ENREGISTREMENT VIDE · ESSAIE EXPORT WAV', 'al');
+            if(recordingDest){try{masterOutput.disconnect(recordingDest);}catch(ignore){}recordingDest=null;}
             btn.classList.remove('on'); btn.textContent = '● REC MASTER';
             setStatus('MASTER ENREGISTRÉ', 'ok');
         };
         mediaRecorder.start(250);
         btn.classList.add('on'); btn.textContent = '■ STOP REC';
         setStatus('REC MASTER...', 'al');
-    } catch(e) { setStatus('ERREUR REC MASTER', 'al'); }
+    } catch(e) {
+        if(recordingDest){try{masterOutput.disconnect(recordingDest);}catch(ignore){}recordingDest=null;}
+        setStatus('ERREUR REC MASTER', 'al');
+    }
 }
 
 // ── WEB MIDI (IN/OUT & VJ SYNC) ──────────────────────────────────
@@ -1691,53 +1696,53 @@ function studioQueueSeqPaint(){
     setTimeout(function(){
         studioSeqPaintPending=false;
         if(!document.hidden)buildSeq();
-    },170);
+    },studioEcoMode?400:170);
 }
 function scheduleStep(time) {
-    let m = matrix; if (m.kick[trackSteps.kick]) (psyState.t8.enabled ? psyTriggerT8Kick(time) : triggerKick(time));
+    let m = matrix; if (m.kick[trackSteps.kick]) studioSafeTrigger('kick',()=>{ (psyState.t8.enabled ? psyTriggerT8Kick(time) : triggerKick(time)); });
     
     let ac = m.acid[trackSteps.acid]; let tRate = trackChaos.acid + (morphAmount * 0.15); let gRate = trackChaos.acid * 0.4;
-    if (ac) { (psyState.td3.enabled ? psyTriggerTD3 : triggerAcid)((ac.note || 'G2'), ac.vel || 0.8, time, ac.morph); if (Math.random() < tRate) { m.acid[trackSteps.acid].note = ['G2','C3','F2','Eb2','Ab2'][Math.floor(Math.random()*5)]; studioQueueLiveSave(); } } 
+    if (ac) { studioSafeTrigger('acid',()=>{(psyState.td3.enabled ? psyTriggerTD3 : triggerAcid)((ac.note || 'G2'), ac.vel || 0.8, time, ac.morph);}); if (Math.random() < tRate) { m.acid[trackSteps.acid].note = ['G2','C3','F2','Eb2','Ab2'][Math.floor(Math.random()*5)]; studioQueueLiveSave(); } } 
     else if (Math.random() < gRate) { m.acid[trackSteps.acid] = { note: ['G2','C3','F2','Eb2'][Math.floor(Math.random()*4)], vel: 0.7 }; studioQueueSeqPaint(); studioQueueLiveSave(); }
 
     let fm = m.fm[trackSteps.fm]; let tfRate = trackChaos.fm + (morphAmount * 0.1);
-    if (fm) { let fNote = fm.note || fm; if(psyState.fm2.enabled)psyTriggerFM2(fNote,time,typeof fm==='object'?(fm.vel||.8):.8); else triggerFM(fNote, time, fm.morph); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; studioQueueLiveSave(); } }
+    if (fm) { let fNote = fm.note || fm; studioSafeTrigger('fm',()=>{if(psyState.fm2.enabled)psyTriggerFM2(fNote,time,typeof fm==='object'?(fm.vel||.8):.8); else triggerFM(fNote, time, fm.morph);}); if (Math.random() < tfRate) { let nn = ['C4','G4','D4','F4'][Math.floor(Math.random()*4)]; if (typeof m.fm[trackSteps.fm] === 'string') m.fm[trackSteps.fm] = nn; else m.fm[trackSteps.fm].note = nn; studioQueueLiveSave(); } }
 
     let bi = m.biniou && m.biniou[trackSteps.biniou];
     let tbRate = trackChaos.biniou + (morphAmount * 0.08);
     if (biniouEnabled && bi) {
-        triggerBiniou(bi.note || bi || 'A4', time, bi.vel || 0.82, bi.morph);
+        studioSafeTrigger('biniou',()=>triggerBiniou(bi.note || bi || 'A4', time, bi.vel || 0.82, bi.morph));
         if (typeof bi === 'object' && Math.random() < tbRate) {
             bi.note = ['A4','B4','D5','E5','G4'][Math.floor(Math.random()*5)];
             studioQueueLiveSave();
         }
     }
 
-    let met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) triggerMetal(time); }
-    if (m.snare[trackSteps.snare]) (psyState.t8.enabled ? psyTriggerT8Snare(time) : triggerSnare(time));
-    if (m.hat[trackSteps.hat]) (psyState.t8.enabled ? psyTriggerT8Hat(time) : triggerHat(time));
+    let met = m.metal[trackSteps.metal]; if (met) { if (Math.random() <= (typeof met === 'number' ? met : 1)) studioSafeTrigger('metal',()=>triggerMetal(time)); }
+    if (m.snare[trackSteps.snare]) studioSafeTrigger('snare',()=>{(psyState.t8.enabled ? psyTriggerT8Snare(time) : triggerSnare(time));});
+    if (m.hat[trackSteps.hat]) studioSafeTrigger('hat',()=>{(psyState.t8.enabled ? psyTriggerT8Hat(time) : triggerHat(time));});
     const subStep = m.sub[trackSteps.sub];
-    if (subStep) creatorRollingBass(typeof subStep === 'string' ? subStep : (subStep.note || 'C2'),time,typeof subStep === 'object' ? (subStep.vel || 0.8) : 0.8);
-    const th=m.theremin[trackSteps.theremin]; if(th)psyTriggerTheremin(typeof th==='string'?th:(th.note||'C4'),time,typeof th==='object'?(th.vel||.75):.75);
-    if(m.speak[trackSteps.speak])psyTriggerSpeak(time,.86);
+    if (subStep) studioSafeTrigger('sub',()=>creatorRollingBass(typeof subStep === 'string' ? subStep : (subStep.note || 'C2'),time,typeof subStep === 'object' ? (subStep.vel || 0.8) : 0.8));
+    const th=m.theremin[trackSteps.theremin]; if(th)studioSafeTrigger('theremin',()=>psyTriggerTheremin(typeof th==='string'?th:(th.note||'C4'),time,typeof th==='object'?(th.vel||.75):.75));
+    if(m.speak[trackSteps.speak])studioSafeTrigger('speak',()=>psyTriggerSpeak(time,.86));
     const s1Step=m.s1 && m.s1[trackSteps.s1];
-    if(s1Step)s1Trigger(typeof s1Step==='string'?s1Step:(s1Step.note||'F3'),time,
-      typeof s1Step==='object'?(s1Step.vel||.8):.8);
+    if(s1Step)studioSafeTrigger('s1',()=>s1Trigger(typeof s1Step==='string'?s1Step:(s1Step.note||'F3'),time,
+      typeof s1Step==='object'?(s1Step.vel||.8):.8));
     const taigaStep=m.taiga && m.taiga[trackSteps.taiga];
-    if(taigaStep)taigaTrigger(typeof taigaStep==='string'?taigaStep:(taigaStep.note||'F3'),time,
-      typeof taigaStep==='object'?(taigaStep.vel||.8):.8);
+    if(taigaStep)studioSafeTrigger('taiga',()=>taigaTrigger(typeof taigaStep==='string'?taigaStep:(taigaStep.note||'F3'),time,
+      typeof taigaStep==='object'?(taigaStep.vel||.8):.8));
     const fieldCell=m.fieldkit&&m.fieldkit[trackSteps.fieldkit];
-    if(fieldCell)fieldkitTrigger(typeof fieldCell==='string'?fieldCell:
+    if(fieldCell)studioSafeTrigger('fieldkit',()=>fieldkitTrigger(typeof fieldCell==='string'?fieldCell:
       typeof fieldCell==='object'?(fieldCell.note||'C3'):'C3',
-      time,typeof fieldCell==='object'?(fieldCell.vel||.8):.8);
+      time,typeof fieldCell==='object'?(fieldCell.vel||.8):.8));
     const gmCell=m.grandmother&&m.grandmother[trackSteps.grandmother];
-    if(gmCell)grandmotherTrigger(typeof gmCell==='string'?gmCell:
+    if(gmCell)studioSafeTrigger('grandmother',()=>grandmotherTrigger(typeof gmCell==='string'?gmCell:
       typeof gmCell==='object'?(gmCell.note||'C3'):'C3',
-      time,typeof gmCell==='object'?(gmCell.vel||.8):.8);
+      time,typeof gmCell==='object'?(gmCell.vel||.8):.8));
     for(const machine of HARDWARE_IDS){
       const cell=m[machine]&&m[machine][trackSteps[machine]];
-      if(cell)hardwareTrigger(machine,typeof cell==='object'?(cell.note||'F3'):
-        typeof cell==='string'?cell:'F3',time,typeof cell==='object'?(cell.vel||.8):.8);
+      if(cell)studioSafeTrigger(machine,()=>hardwareTrigger(machine,typeof cell==='object'?(cell.note||'F3'):
+        typeof cell==='string'?cell:'F3',time,typeof cell==='object'?(cell.vel||.8):.8));
     }
     if (!isAiAuto && m.auto && m.auto[trackSteps.auto] != null && masterFilter) { masterFilter.frequency.setTargetAtTime(m.auto[trackSteps.auto] * 17700 + 300, time, 0.018); }
 
@@ -1763,7 +1768,10 @@ function schedulerTick() {
     }
     // Les timers Android sont ralentis en arrière-plan : empêcher un rattrapage
     // de milliers de notes (et une saturation instantanée du CPU).
-    if(SEQ.nextTime<ctx.currentTime-.10)SEQ.nextTime=ctx.currentTime+.025;
+    if(SEQ.nextTime<ctx.currentTime-.10){
+        if(typeof studioStabilityReportLateStep==='function')studioStabilityReportLateStep();
+        SEQ.nextTime=ctx.currentTime+.025;
+    }
     let budget=0;
     while(ctx && SEQ.playing && SEQ.nextTime<ctx.currentTime+.14 && budget++<8){
         try{scheduleStep(SEQ.nextTime);}
