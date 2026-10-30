@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v25-mobile-keyboard-play-recovery';
+const CACHE_NAME = 'lovestronautes-v25-automatic-recovery';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
@@ -59,7 +59,7 @@ self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys()
       .then(function(keys) {
-        return Promise.all(keys.filter(function(key) { return key !== CACHE_NAME; }).map(function(key) { return caches.delete(key); }));
+        return Promise.all(keys.filter(function(key) { return key.startsWith('lovestronautes-') && key !== CACHE_NAME; }).map(function(key) { return caches.delete(key); }));
       })
       .then(function() { return self.clients.claim(); })
   );
@@ -71,7 +71,7 @@ self.addEventListener('fetch', function(event) {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, {cache:'no-store'})
         .then(function(response) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(function(cache) { cache.put(request, copy); });
@@ -88,7 +88,7 @@ self.addEventListener('fetch', function(event) {
   // JavaScript is network-first so returning users see a published update,
   // with cached content preserved when the network is unavailable.
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.endsWith('.css')) {
-    event.respondWith(fetch(request).then(function(response){
+    event.respondWith(fetch(request, {cache:'no-store'}).then(function(response){
       if(response && response.ok) {
         const copy=response.clone();
         caches.open(CACHE_NAME).then(function(cache){cache.put(request,copy);});
