@@ -1588,7 +1588,7 @@ function _gate(dest, time, sus, rel, peak) { let g = ctx.createGain(); g.gain.se
 
 function triggerKick(time, velocity=1) {
     if (!ctx) return; let dur = 0.45; let o = ctx.createOscillator(); o.frequency.setValueAtTime(250, time); o.frequency.exponentialRampToValueAtTime(45, time + 0.08); o.frequency.linearRampToValueAtTime(30, time + dur);
-    let g = _gate(chanGain.kick, time, 0.001, dur, 1.2*velocity); o.connect(g); o.start(time); o.stop(time + dur + 0.1);
+    let g = _gate(chanGain.kick, time, 0.001, dur, 1.2*velocity); o.connect(g); studioAutoRelease(o,[o,g]); o.start(time); o.stop(time + dur + 0.1);
     if (!isMultiOut && duckingGain) { duckingGain.gain.cancelScheduledValues(time); duckingGain.gain.setValueAtTime(duckingGain.gain.value, time); duckingGain.gain.linearRampToValueAtTime(tension > 0.5 ? 0.05 : 0.15, time + 0.005); duckingGain.gain.exponentialRampToValueAtTime(1.0, time + 0.35); }
 }
 
@@ -1599,13 +1599,15 @@ function triggerAcid(note, vel, time, pLockMorph) {
     let localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount; // P-LOCK SUPPORT
     let envMax = 4000 * vel + (localMorph * 3000);
     filt.frequency.setValueAtTime(100, time); filt.frequency.exponentialRampToValueAtTime(envMax, time + 0.03); filt.frequency.exponentialRampToValueAtTime(200, time + dur);
-    let g = _gate(chanGain.acid, time, dur * 0.2, dur * 0.8, vel * 0.9); o.connect(filt); filt.connect(g); o.start(time); o.stop(time + dur + 0.1);
+    let g = _gate(chanGain.acid, time, dur * 0.2, dur * 0.8, vel * 0.9); o.connect(filt); filt.connect(g); studioAutoRelease(o,[o,filt,g]); o.start(time); o.stop(time + dur + 0.1);
 }
 
 function triggerFM(note, time, pLockMorph, velocity=1) {
     if (!ctx) return; let f = hz(note), dur = composeDuration((60 / (bpm * 4)) * 1.5); let g = _gate(chanGain.fm, time, dur * 0.3, dur * 0.7, 0.4*velocity); let detunes = [-12, 0, 15];
     let localMorph = pLockMorph !== undefined ? pLockMorph : morphAmount;
-    detunes.forEach(function(det) { let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det + (localMorph * 50); o.connect(g); o.start(time); o.stop(time + dur + 0.1); });
+    const voices=[];
+    detunes.forEach(function(det) { let o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det + (localMorph * 50); o.connect(g); voices.push(o); o.start(time); o.stop(time + dur + 0.1); });
+    studioAutoRelease(voices[voices.length-1],voices.concat(g));
 }
 
 function triggerBiniou(note, time, vel=0.85, pLockMorph) {
@@ -1629,7 +1631,7 @@ function triggerBiniou(note, time, vel=0.85, pLockMorph) {
     const bite = ctx.createBiquadFilter();
     bite.type = 'peaking'; bite.frequency.value = 3500 + localMorph * 1200; bite.Q.value = 3.2; bite.gain.value = 6;
 
-    const oscillators = [];
+    const oscillators = [], privateNodes=[voice,hp,nasal,bite];
     function addOsc(type, freq, gainValue, detune) {
         const o = ctx.createOscillator();
         o.type = type;
@@ -1638,7 +1640,7 @@ function triggerBiniou(note, time, vel=0.85, pLockMorph) {
         const g = ctx.createGain();
         g.gain.value = gainValue;
         o.connect(g); g.connect(hp);
-        oscillators.push(o);
+        privateNodes.push(o,g);oscillators.push(o);
         return o;
     }
 
@@ -1663,6 +1665,7 @@ function triggerBiniou(note, time, vel=0.85, pLockMorph) {
     const stopAt = time + dur + 0.24;
     oscillators.forEach(function(o){ o.stop(stopAt); });
     vibrato.stop(stopAt);
+    studioAutoRelease(vibrato,privateNodes.concat(vibrato,vibratoDepth));
 }
 
 function startBiniouDrone() {
@@ -1710,7 +1713,9 @@ function setBiniouDrone(active) {
 
 function triggerMetal(time, velocity=1) {
     if (!ctx) return; let ratios = [1, 1.31, 1.85, 2.47, 3.1, 4.1], dur = 0.12; let g = _gate(chanGain.metal, time, 0.001, 0.12, 0.38*velocity);
-    ratios.forEach(function(r) { let o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 220 * r * (0.97 + Math.random() * 0.06); o.connect(g); o.start(time); o.stop(time + dur + 0.02); });
+    const voices=[];
+    ratios.forEach(function(r) { let o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 220 * r * (0.97 + Math.random() * 0.06); o.connect(g); voices.push(o); o.start(time); o.stop(time + dur + 0.02); });
+    studioAutoRelease(voices[voices.length-1],voices.concat(g));
 }
 
 // ── SCHEDULER & TURING ───────────────────────────────────────────
