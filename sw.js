@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v18';
+const CACHE_NAME = 'lovestronautes-v19';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
@@ -12,6 +12,7 @@ const APP_SHELL = [
   new URL('./studio-keyboard.css', scope).href,
   new URL('./loop-studio.css', scope).href,
   new URL('./hardware-synth-lab.css', scope).href,
+  new URL('./grandmother-synth.css', scope).href,
   new URL('./field-kit.css', scope).href,
   new URL('./mobile-v17.css', scope).href,
   new URL('./mobile-v18.css', scope).href,
@@ -25,6 +26,7 @@ const APP_SHELL = [
   new URL('./studio-keyboard.js', scope).href,
   new URL('./loop-studio.js', scope).href,
   new URL('./hardware-synth-lab.js', scope).href,
+  new URL('./grandmother-synth.js', scope).href,
   new URL('./field-kit-import-v18.js', scope).href,
   new URL('./field-kit.js', scope).href,
   new URL('./studio-stability-v18.js', scope).href,
