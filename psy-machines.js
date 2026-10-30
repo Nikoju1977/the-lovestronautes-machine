@@ -291,6 +291,7 @@ function psyTriggerSpeak(time,velocity=.86,force=false){
   }else{
     // Démo synthétique distincte : elle n'est pas une prise du microphone.
     const source=ctx.createOscillator();source.type='sawtooth';
+    privateNodes.push(source);
     source.frequency.value=hz('C3')*rate;
     [560+p.robot*290,1180+p.robot*650].forEach(function(freq,i){
       const filter=ctx.createBiquadFilter();filter.type='bandpass';
