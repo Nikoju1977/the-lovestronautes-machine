@@ -1,5 +1,10 @@
 /* PSYTRANCE STUDIO V9 — phone-first production interface.
    Loads after the legacy theme; keeps every existing control operable. */
+.studio-version-banner{display:block!important;visibility:visible!important;opacity:1!important;width:100%;box-sizing:border-box;text-align:center;font:900 clamp(14px,3.6vw,18px)/1.4 system-ui,-apple-system,'Segoe UI',sans-serif!important;letter-spacing:.25px;color:#07210c;background:#75ffc1;border:2px solid #c1ffe4;border-radius:10px;padding:9px 12px;overflow-wrap:anywhere}
+#studio-refresh-btn{background:#1d293c;color:#fff;border:2px solid #74b8ef;grid-column:span 2}
+#studio-refresh-btn:disabled{opacity:.65;cursor:progress}
+.live-badge{font-size:12px!important;letter-spacing:0!important;line-height:1.35}
+.studio-build{font-size:12px!important;line-height:1.35}
 .studio-quickbar{display:flex;flex-direction:column;gap:8px;padding:7px 0 3px}
 .studio-quick-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .studio-quick-title strong{font-family:var(--hd);font-weight:900;color:#e6fff2;letter-spacing:1.4px;font-size:.95rem}
