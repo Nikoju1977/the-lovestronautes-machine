@@ -823,13 +823,13 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
             <div class="studio-quick-title"><strong>STUDIO DE PRODUCTION MUSICALE</strong><span class="studio-build">V25 · CORRECTION CLAVIERS / PLAY</span></div>
             <div class="studio-quick-actions">
                 <button id="unlock" type="button" class="studio-activate" aria-pressed="false">ACTIVER LE SON</button>
-                <button id="studio-demo-btn" type="button">▶ DÉMO PSY</button>
+                <button id="studio-demo-btn" type="button">▶ GROOVE PSY</button>
                 <button id="studio-compose-btn" type="button">COMPOSER UN MORCEAU</button>
                 <button id="studio-test-btn" type="button">♪ TEST SON</button>
                 <button id="studio-fx-btn" type="button">FX / WAV / MP3</button>
                 <button id="studio-refresh-btn" type="button" aria-label="Actualiser la version sans supprimer mes projets">↻ ACTUALISER LA VERSION</button>
             </div>
-            <div id="studio-audio-guide" role="status" aria-live="polite">1. Activer le son · 2. DÉMO PSY · 3. MIX ou FX pour régler les effets.</div>
+            <div id="studio-audio-guide" role="status" aria-live="polite">1. Activer le son · 2. GROOVE PSY · 3. MIX ou FX pour régler les effets.</div>
         </section>
     </div>
 
@@ -1311,8 +1311,8 @@ function markStudioAudioReady() {
         button.textContent = audioReady ? 'SON ACTIVÉ · OK' : 'ACTIVER LE SON';
     }
     if (hint) hint.textContent = audioReady
-        ? 'Audio opérationnel. DÉMO PSY joue le pattern C / DROP ; FX / WAV / MP3 ouvre le mastering.'
-        : 'Audio non activé. Appuie sur ACTIVER LE SON (autorise le navigateur), puis lance DÉMO PSY.';
+        ? 'Audio opérationnel. GROOVE PSY joue le pattern C / DROP ; FX / WAV / MP3 ouvre le mastering.'
+        : 'Audio non activé. Appuie sur ACTIVER LE SON (autorise le navigateur), puis lance GROOVE PSY.';
     if (audioReady) { setStatus('AUDIO ONLINE', 'ok'); requestWakeLock(); }
     return audioReady;
 }
@@ -2257,8 +2257,8 @@ $id('studio-demo-btn').addEventListener('click', async function() {
     buildSeq(); saveLiveState();
     startSeq(); isPlaying = true;
     $id('play-btn').textContent = '⏸ PAUSE';
-    $id('studio-audio-guide').textContent = 'DÉMO PSY en lecture : pattern C / DROP. Modifie les sons dans MACHINES et FX / WAV.';
-    setStatus('DÉMO PSY : C DROP', 'ok');
+    $id('studio-audio-guide').textContent = 'GROOVE PSY en lecture : pattern C / DROP. Modifie les sons dans MACHINES et FX / WAV.';
+    setStatus('GROOVE PSY : C DROP', 'ok');
 });
 $id('studio-test-btn').addEventListener('click', audioRepairDiagnose);
 $id('studio-fx-btn').addEventListener('click', function() {
