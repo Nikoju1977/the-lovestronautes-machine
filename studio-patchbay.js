@@ -53,6 +53,7 @@ function studioPatchReconnect(name){
   if(route==='off')target=null;
   else if(isMultiOut&&channelMerger)target=channelMerger;
   else target=studioPatchTarget(route)||duckingGain;
+  if(!target&&route!=='off')target=duckingGain||masterFilter||null;
   // An unpatched channel is disconnected only at its unique, dedicated output.
   try{output.disconnect();}catch(error){}
   if(target){
@@ -129,7 +130,7 @@ function studioPatchBuild(){
       '<p>Choisis la destination de chaque piste. Les câbles changent en direct sans recharger le studio. Toutes les voies arrivent ensuite au master, sauf les voies débranchées.</p>'+
       '<div class="patchbay-signal" aria-label="Chemin du signal">INSTRUMENT → EQ / PAN → ROUTAGE → MASTER EQ → LIMITEUR → HAUT-PARLEURS</div>'+
       '<div class="patchbay-actions">'+
-        '<button type="button" id="patchbay-test">TESTER CONNEXIONS</button>'+
+        '<button type="button" id="patchbay-test">TESTER CONNEXIONS</button>'+\n        '<button type="button" id="patchbay-tone">TEST AUDIO DIRECT</button>'+
         '<button type="button" id="patchbay-default">RÉTABLIR CÂBLAGE</button>'+
       '</div>'+
       '<div id="patchbay-status" role="status" aria-live="polite"></div>'+
@@ -159,6 +160,21 @@ function studioPatchInstall(){
   document.addEventListener('click',async event=>{
     const reset=event.target.closest?.('#patchbay-default');
     if(reset){studioPatchReset();return;}
+    const tone=event.target.closest?.('#patchbay-tone');
+    if(tone){
+      const ready=await activateStudioAudio();
+      if(!ready||!ctx||!masterOutput){setStatus('AUDIO INDISPONIBLE','al');return;}
+      const osc=ctx.createOscillator(),volume=ctx.createGain();
+      osc.type='sine';osc.frequency.value=440;
+      volume.gain.setValueAtTime(0.0001,ctx.currentTime);
+      volume.gain.exponentialRampToValueAtTime(0.12,ctx.currentTime+0.025);
+      volume.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.5);
+      osc.connect(volume);volume.connect(masterOutput);
+      osc.start();osc.stop(ctx.currentTime+0.52);
+      osc.onended=()=>{try{osc.disconnect();volume.disconnect();}catch(ignore){}};
+      setStatus('TEST DIRECT 440 HZ — SI SILENCE : SORTIE / NAVIGATEUR','ok');
+      return;
+    }
     const test=event.target.closest?.('#patchbay-test');
     if(!test)return;
     const status=document.getElementById('patchbay-status');
