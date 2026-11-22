@@ -48,7 +48,7 @@ assert.ok(studio.includes('if(!node&&ctx.createScriptProcessor)'));
 assert.ok(voice.includes('source=context.createMediaStreamSource(stream)'));
 assert.ok(voice.includes('if(source)try{source.disconnect();}'));
 assert.ok(keyboard.includes('studioKeyboardSound(note,velocity,active&&held,token.mode)'));
-assert.ok(/const CACHE_NAME\\s*=\\s*['"]lovestronautes-v\\d+[-\\w]*['"]/.test(sw),'V19 offline cache includes previous iOS and Android compatibility');
+assert.ok(/const CACHE_NAME\s*=\s*['"]lovestronautes-v\d+[-\w]*['"]/.test(sw),'V19 offline cache includes previous iOS and Android compatibility');
 assert.ok(sw.includes("new URL('./mobile-compat.js', scope).href"));
 console.log('✓ iOS viewport, touch note, microphone, offline and export regressions');
 console.log('iOS + Android compatibility regression suite: OK');
