@@ -1151,10 +1151,39 @@ function applyProjectState(state, persist) {
     if (persist !== false) saveLiveState();
 }
 
+let studioLastBackupRotation=0;
+const STUDIO_RECOVERY_PREVIOUS='lovestronautes_state_previous';
+function studioValidSavedProject(raw){
+    if(!raw)return null;
+    try{
+        const data=JSON.parse(raw);
+        return data&&validPatternBank(data.pat)?data:null;
+    }catch(_){return null;}
+}
+function studioPreviousBackup(){
+    return studioValidSavedProject(safeStorage.getItem(STUDIO_RECOVERY_PREVIOUS));
+}
 function saveLiveState() {
-    const persisted=safeStorage.setItem('lovestronautes_state', JSON.stringify(projectState()))!==false;
+    let serialized;
+    try{serialized=JSON.stringify(projectState());}
+    catch(error){
+        const hint=document.getElementById('cp-save-status');
+        if(hint)hint.textContent='Sauvegarde impossible : '+error.message+' · Exporte le JSON dès que possible.';
+        return false;
+    }
+    const previousCurrent=safeStorage.getItem('lovestronautes_state');
+    const persisted=safeStorage.setItem('lovestronautes_state',serialized)!==false;
+    const now=Date.now();
+    // Rotate no more than once per two minutes: never copy large song states in the audio scheduler.
+    if(persisted&&previousCurrent&&previousCurrent!==serialized&&
+       now-studioLastBackupRotation>=120000&&studioValidSavedProject(previousCurrent)){
+        if(safeStorage.setItem(STUDIO_RECOVERY_PREVIOUS,previousCurrent)!==false)
+            studioLastBackupRotation=now;
+    }
     const hint=document.getElementById('cp-save-status');
-    if(hint)hint.textContent=persisted?'Sauvegarde navigateur à jour.':'Sauvegarde temporaire : stockage indisponible ou plein. Utilise SAUVER LE PROJET avant de fermer la page.';
+    if(hint)hint.textContent=persisted?
+        'Sauvegarde navigateur à jour. Une copie précédente est conservée lorsque le stockage le permet.':
+        'Sauvegarde temporaire : stockage indisponible ou plein. Utilise SAUVER LE PROJET avant de fermer la page.';
     return persisted;
 }
 // Scheduler changes no longer serialize 17 tracks to localStorage every audio step.
@@ -1175,17 +1204,40 @@ function studioQueueLiveSave(){
 
 function loadLiveState() {
     try {
-        const raw = safeStorage.getItem('lovestronautes_state');
-        if (raw) applyProjectState(JSON.parse(raw), false);
-        else matrix = patterns[curPat];
-    } catch(e) {
-        // A restore failure must be visible to developers instead of silently
-        // presenting the default composition as a successfully loaded project.
-        console.warn('Restauration du projet local impossible :', e);
-        patterns = initPats();
-        matrix = patterns[curPat];
+        const raw=safeStorage.getItem('lovestronautes_state');
+        if(raw){
+            const data=studioValidSavedProject(raw);
+            if(!data)throw Error('Le dernier projet local est invalide.');
+            applyProjectState(data,false);
+        }else matrix=patterns[curPat];
+    }catch(error){
+        console.warn('Dernière sauvegarde locale illisible :',error);
+        try{
+            const previous=studioPreviousBackup();
+            if(!previous)throw Error('Aucune sauvegarde précédente valide.');
+            applyProjectState(previous,false);
+            console.warn('Version précédente restaurée en mémoire. Exporte immédiatement le JSON.');
+            // Do not overwrite either recovery slot automatically during fallback.
+            window.studioRecoveredPreviousOnStartup=true;
+        }catch(olderError){
+            console.warn('Restauration précédente impossible :',olderError);
+            patterns=initPats();
+            matrix=patterns[curPat];
+        }
     }
 }
+// Safari often suspends rather than unloading. Flush only pending user edits.
+function studioFlushPendingState(){
+    if(studioPendingLiveSave===null)return;
+    if(typeof studioPendingLiveSave==='number')clearTimeout(studioPendingLiveSave);
+    studioPendingLiveSave=null;
+    saveLiveState();
+}
+document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='hidden')studioFlushPendingState();
+});
+window.addEventListener('pagehide',studioFlushPendingState);
+
 // Restore only after every global audio state (including ctx) is initialized.
 // A previous call here ran before `let ctx` and hit the TDZ in
 // fieldkitRestoreState -> fieldkitApplyMix, silently discarding saved clips.
