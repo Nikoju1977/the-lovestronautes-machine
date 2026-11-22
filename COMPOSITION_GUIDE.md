@@ -34,3 +34,11 @@ Les paramètres Mute/Solo du mixeur, les pistes choisies dans chaque section et 
 **SAUVER LE PROJET** télécharge un JSON contenant les notes, clips, sections, paramètres des synthés et mixage. **OUVRIR UN PROJET** recharge ce JSON, y compris les anciens projets A–D. Le navigateur garde aussi une sauvegarde locale ; exporte ton JSON avant de vider les données du site ou de changer d’appareil. Les enregistrements micro, extraits et gros fichiers audio importés doivent être conservés séparément puis réimportés.
 
 Le format des clips est limité à 16 clips, 8 mesures par clip et 32 sections / 1 024 mesures au total. Les exports longs sont limités à 180 Mo de PCM avant encodage ; exporte des parties plus courtes si le navigateur manque de mémoire. Une marge de niveau et une écoute critique restent nécessaires pour finaliser un mix ; le limiteur ne constitue pas un mastering automatique.
+
+## Sécurisation des sauvegardes et de la capture (22 novembre 2026)
+
+L'import JSON demande confirmation avant le remplacement de la composition. Si le chargement échoue pendant l'application des réglages, le code tente de remettre le projet précédent. L'export JSON ne contient toujours pas les binaires des prises audio importées ; conserve séparément tes WAV et échantillons.
+
+Le WAV/MP3 dispose d'un contrôle PCM pour éviter de déclarer réussi un export silencieux ou dont les canaux sont incomplets. Après l'encodage, un lien manuel de téléchargement reste disponible cinq minutes dans le panneau de l'export effectué. Il ne garantit pas qu'un navigateur iOS acceptera les téléchargements ni que la capture est musicalement correcte.
+
+[Consulter la procédure de sauvegarde et d'export](SAUVEGARDE_EXPORT.md). Aucun nouvel essai sur un appareil physique n'est revendiqué.
