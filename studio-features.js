@@ -429,8 +429,9 @@ function studioManualDownload(blob,name,composition=false){
     link=document.createElement('a');link.id='studio-manual-download';
     link.style.cssText='display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;margin:10px 0;border:1px solid #7fd2bd;border-radius:9px;color:#b8ffe9;background:#18372f;font-weight:700;text-decoration:none;overflow-wrap:anywhere';
     link.setAttribute('aria-label','Télécharger manuellement le dernier fichier audio exporté');
-    (composition?target.parentElement:target).appendChild(link);
   }
+  // Move the same fallback to the panel that launched the export.
+  (composition?target.parentElement:target).appendChild(link);
   const url=URL.createObjectURL(blob);
   studioManualUrls.push(url);link.href=url;link.download=name;
   link.textContent='Télécharger '+formatName(name)+' (si rien ne se passe automatiquement)';
