@@ -795,6 +795,32 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <link rel="manifest" href="manifest.json">
+<style id="studio-niko-ui-v7">
+
+/* STUDIO NIKO UI V7 — console musicale lisible sur mobile */
+:where(button,input,select,textarea){-webkit-tap-highlight-color:transparent}
+:where(button,input,select,textarea,a):focus-visible{outline:2px solid var(--p);outline-offset:3px}
+.nav-tabs{overscroll-behavior-x:contain;scrollbar-width:thin}
+.nav-tabs .nt{min-height:44px;touch-action:manipulation}
+.panel{overscroll-behavior-y:contain;scrollbar-width:thin}
+:where(.psy-card,.tcard,.fxcard){overflow-wrap:anywhere}
+@media(max-width:679px){
+  .nav-tabs{display:flex;flex-flow:row nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;gap:2px}
+  .nav-tabs .nt{flex:0 0 auto;width:auto;min-width:78px;min-height:46px;font-size:clamp(.67rem,2.7vw,.79rem);letter-spacing:0;scroll-snap-align:start;padding:7px 6px}
+  .panel{padding:12px 9px calc(32px + env(safe-area-inset-bottom))}
+  .studio-quick-actions :where(button){min-height:46px;touch-action:manipulation}
+  :where(input:not([type="range"]):not([type="checkbox"]),textarea,select){font-size:16px}
+  .psy-card{padding:12px;border-radius:10px}
+  .psy-model{font-size:1.18rem}
+  .psy-description{font-size:.76rem;line-height:1.5}
+  .psy-param>span{font-size:.72rem}
+  .psy-param output{font-size:.72rem}
+  #status{font-size:.69rem;white-space:normal}
+  #agent-msg{font-size:.66rem;line-height:1.35}
+}
+@media(prefers-reduced-motion:reduce){.nt::after{transition:none!important}}
+
+</style>
 </head>
 <body role="application" aria-label="Lovestronautes Machine — DAW psytrance">
 <main id="app-root" tabindex="-1">
