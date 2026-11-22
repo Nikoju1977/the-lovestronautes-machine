@@ -390,3 +390,10 @@ La même validation est exécutée automatiquement par GitHub Actions sur les pu
 ## Licence
 
 [MIT](LICENSE) © 2026 Nicolas Julienne — Studio Niko Design
+
+
+## Sauvegarde et export audio — mise à jour du 22 novembre 2026
+
+Import de composition confirmé avant remplacement, restauration de secours en cas d'échec et validation du signal PCM avant export WAV/MP3. Un lien manuel de téléchargement est prévu pour les navigateurs mobiles. Les prises audio restent des fichiers séparés du JSON de projet. [Guide exact et limites](SAUVEGARDE_EXPORT.md).
+
+**Statut :** code modifié et enregistré sur GitHub, sans preuve de fonctionnement sur iPhone/Android pour cette révision.
