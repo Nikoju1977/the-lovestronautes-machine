@@ -302,16 +302,42 @@ function composeExportMidi(mode){
   composeNotice('MIDI créé : 18 pistes séparées, tempo, swing, vélocités, durées et marqueurs. Importe-le dans Ableton Live ; choisis les instruments dans ton DAW.');
  }catch(error){composeNotice(error.message);}
 }
-function composeSaveProject(){downloadBlob(new Blob([JSON.stringify(projectState(),null,2)],{type:'application/json'}),'lovestronautes-composition.json');composeNotice('Projet JSON exporté : clips, arrangement, mix et réglages des synthés. Les prises audio importées restent en mémoire et doivent être conservées séparément.');}
+function composeSaveProject(){
+ try{
+  if(!composeCanEdit())return false;
+  const json=JSON.stringify(projectState(),null,2);
+  if(!json||json.length<32)throw Error('Projet vide ou impossible à sérialiser.');
+  downloadBlob(new Blob([json],{type:'application/json'}),'lovestronautes-composition.json');
+  composeNotice('Téléchargement JSON préparé : clips, arrangement et réglages. Les prises audio importées NE sont PAS incluses : conserve-les séparément et vérifie le fichier téléchargé.');
+  return true;
+ }catch(error){composeNotice('Sauvegarde du projet impossible : '+(error.message||'Erreur inconnue'));return false;}
+}
 async function composeLoadProject(file){
  if(!file||!composeCanEdit())return false;
  try{
   if(file.size>8*1024*1024)throw Error('Projet JSON trop volumineux (8 Mo maximum).');
   const state=JSON.parse(await file.text());
   if(!composeCanEdit())return false;
-  if(!validPatternBank(state.pat))throw Error('Projet Lovestronautes incompatible.');
-  pushUndo();applyProjectState(state,true);composeSeedFromPatterns();syncProjectUI();
-  composeNotice('Projet chargé.');return true;
+  if(!state||typeof state!=='object'||Array.isArray(state)||!validPatternBank(state.pat))
+    throw Error('Projet Lovestronautes incompatible.');
+  // Do not replace the current composition without deliberate consent.
+  if(!window.confirm('Importer ce projet et remplacer la composition actuelle ? Enregistre d’abord ton projet si nécessaire.')) {
+    composeNotice('Import annulé : composition actuelle conservée.');return false;
+  }
+  const backup=projectState();
+  try{
+    applyProjectState(state,false);
+    composeSeedFromPatterns();
+    syncProjectUI();
+    if(!saveLiveState())composeNotice('Projet importé en mémoire, mais sauvegarde navigateur indisponible. Exporte ton projet JSON.');
+    else composeNotice('Projet chargé et sauvegardé localement. Les prises audio externes doivent être conservées séparément.');
+    pushUndo();return true;
+  }catch(error){
+    // Import can fail after mutating several synths. Restore the pre-import snapshot.
+    try{applyProjectState(backup,false);composeSeedFromPatterns();syncProjectUI();saveLiveState();}
+    catch(rollbackError){composeNotice('Restauration impossible : '+rollbackError.message+'. Recharge ou réimporte la dernière sauvegarde JSON.');return false;}
+    throw Error('Import annulé, ancien projet restauré : '+error.message);
+  }
  }catch(error){composeNotice('Import impossible : '+error.message);return false;}
 }
 function composeEditCell(change){
