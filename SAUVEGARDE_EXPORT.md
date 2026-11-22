@@ -21,3 +21,13 @@
 - Aucun service cloud n'est ajouté ; les moteurs Web Audio, les synthétiseurs et les fichiers préexistants ne sont pas remplacés.
 
 **Statut :** code enregistré sur GitHub le 22 novembre 2026 ; fonctionnement réel et installation physique non certifiés.
+
+## Récupération en cas de fermeture ou de suspension — 22 novembre 2026
+
+La sauvegarde du projet sur cet appareil conserve maintenant, **si le navigateur le permet**, une copie de l'état précédent, tournée au maximum toutes les deux minutes pendant les modifications. Lorsqu'une sauvegarde primaire est illisible au démarrage, le code tente de retrouver une copie précédente valide et signale cet état dans l'interface.
+
+Dans **Composition Pro**, déplie **Récupération après interruption** pour choisir **Restaurer la copie précédente** ou **Exporter la copie JSON**. La restauration exige une confirmation, ne fonctionne pas pendant la lecture ou un export audio, et essaye de préserver l'état courant en cas d'erreur. Les commandes Annuler/Rétablir de la session restent distinctes du secours local.
+
+Quand Safari masque l'onglet ou quitte la page, les écritures différées en attente sont poussées dans le stockage local sans sérialisation continue pendant chaque événement audio. Un onglet fermé brutalement peut néanmoins interrompre l'enregistrement ; le stockage peut aussi être purgé par iOS. Les prises audio et échantillons importés restent **hors du JSON**. Exporte des fichiers de projet et des WAV indépendants pour assurer une vraie sauvegarde durable.
+
+**État :** code committé, sans essai physique iPhone/Android ni preuve que les données survivent à une purge Safari.
