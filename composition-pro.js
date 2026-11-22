@@ -304,7 +304,7 @@ function composeExportMidi(mode){
 }
 function composeSaveProject(){
  try{
-  if(!composeCanEdit())return false;
+  // Keep the existing ability to export a snapshot even during playback.
   const json=JSON.stringify(projectState(),null,2);
   if(!json||json.length<32)throw Error('Projet vide ou impossible à sérialiser.');
   downloadBlob(new Blob([json],{type:'application/json'}),'lovestronautes-composition.json');
