@@ -416,6 +416,34 @@ function studioMp3(chunks,sampleRate){
     encoder.postMessage({chunks:data,sampleRate,bitRate:320},transferable);
   });
 }
+let studioManualUrls=[];
+function studioManualDownload(blob,name,composition=false){
+  // Download APIs may be delayed or rejected after async encoding on iOS.
+  // Keep a visible, user-activated fallback for five minutes.
+  for(const url of studioManualUrls){try{URL.revokeObjectURL(url);}catch(_){}}
+  studioManualUrls=[];
+  const target=document.getElementById(composition?'cp-export-status':'studio-export-card');
+  if(!target)return;
+  let link=document.getElementById('studio-manual-download');
+  if(!link){
+    link=document.createElement('a');link.id='studio-manual-download';
+    link.style.cssText='display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;margin:10px 0;border:1px solid #7fd2bd;border-radius:9px;color:#b8ffe9;background:#18372f;font-weight:700;text-decoration:none;overflow-wrap:anywhere';
+    link.setAttribute('aria-label','Télécharger manuellement le dernier fichier audio exporté');
+    (composition?target.parentElement:target).appendChild(link);
+  }
+  const url=URL.createObjectURL(blob);
+  studioManualUrls.push(url);link.href=url;link.download=name;
+  link.textContent='Télécharger '+formatName(name)+' (si rien ne se passe automatiquement)';
+  setTimeout(function(){
+    if(studioManualUrls.includes(url)){
+      URL.revokeObjectURL(url);studioManualUrls=studioManualUrls.filter(x=>x!==url);
+      if(link.href===url||link.href===new URL(url,location.href).href){
+        link.removeAttribute('href');link.textContent='Lien expiré : relance un export.';
+      }
+    }
+  },300000);
+}
+function formatName(name){return String(name).endsWith('.mp3')?'MP3':'WAV';}
 async function studioExport(format,options={}){
   if(studioExportBusy)return;
   if(isPlaying || SEQ.playing){studioProgress('Arrêtez PLAY pour exporter depuis le début.',0);return;}
@@ -473,7 +501,9 @@ async function studioExport(format,options={}){
     studioProgress('Encodage '+format.toUpperCase()+'…',97);
     const output=format==='wav'?studioWav(pcm,ctx.sampleRate,options.wavBits||studioExportWavBits):await studioMp3(pcm,ctx.sampleRate);
     if(output.size<128)throw Error('Fichier audio vide');
-    downloadBlob(output,'lovestronautes-'+(composition?'composition-'+options.composition:exportSong?'song-'+barCount+'bars':curPat+'-'+barCount+'bars')+'-'+new Date().toISOString().slice(0,10)+'.'+format);
+    const exportName='lovestronautes-'+(composition?'composition-'+options.composition:exportSong?'song-'+barCount+'bars':curPat+'-'+barCount+'bars')+'-'+new Date().toISOString().slice(0,10)+'.'+format;
+    studioManualDownload(output,exportName,composition);
+    downloadBlob(output,exportName);
     studioProgress('Fichier '+format.toUpperCase()+' créé · '+(output.size/1048576).toFixed(1)+' Mo · pic '+(20*Math.log10(audit.peak)).toFixed(1)+' dBFS. Vérifie le téléchargement.',100);
     setStatus('STUDIO '+format.toUpperCase()+' EXPORT OK','ok');
   }catch(error){
