@@ -397,3 +397,10 @@ La même validation est exécutée automatiquement par GitHub Actions sur les pu
 Import de composition confirmé avant remplacement, restauration de secours en cas d'échec et validation du signal PCM avant export WAV/MP3. Un lien manuel de téléchargement est prévu pour les navigateurs mobiles. Les prises audio restent des fichiers séparés du JSON de projet. [Guide exact et limites](SAUVEGARDE_EXPORT.md).
 
 **Statut :** code modifié et enregistré sur GitHub, sans preuve de fonctionnement sur iPhone/Android pour cette révision.
+
+
+## Version de secours de la composition — 22 novembre 2026
+
+La sauvegarde locale conserve désormais une génération précédente quand l'espace le permet, et repousse les modifications différées lors de la suspension de la page. Le panneau repliable de **Composition Pro → Récupération après interruption** permet de restaurer volontairement ou d'exporter le précédent état JSON. En cas de fichier primaire illisible, le code tente de rétablir une copie précédente et avertit qu'il faut exporter une sauvegarde indépendante.
+
+L'import/export JSON n'intègre toujours pas les prises audio ni les fichiers d'échantillons. Les sauvegardes locales peuvent être effacées par le navigateur ; sauvegarde aussi le projet sur ton appareil. [Mode d'emploi](SAUVEGARDE_EXPORT.md). Aucun essai physique iPhone ou Android n'est revendiqué.
