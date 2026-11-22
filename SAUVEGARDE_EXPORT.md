@@ -31,3 +31,13 @@ Dans **Composition Pro**, déplie **Récupération après interruption** pour ch
 Quand Safari masque l'onglet ou quitte la page, les écritures différées en attente sont poussées dans le stockage local sans sérialisation continue pendant chaque événement audio. Un onglet fermé brutalement peut néanmoins interrompre l'enregistrement ; le stockage peut aussi être purgé par iOS. Les prises audio et échantillons importés restent **hors du JSON**. Exporte des fichiers de projet et des WAV indépendants pour assurer une vraie sauvegarde durable.
 
 **État :** code committé, sans essai physique iPhone/Android ni preuve que les données survivent à une purge Safari.
+
+
+## PWA : protection des liens externes et repli réseau — lot du 22 novembre 2026
+
+- Service worker `lovestronautes-v28-origin-safe-offline` : les navigations hors du domaine de l'application ne sont plus interceptées. Une défaillance réseau lors de l'ouverture d'un site externe ne doit jamais présenter la machine musicale comme si ce site avait répondu.
+- Les fichiers JS/CSS utilisent un repli sur **leur propre version mise en cache** ; un fichier absent ne reçoit plus la page HTML à la place du code (erreur réseau explicite).
+- La mise en cache des documents et scripts ne retient que les réponses HTTP réussies et lie la fin des écritures à l'événement du service worker, afin de réduire les écritures perdues.
+- Les anciennes assertions de validation, figées sur `v25`, vérifient désormais le format de version du cache plutôt qu'une chaîne historique. Les ressources hors ligne du moteur sonore existant sont conservées.
+
+Cette modification concerne la fiabilité de navigation et du shell PWA, **pas** la génération sonore ni l'écoute vérifiée sur un appareil physique. GitHub Pages et ses caches installés peuvent être mis à jour à des instants différents : consulter le numéro de cache réellement servi et relancer la PWA si nécessaire.

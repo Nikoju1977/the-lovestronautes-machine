@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v27-safe-recovery-20261122';
+const CACHE_NAME = 'lovestronautes-v28-origin-safe-offline';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
@@ -69,33 +69,39 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   const request = event.request;
   if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  // Never intercept external navigation (Suno, documentation, licensing, etc.).
+  // An offline failure on another domain must not display this app's cached UI.
+  if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request, {cache:'no-store'})
         .then(function(response) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) { cache.put(request, copy); });
+          // Never keep HTTP 404/503 or non-readable responses as an offline app shell.
+          if (response && response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then(function(cache) { return cache.put(request, copy); }));
+          }
           return response;
         })
-        .catch(function() { return caches.match(request).then(function(hit) { return hit || caches.match(INDEX_URL); }); })
+        .catch(async function() {
+          return (await caches.match(request)) || (await caches.match(INDEX_URL)) || Response.error();
+        })
     );
     return;
   }
 
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
-
-  // JavaScript is network-first so returning users see a published update,
-  // with cached content preserved when the network is unavailable.
+  // JavaScript/CSS network-first, with a genuine cached asset fallback.
+  // If none was precached, signal an error rather than returning HTML with a bad MIME type.
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.endsWith('.css')) {
     event.respondWith(fetch(request, {cache:'no-store'}).then(function(response){
       if(response && response.ok) {
         const copy=response.clone();
-        caches.open(CACHE_NAME).then(function(cache){cache.put(request,copy);});
+        event.waitUntil(caches.open(CACHE_NAME).then(function(cache){return cache.put(request,copy);}));
       }
       return response;
-    }).catch(function(){return caches.match(request);}));
+    }).catch(async function(){return (await caches.match(request)) || Response.error();}));
     return;
   }
   event.respondWith(
