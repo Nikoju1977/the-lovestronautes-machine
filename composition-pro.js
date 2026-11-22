@@ -313,6 +313,9 @@ function composeRecoverPrevious(){
   applyProjectState(previous,false);
   composeSeedFromPatterns();syncProjectUI();
   const persisted=saveLiveState();
+  // Keep the pre-recovery song in the secondary slot when space allows,
+  // so the user can revert even after a subsequent browser restart.
+  if(persisted)safeStorage.setItem(STUDIO_RECOVERY_PREVIOUS,JSON.stringify(before));
   composeNotice(persisted?
     'Version précédente récupérée. Tu peux ANNULER si besoin ; exporte maintenant ton JSON.':
     'Version précédente récupérée uniquement en mémoire. Exporte immédiatement le JSON : stockage indisponible.');
