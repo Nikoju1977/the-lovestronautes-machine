@@ -338,6 +338,30 @@ function studioTrimPCM(chunks,sampleRate,startTime,endTime,fallbackTime=0){
  gapTo(end);
  return output;
 }
+function studioCheckPCM(chunks){
+  // Analyze the actual captured samples, not a presumed recording state.
+  // Sample at a bounded cadence to avoid an expensive full pass on mobile.
+  let peak=0,nonzero=0,checked=0,frames=0;
+  for(const part of chunks){
+    if(!part||!part.left||!part.right||part.left.length!==part.right.length)
+      throw Error('Capture PCM incomplète : canaux gauche/droite différents.');
+    frames+=part.left.length;
+    const stride=Math.max(1,Math.floor(part.left.length/4096));
+    for(let i=0;i<part.left.length;i+=stride){
+      const left=part.left[i],right=part.right[i];
+      if(!Number.isFinite(left)||!Number.isFinite(right))
+        throw Error('Capture audio invalide : échantillons non numériques.');
+      const level=Math.max(Math.abs(left),Math.abs(right));
+      if(level>peak)peak=level;
+      if(level>0.00001)nonzero++;
+      checked++;
+    }
+  }
+  if(frames<512)throw Error('Capture audio trop courte.');
+  if(peak<0.00001||nonzero<Math.max(3,Math.floor(checked*0.0001)))
+    throw Error('Le master capturé est silencieux : vérifie les volumes, Mute/Solo et la sortie du moteur audio avant de relancer.');
+  return {peak,frames};
+}
 function studioWav(chunks,sampleRate,bits=16){
   if(![16,24].includes(bits))throw Error('Résolution WAV invalide');
   const frameBytes=bits/8*2;
@@ -445,11 +469,12 @@ async function studioExport(format,options={}){
     const captured=await tap.finish();
     const pcm=studioTrimPCM(captured,ctx.sampleRate,at,at+duration+1.6,tap.startedAt);tap.close();tap=null;
     if(!pcm.length)throw Error('Capture audio vide');
+    const audit=studioCheckPCM(pcm);
     studioProgress('Encodage '+format.toUpperCase()+'…',97);
     const output=format==='wav'?studioWav(pcm,ctx.sampleRate,options.wavBits||studioExportWavBits):await studioMp3(pcm,ctx.sampleRate);
     if(output.size<128)throw Error('Fichier audio vide');
     downloadBlob(output,'lovestronautes-'+(composition?'composition-'+options.composition:exportSong?'song-'+barCount+'bars':curPat+'-'+barCount+'bars')+'-'+new Date().toISOString().slice(0,10)+'.'+format);
-    studioProgress('Fichier '+format.toUpperCase()+' créé · '+(output.size/1048576).toFixed(1)+' Mo',100);
+    studioProgress('Fichier '+format.toUpperCase()+' créé · '+(output.size/1048576).toFixed(1)+' Mo · pic '+(20*Math.log10(audit.peak)).toFixed(1)+' dBFS. Vérifie le téléchargement.',100);
     setStatus('STUDIO '+format.toUpperCase()+' EXPORT OK','ok');
   }catch(error){
     studioProgress(error.message||'Export impossible',0);setStatus('EXPORT : '+(error.message||'ERREUR'),'al');
