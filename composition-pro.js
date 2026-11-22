@@ -325,16 +325,17 @@ async function composeLoadProject(file){
     composeNotice('Import annulé : composition actuelle conservée.');return false;
   }
   const backup=projectState();
+  pushUndo();
   try{
     applyProjectState(state,false);
     composeSeedFromPatterns();
     syncProjectUI();
     if(!saveLiveState())composeNotice('Projet importé en mémoire, mais sauvegarde navigateur indisponible. Exporte ton projet JSON.');
     else composeNotice('Projet chargé et sauvegardé localement. Les prises audio externes doivent être conservées séparément.');
-    pushUndo();return true;
+    return true;
   }catch(error){
     // Import can fail after mutating several synths. Restore the pre-import snapshot.
-    try{applyProjectState(backup,false);composeSeedFromPatterns();syncProjectUI();saveLiveState();}
+    try{applyProjectState(backup,false);composeSeedFromPatterns();syncProjectUI();saveLiveState();undoStack.pop();updateHistoryUI();}
     catch(rollbackError){composeNotice('Restauration impossible : '+rollbackError.message+'. Recharge ou réimporte la dernière sauvegarde JSON.');return false;}
     throw Error('Import annulé, ancien projet restauré : '+error.message);
   }
