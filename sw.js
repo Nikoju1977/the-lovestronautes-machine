@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v25-studio-core-20261122';
+const CACHE_NAME = 'lovestronautes-v25-save-export-20261122';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
