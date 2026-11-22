@@ -302,6 +302,42 @@ function composeExportMidi(mode){
   composeNotice('MIDI créé : 18 pistes séparées, tempo, swing, vélocités, durées et marqueurs. Importe-le dans Ableton Live ; choisis les instruments dans ton DAW.');
  }catch(error){composeNotice(error.message);}
 }
+function composeRecoverPrevious(){
+ if(!composeCanEdit())return false;
+ const previous=studioPreviousBackup();
+ if(!previous){composeNotice('Aucune version précédente valide sur cet appareil. Utilise le JSON exporté si tu en possèdes un.');return false;}
+ if(!window.confirm('Restaurer la sauvegarde précédente de ce navigateur et remplacer la composition actuelle ? Enregistre d’abord le projet en cours si nécessaire.'))return false;
+ const before=projectState();
+ try{
+  pushUndo();
+  applyProjectState(previous,false);
+  composeSeedFromPatterns();syncProjectUI();
+  const persisted=saveLiveState();
+  composeNotice(persisted?
+    'Version précédente récupérée. Tu peux ANNULER si besoin ; exporte maintenant ton JSON.':
+    'Version précédente récupérée uniquement en mémoire. Exporte immédiatement le JSON : stockage indisponible.');
+  return true;
+ }catch(error){
+  try{
+   applyProjectState(before,false);composeSeedFromPatterns();syncProjectUI();saveLiveState();
+   undoStack.pop();updateHistoryUI();
+   composeNotice('Récupération impossible : projet courant restauré · '+error.message);
+  }catch(rollbackError){
+   composeNotice('Récupération et retour arrière impossibles : '+rollbackError.message+'. Réimporte ta dernière copie JSON.');
+  }
+  return false;
+ }
+}
+function composeExportPrevious(){
+ try{
+  const previous=studioPreviousBackup();
+  if(!previous)throw Error('Aucune version précédente disponible.');
+  const json=JSON.stringify(previous,null,2);
+  downloadBlob(new Blob([json],{type:'application/json'}),
+    'lovestronautes-copie-precedente-'+new Date().toISOString().slice(0,10)+'.json');
+  composeNotice('Téléchargement de la copie précédente préparé. Vérifie le fichier JSON ; les prises audio ne sont pas incluses.');
+ }catch(error){composeNotice('Export de secours impossible : '+error.message);}
+}
 function composeSaveProject(){
  try{
   // Keep the existing ability to export a snapshot even during playback.
@@ -479,6 +515,7 @@ function composeInstall(){
  root.innerHTML='<section class="cp-head"><div class="cp-eyebrow">COMPOSITION PRO · V23</div><h2>Du motif au morceau.</h2><p>Écris des phrases de plusieurs mesures, construis tes sections et retrouve tes pistes dans Ableton Live. Les 18 instruments partagent le mix et les effets de la machine.</p>'+
   '<div class="cp-tools"><label class="cp-wide">TITRE<input type="text" id="cp-title" maxlength="60"></label><label>TEMPO<input type="number" id="cp-tempo" min="40" max="220"></label><label>TONALITÉ<select id="cp-root">'+COMPOSE_ROOTS.map(n=>'<option>'+n+'</option>').join('')+'</select></label><label>GAMME<select id="cp-scale"><option value="minor">Mineure</option><option value="major">Majeure</option><option value="dorian">Dorienne</option><option value="phrygian">Phrygienne</option><option value="harmonic">Mineure harmonique</option><option value="pentatonic">Pentatonique mineure</option></select></label></div>'+
   '<div class="cp-transport"><button type="button" id="cp-play-song" class="cp-primary">▶ LIRE LE MORCEAU</button><button type="button" id="cp-play-clip">↻ ÉCOUTER LE CLIP</button><button type="button" id="cp-stop">■ STOP</button><button type="button" id="cp-undo">ANNULER</button><button type="button" id="cp-redo">RÉTABLIR</button><button type="button" id="cp-save">SAUVER LE PROJET</button><button type="button" id="cp-load">OUVRIR UN PROJET</button><input type="file" id="cp-project-file" accept=".json,application/json" hidden></div>'+
+  '<details class="cp-recovery" style="margin:12px 0;padding:10px 12px;border:1px solid #4a817d;border-radius:10px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700">Récupération après interruption</summary><p>Les sauvegardes restent sur cet appareil. Une copie précédente est conservée lorsque le stockage le permet ; elle ne contient ni prises audio ni échantillons binaires.</p><div class="cp-transport" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="cp-restore-previous" style="min-height:44px">RESTAURER LA COPIE PRÉCÉDENTE</button><button type="button" id="cp-export-previous" style="min-height:44px">EXPORTER LA COPIE JSON</button></div></details>'+
   '<div id="cp-position" role="status">Prêt · choisis un clip, puis touche une case pour écrire.</div><p id="cp-save-status" role="status">Pense à exporter ton projet JSON pour conserver une copie.</p><div id="cp-notice" role="status" aria-live="polite">Tes patterns A–D sont copiés dans des clips indépendants au premier lancement. Sauve ton projet JSON pour le conserver et changer d’appareil.</div></section>'+
   '<div class="cp-workspace"><section class="cp-card"><h3>01 / Clips et piano roll</h3><div class="cp-tools"><label>CLIP<select id="cp-clip"></select></label><label class="cp-wide">NOM<input id="cp-clip-name" type="text" maxlength="40"></label><label>MESURES<select id="cp-bars">'+[1,2,4,8].map(n=>'<option>'+n+'</option>').join('')+'</select></label></div>'+
   '<div class="cp-transport"><button type="button" id="cp-new">+ CLIP VIDE</button><button type="button" id="cp-duplicate">DUPLIQUER CLIP</button><button type="button" id="cp-delete-clip" class="cp-danger">SUPPRIMER CLIP</button></div>'+
@@ -551,6 +588,8 @@ function composeInstall(){
  bind('cp-undo','click',()=>{if(composeCanEdit())undoProject();});
  bind('cp-redo','click',()=>{if(composeCanEdit())redoProject();});
  bind('cp-load','click',()=>{if(composeCanEdit())document.getElementById('cp-project-file').click();});
+ bind('cp-restore-previous','click',composeRecoverPrevious);
+ bind('cp-export-previous','click',composeExportPrevious);
  bind('cp-project-file','change',async e=>{await composeLoadProject(e.target.files[0]);e.target.value='';});
  bind('cp-midi','click',()=>composeExportMidi(document.getElementById('cp-export-source').value));
  for(const format of ['wav','mp3'])bind('cp-'+format,'click',()=>studioExport(format,{composition:document.getElementById('cp-export-source').value,wavBits:24}));
@@ -559,4 +598,7 @@ function composeInstall(){
   document.querySelector('.nt[data-panel="compose"]').click();root.scrollIntoView({behavior:'smooth',block:'start'});
  });
  composeRender();
+ if(window.studioRecoveredPreviousOnStartup){
+   composeNotice('La dernière sauvegarde locale était illisible : une copie précédente a été chargée en mémoire. Exporte immédiatement ton projet JSON et conserve les sources audio séparément.');
+ }
 }
