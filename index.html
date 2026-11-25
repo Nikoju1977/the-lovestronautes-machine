@@ -2222,9 +2222,26 @@ function buildFX() {
     spr();
 }
 
+// Restore the previous in-memory project if a module rejects an import.
+function studioImportProject(data){
+    if(SEQ.playing||isPlaying||studioExportBusy)throw Error('Arrête la lecture ou l’export avant l’import.');
+    if(!data||!validPatternBank(data.pat))throw Error('Projet incompatible ou corrompu');
+    const before=snapshotProject();
+    try{
+        applyProjectState(data,false);
+        syncProjectUI();
+    }catch(error){
+        try{applyProjectState(JSON.parse(before),false);syncProjectUI();}
+        catch(rollbackError){throw Error('Import échoué et restauration incomplète : conserve ta sauvegarde JSON.');}
+        throw error;
+    }
+    undoStack.push(before);trimHistoryStack(undoStack);redoStack.length=0;updateHistoryUI();
+    return saveLiveState();
+}
+
 function buildDNA() {
     $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, piste BINI, SNARE, HAT, SUB, égaliseur 5 bandes, volumes, chaos, BPM, swing, morph et réglages Cyber Breton.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
-    $id('save-dna').addEventListener('click', function(){ saveLiveState(); setStatus('SAUVEGARDE FORCÉE', 'ok'); });
+    $id('save-dna').addEventListener('click', function(){ const saved=saveLiveState();setStatus(saved?'SAUVEGARDE FORCÉE':'STOCKAGE NON CONFIRMÉ · EXPORTER LE JSON',saved?'ok':'al'); });
     $id('export-project').addEventListener('click', function(){
         const blob = new Blob([JSON.stringify(projectState(), null, 2)], {type:'application/json'});
         downloadBlob(blob, 'lovestronautes-project-' + new Date().toISOString().slice(0,10) + '.json');
@@ -2232,18 +2249,17 @@ function buildDNA() {
     });
     $id('import-project').addEventListener('click', function(){ $id('import-file').click(); });
     $id('import-file').addEventListener('change', async function(e){
-        const file = e.target.files && e.target.files[0]; if (!file) return;
-        try {
-            pushUndo();
-            const data = JSON.parse(await file.text());
-            applyProjectState(data, true);
-            syncProjectUI();
-            setStatus('PROJET IMPORTÉ', 'ok');
-        } catch(err) {
-            if (undoStack.length) undoStack.pop();
-            updateHistoryUI();
-            setStatus('IMPORT JSON INVALIDE', 'al');
-        } finally { e.target.value = ''; }
+        const file=e.target.files&&e.target.files[0];e.target.value='';if(!file)return;
+        if(studioImportProject.pending){setStatus('IMPORT DÉJÀ EN COURS','al');return;}
+        studioImportProject.pending=true;
+        try{
+            if(file.size>32*1024*1024)throw Error('Projet trop volumineux (32 Mio maximum).');
+            if(SEQ.playing||isPlaying||studioExportBusy)throw Error('Arrête la lecture ou l’export avant l’import.');
+            const data=JSON.parse(await file.text());
+            const saved=studioImportProject(data);
+            setStatus(saved?'PROJET IMPORTÉ':'PROJET IMPORTÉ EN MÉMOIRE · EXPORTER LE JSON',saved?'ok':'al');
+        }catch(err){setStatus('IMPORT REFUSÉ : '+err.message,'al');}
+        finally{studioImportProject.pending=false;}
     });
     $id('nuke-dna').addEventListener('click', function(){ safeStorage.removeItem('lovestronautes_state'); location.reload(); });
 }

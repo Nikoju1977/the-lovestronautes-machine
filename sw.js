@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v29-safe-loop-library';
+const CACHE_NAME = 'lovestronautes-v30-project-import-safety';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
