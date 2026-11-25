@@ -1346,7 +1346,7 @@ let masterFilter, distShaper, analyserNode;
 let scopeCanvas = null, scopeCtx = null, scopeBuffer = new Float32Array(256);
 let chanGain = {};
 let duckingGain = null, channelMerger = null, recordingDest = null;
-let mediaRecorder = null, recordChunks = [];
+let mediaRecorder = null, studioMasterSession=null, studioMasterRetry=null;
 let biniouInput = null, biniouDrive = null, biniouTone = null, biniouDelay = null, biniouFeedback = null, biniouDelayWet = null, biniouDry = null, biniouReverb = null, biniouReverbWet = null;
 let biniouDroneNodes = null;
 
@@ -1609,47 +1609,58 @@ function downloadBlob(blob, filename) {
 }
 
 function toggleMasterRecording() {
-    const btn = $id('rec-btn');
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
+    const btn=$id('rec-btn');
+    if(studioMasterRetry){
+        try{downloadBlob(studioMasterRetry.blob,studioMasterRetry.name);studioMasterRetry=null;btn.textContent='● REC MASTER';setStatus('FICHIER MASTER PRÉPARÉ','ok');}
+        catch(_){setStatus('EXPORT MASTER NON TERMINÉ · RÉESSAIE REC','al');}
         return;
     }
-    if (isMultiOut) { setStatus('REC MASTER: DÉSACTIVÉ EN MULTI-OUT', 'al'); return; }
-    if (!audioReady) {
-        initAudio();
-        setTimeout(function(){ if (audioReady) toggleMasterRecording(); }, 300);
+    if(studioMasterSession){
+        if(!studioMasterSession.stopping)studioMasterSession.stop();
         return;
     }
-    if (!window.MediaRecorder || typeof ctx.createMediaStreamDestination !== 'function') { setStatus('REC MASTER NON SUPPORTÉ', 'al'); return; }
-    const mime = bestRecordingMime();
-    try {
-        recordingDest = ctx.createMediaStreamDestination();
-        masterOutput.connect(recordingDest);
-        recordChunks = [];
-        mediaRecorder = mime ? new MediaRecorder(recordingDest.stream, {mimeType:mime}) : new MediaRecorder(recordingDest.stream);
-        mediaRecorder.ondataavailable = function(e){ if (e.data && e.data.size) recordChunks.push(e.data); };
-        mediaRecorder.onerror = function(e){
-            const reason=e && e.error && e.error.message ? e.error.message : 'MediaRecorder interrompu';
-            setStatus('REC MASTER : '+reason+' · UTILISE EXPORT WAV', 'al');
-            if(recordingDest){try{masterOutput.disconnect(recordingDest);}catch(ignore){}recordingDest=null;}
-            if(btn){btn.classList.remove('on');btn.textContent='● REC MASTER';}
-        };
-        mediaRecorder.onstop = function() {
-            const type = mediaRecorder.mimeType || mime || 'audio/webm';
-            const ext = mobileRecordingExtension(type);
-            const blob = new Blob(recordChunks, {type:type});
-            if (blob.size) downloadBlob(blob, 'lovestronautes-master-' + new Date().toISOString().replace(/[:.]/g,'-') + '.' + ext);
-            else setStatus('ENREGISTREMENT VIDE · ESSAIE EXPORT WAV', 'al');
-            if(recordingDest){try{masterOutput.disconnect(recordingDest);}catch(ignore){}recordingDest=null;}
-            btn.classList.remove('on'); btn.textContent = '● REC MASTER';
-            setStatus('MASTER ENREGISTRÉ', 'ok');
-        };
-        mediaRecorder.start(250);
-        btn.classList.add('on'); btn.textContent = '■ STOP REC';
-        setStatus('REC MASTER...', 'al');
-    } catch(e) {
-        if(recordingDest){try{masterOutput.disconnect(recordingDest);}catch(ignore){}recordingDest=null;}
-        setStatus('ERREUR REC MASTER', 'al');
+    if(isMultiOut){setStatus('REC MASTER: DÉSACTIVÉ EN MULTI-OUT','al');return;}
+    if(!audioReady){initAudio();setTimeout(function(){if(audioReady&&!studioMasterSession&&!studioMasterRetry)toggleMasterRecording();},300);return;}
+    if(!window.MediaRecorder||typeof ctx.createMediaStreamDestination!=='function'){setStatus('REC MASTER NON SUPPORTÉ','al');return;}
+    const mime=bestRecordingMime();
+    const session={recorder:null,dest:null,chunks:[],stopping:false,done:false,error:null,timer:null};
+    studioMasterSession=session;
+    function finalize(){
+        if(session.done)return;
+        session.done=true;
+        if(session.timer!==null)clearTimeout(session.timer);
+        if(session.dest){try{masterOutput.disconnect(session.dest);}catch(_){}}
+        if(studioMasterSession===session){studioMasterSession=null;mediaRecorder=null;recordingDest=null;}
+        btn.classList.remove('on');btn.textContent='● REC MASTER';btn.disabled=false;
+        const type=session.recorder?.mimeType||mime||'audio/webm';
+        const ext=mobileRecordingExtension(type);
+        const blob=new Blob(session.chunks,{type});session.chunks.length=0;
+        if(!blob.size){setStatus('ENREGISTREMENT VIDE · ESSAIE EXPORT WAV','al');return;}
+        const name='lovestronautes-master-'+(session.error?'partiel-':'')+new Date().toISOString().replace(/[:.]/g,'-')+'.'+ext;
+        try{downloadBlob(blob,name);setStatus(session.error?'MASTER PARTIEL · INTÉGRITÉ NON GARANTIE':'MASTER PRÉPARÉ POUR TÉLÉCHARGEMENT',session.error?'al':'ok');}
+        catch(_){studioMasterRetry={blob,name};btn.textContent='⇩ RÉESSAYER EXPORT';setStatus('EXPORT MASTER NON TERMINÉ · RÉESSAIE REC','al');}
+    }
+    session.stop=function(){
+        if(session.stopping||session.done)return;
+        session.stopping=true;btn.disabled=true;btn.textContent='FINALISATION…';
+        // If the browser never emits stop, recover the chunks received so far.
+        session.timer=setTimeout(function(){session.error=session.error||'Finalisation interrompue';finalize();},8000);
+        try{if(session.recorder&&session.recorder.state!=='inactive')session.recorder.stop();}
+        catch(error){session.error=error.message||'Arrêt impossible';finalize();}
+    };
+    try{
+        session.dest=ctx.createMediaStreamDestination();recordingDest=session.dest;
+        masterOutput.connect(session.dest);
+        const recorder=mime?new MediaRecorder(session.dest.stream,{mimeType:mime}):new MediaRecorder(session.dest.stream);
+        session.recorder=recorder;mediaRecorder=recorder;
+        recorder.ondataavailable=function(e){if(!session.done&&e.data&&e.data.size)session.chunks.push(e.data);};
+        recorder.onerror=function(e){if(session.done)return;session.error=e?.error?.message||'MediaRecorder interrompu';session.stop();};
+        recorder.onstop=finalize;
+        recorder.start(250);
+        btn.classList.add('on');btn.textContent='■ STOP REC';setStatus('REC MASTER…','al');
+    }catch(error){
+        session.error=error.message||'Démarrage impossible';finalize();
+        setStatus('ERREUR REC MASTER · '+session.error,'al');
     }
 }
 
@@ -2359,6 +2370,7 @@ if(studioRecoveryProtected){setStatus('RÉCUPÉRATION PROTÉGÉE · EXPORTER LE 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
 $id('studio-refresh-btn').addEventListener('click', async function(){
+    if(studioMasterSession||studioMasterRetry){setStatus('TERMINE L’ENREGISTREMENT MASTER AVANT ACTUALISATION','al');return;}
     const button=this;button.disabled=true;button.textContent='ACTUALISATION…';
     // Always preserve projects and stop the audio before replacing the document.
     try {
@@ -2560,14 +2572,15 @@ if ('serviceWorker' in navigator) {
     const busy=(typeof SEQ!=='undefined'&&SEQ.playing)||
       (typeof isPlaying!=='undefined'&&isPlaying)||
       (typeof studioExportBusy!=='undefined'&&studioExportBusy)||
-      (typeof mediaRecorder!=='undefined'&&mediaRecorder&&mediaRecorder.state==='recording');
+      (typeof studioMasterSession!=='undefined'&&studioMasterSession)||
+      (typeof studioMasterRetry!=='undefined'&&studioMasterRetry);
     if(busy){
       const health=document.getElementById('studio-playback-health');
       if(health)health.textContent='MISE À JOUR PRÊTE · APRÈS STOP';
       return;
     }
+    try{if(typeof saveLiveState==='function'&&!saveLiveState()){const health=document.getElementById('studio-playback-health');if(health)health.textContent='MISE À JOUR EN ATTENTE · SAUVEGARDE NON CONFIRMÉE';return;}}catch(error){console.warn('Sauvegarde avant MAJ :',error);return;}
     studioUpdatePending=false;
-    try{if(typeof saveLiveState==='function')saveLiveState();}catch(error){console.warn('Sauvegarde avant MAJ :',error);}
     const url=new URL('./index.html',location.href);
     url.searchParams.set('worker-refresh',String(Date.now()));
     location.replace(url.href);

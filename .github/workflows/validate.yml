@@ -50,6 +50,9 @@ jobs:
       - name: Transactional undo and redo regression
         run: node scripts/test-transactional-history.mjs
 
+      - name: Master recording lifecycle regression
+        run: node scripts/test-master-recording.mjs
+
       - name: Audio encoder tests
         run: node scripts/test-audio-exports.mjs
 

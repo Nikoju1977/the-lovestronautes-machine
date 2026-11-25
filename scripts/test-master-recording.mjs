@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
+const html=readFileSync('index.html','utf8'),src=html.slice(html.indexOf('function toggleMasterRecording()'),html.indexOf('// ── WEB MIDI'));
+const recorders=[],disconnected=[],downloads=[],timers=new Map();let id=0,status='',failDownload=false;
+class Recorder{constructor(stream,opts){this.mimeType=opts.mimeType;this.state='inactive';recorders.push(this);}start(){this.state='recording';}stop(){this.state='inactive';}data(text){this.ondataavailable({data:new Blob([text])});}}
+const btn={classList:{add(){},remove(){}},textContent:'',disabled:false};
+const env={Blob,Date,window:{MediaRecorder:Recorder},MediaRecorder:Recorder,$id:()=>btn,studioMasterSession:null,studioMasterRetry:null,mediaRecorder:null,recordingDest:null,isMultiOut:false,audioReady:true,ctx:{createMediaStreamDestination:()=>({stream:{},id:recorders.length})},masterOutput:{connect(){},disconnect:d=>disconnected.push(d.id)},bestRecordingMime:()=> 'audio/webm',mobileRecordingExtension:()=> 'webm',downloadBlob:(blob,name)=>{if(failDownload)throw Error('download');downloads.push({blob,name});},setStatus:s=>status=s,setTimeout:f=>{timers.set(++id,f);return id;},clearTimeout:i=>timers.delete(i)};
+const toggle=vm.runInNewContext(src+'\ntoggleMasterRecording',env);
+toggle();const first=recorders[0];first.data('a');toggle();assert.equal(btn.disabled,true);toggle();assert.equal(recorders.length,1);first.data('b');first.onstop();assert.equal(await downloads[0].blob.text(),'ab');assert.equal(env.studioMasterSession,null);assert.equal(timers.size,0);
+toggle();const second=recorders[1];first.data('late');first.onstop();assert.equal(env.mediaRecorder,second);assert.deepEqual(disconnected,[0]);second.data('c');second.onerror({error:{message:'encoder'}});second.onstop();assert.match(downloads[1].name,/partiel/);assert.match(status,/PARTIEL/);assert.equal(await downloads[1].blob.text(),'c');
+toggle();recorders[2].onstop();assert.match(status,/VIDE/);assert.equal(downloads.length,2);
+toggle();recorders[3].data('recover');toggle();const timer=[...timers.values()][0];timer();assert.match(status,/PARTIEL/);assert.equal(await downloads[2].blob.text(),'recover');
+toggle();recorders[4].data('retry');failDownload=true;recorders[4].onstop();assert.ok(env.studioMasterRetry);failDownload=false;toggle();assert.equal(env.studioMasterRetry,null);assert.equal(await downloads[3].blob.text(),'retry');
+assert.equal(recorders.length,5);assert.deepEqual(disconnected,[0,1,2,3,4]);
+console.log('PASS master recorder session isolation, final chunk, partial error/timeout, empty status and retryable export');
