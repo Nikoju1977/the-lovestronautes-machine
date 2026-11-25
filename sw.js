@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v32-isolated-shell';
+const CACHE_NAME = 'lovestronautes-v33-transactional-history';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,

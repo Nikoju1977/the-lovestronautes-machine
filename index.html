@@ -1284,26 +1284,43 @@ function pushUndo() {
     updateHistoryUI();
 }
 function restoreSnapshot(serialized) {
-    applyProjectState(JSON.parse(serialized), true);
+    const data=JSON.parse(serialized);
+    if(!data||!validPatternBank(data.pat))throw Error('Historique incompatible ou corrompu.');
+    applyProjectState(data,false);
     syncProjectUI();
 }
-function undoProject() {
-    if(SEQ.playing||studioExportBusy){setStatus('ARRÊTE LA LECTURE AVANT ANNULER','al');return;}
-    if (!undoStack.length) return;
-    redoStack.push(snapshotProject());
-    trimHistoryStack(redoStack);
-    restoreSnapshot(undoStack.pop());
+function studioMoveHistory(source,destination,label){
+    if(SEQ.playing||isPlaying||studioExportBusy){setStatus('ARRÊTE LA LECTURE OU L’EXPORT AVANT '+label,'al');return false;}
+    if(!source.length)return false;
+    let before;
+    try{before=snapshotProject();}
+    catch(error){setStatus('HISTORIQUE NON MODIFIÉ : '+error.message,'al');return false;}
+    const target=source[source.length-1];
+    // Restore in memory, without writing a partially applied project to disk.
+    try{restoreSnapshot(target);}
+    catch(error){
+        try{restoreSnapshot(before);}
+        catch(rollbackError){
+            studioRecoveryProtected=true;
+            setStatus('RESTAURATION INCOMPLÈTE · SAUVEGARDE LOCALE PROTÉGÉE','al');
+            return false;
+        }
+        setStatus(label+' REFUSÉ · HISTORIQUE CONSERVÉ','al');
+        return false;
+    }
+    source.pop();
+    destination.push(before);
+    trimHistoryStack(destination);
     updateHistoryUI();
-    setStatus('UNDO', 'ok');
+    const saved=saveLiveState();
+    setStatus(saved?label:label+' EN MÉMOIRE · EXPORTER LE JSON',saved?'ok':'al');
+    return true;
+}
+function undoProject() {
+    return studioMoveHistory(undoStack,redoStack,'UNDO');
 }
 function redoProject() {
-    if(SEQ.playing||studioExportBusy){setStatus('ARRÊTE LA LECTURE AVANT RÉTABLIR','al');return;}
-    if (!redoStack.length) return;
-    undoStack.push(snapshotProject());
-    trimHistoryStack(undoStack);
-    restoreSnapshot(redoStack.pop());
-    updateHistoryUI();
-    setStatus('REDO', 'ok');
+    return studioMoveHistory(redoStack,undoStack,'REDO');
 }
 
 function $id(id) { return document.getElementById(id); }

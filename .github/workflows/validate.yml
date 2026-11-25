@@ -47,6 +47,9 @@ jobs:
       - name: Startup recovery protection regression
         run: node scripts/test-startup-recovery.mjs
 
+      - name: Transactional undo and redo regression
+        run: node scripts/test-transactional-history.mjs
+
       - name: Audio encoder tests
         run: node scripts/test-audio-exports.mjs
 
