@@ -1152,6 +1152,7 @@ function applyProjectState(state, persist) {
 }
 
 let studioLastBackupRotation=0;
+let studioLastPersistedSerialization=null;
 const STUDIO_RECOVERY_PREVIOUS='lovestronautes_state_previous';
 function studioValidSavedProject(raw){
     if(!raw)return null;
@@ -1172,7 +1173,10 @@ function saveLiveState() {
         return false;
     }
     const previousCurrent=safeStorage.getItem('lovestronautes_state');
-    const persisted=safeStorage.setItem('lovestronautes_state',serialized)!==false;
+    // Only skip writes that were confirmed persistent in this page session.
+    const persisted=studioLastPersistedSerialization===serialized&&previousCurrent===serialized
+        ?true:safeStorage.setItem('lovestronautes_state',serialized)!==false;
+    studioLastPersistedSerialization=persisted?serialized:null;
     const now=Date.now();
     // Rotate no more than once per two minutes: never copy large song states in the audio scheduler.
     if(persisted&&previousCurrent&&previousCurrent!==serialized&&
@@ -1198,6 +1202,7 @@ function studioQueueLiveSave(){
     if(studioPendingLiveSave!==null)return;
     studioPendingLiveSave=setTimeout(function(){
         studioPendingLiveSave=null;
+        if(typeof SEQ!=='undefined'&&SEQ.playing){studioPendingLiveSave='playback';return;}
         saveLiveState();
     },850);
 }
@@ -2107,9 +2112,9 @@ function buildMixer() {
         let len=document.createElement('input'); len.type='range'; len.className='pfader'; len.min=1; len.max=16; len.step=1; len.value=trackLengths[name];
         ch.appendChild(len); row.appendChild(ch);
         [vol,chaos,len].forEach(function(control){ control.addEventListener('pointerdown', pushUndo); });
-        vol.addEventListener('input',function(e){ chanVol[name]=parseFloat(e.target.value); studioApplyMix(); saveLiveState(); });
-        chaos.addEventListener('input',function(e){ trackChaos[name]=parseFloat(e.target.value); saveLiveState(); });
-        len.addEventListener('input',function(e){ trackLengths[name]=parseInt(e.target.value); buildSeq(); saveLiveState(); });
+        vol.addEventListener('input',function(e){ chanVol[name]=parseFloat(e.target.value); studioApplyMix(); studioQueueLiveSave(); });
+        chaos.addEventListener('input',function(e){ trackChaos[name]=parseFloat(e.target.value); studioQueueLiveSave(); });
+        len.addEventListener('input',function(e){ trackLengths[name]=parseInt(e.target.value); buildSeq(); studioQueueLiveSave(); });
         studioExtendChannel(name,ch);
     });
     p.appendChild(row);
