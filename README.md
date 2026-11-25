@@ -11,6 +11,75 @@
 
 **Démo** : [nikoju1977.github.io/the-lovestronautes-machine](https://nikoju1977.github.io/the-lovestronautes-machine/)
 
+**STUDIO NIKO DESIGN** · Build smart. Stay lightweight. Create without limits.
+
+[![DSP](https://img.shields.io/badge/DSP-Web_Audio-00897B)](studio-features.js) [![UI](https://img.shields.io/badge/UI-Vanilla_JS-F7DF1E)](index.html) [![Tracks](https://img.shields.io/badge/tracks-18-326CE5)](index.html) [![MP3 component](https://img.shields.io/badge/lamejs-LGPL--3.0-blue)](vendor/LICENSE-lamejs.txt)
+
+[Quickstart](#quickstart--démarrage-rapide) · [Architecture](#architecture--sécurité) · [Roadmap](#roadmap--contribution) · [English overview](#english-overview) · [Issues](https://github.com/Nikoju1977/the-lovestronautes-machine/issues)
+
+> [Insérer ici un GIF de démonstration / Insert demo GIF here]
+
+## Pourquoi ce projet ?
+
+**A browser-native electronic music studio for psytrance, acid and experimental sound design.**
+
+L'ambition est de réunir une station de composition et un laboratoire d'instruments numériques dans le navigateur, sans DAW à installer pour démarrer. Le moteur Web Audio partagé, le séquençage anticipé sur l'horloge audio, les synthèses originales inspirées de machines matérielles et le traitement local permettent de travailler avec une pile légère. L'export MIDI facilite ensuite le passage vers un DAW. La sophistication du graphe audio implique toutefois des contraintes CPU, mémoire et navigateur : frugalité ne signifie pas performance garantie.
+
+## Fonctionnalités clés
+
+- 🥁 18 pistes : percussions, sub, acid, FM, biniou, theremin, sampler vocal et modules de synthèse semi-modulaire.
+- 🎹 Composition Pro : jusqu'à 16 clips, piano roll, structure jusqu'à 32 sections et export MIDI type 1 (voir guide).
+- 🎛️ Mixage, égalisation de piste et master, routage patchbay, effets et limiteur.
+- 🔊 Capture master WAV PCM 16/24 bits et export MP3 320 kbit/s via encodeur en Worker ; enregistrement rapide distinct via MediaRecorder.
+- 📂 Field Kit : import local jusqu'à 100 Mio, lecture segmentée WAV ou streaming des gros fichiers compatibles, avec contraintes propres aux codecs.
+- 💾 JSON, undo/redo et copie locale précédente ; les samples et prises audio doivent être conservés séparément.
+- 📱 PWA, mode ECO et diagnostics du moteur audio ; Ghost Pilot Mistral facultatif et distant.
+
+## Architecture & sécurité
+
+```mermaid
+flowchart TD
+  A[Patterns / Composition Pro / live input] --> B[Audio-clock scheduler]
+  B --> C[18 instrument tracks]
+  D[Local audio files / permitted mic] --> C
+  C --> E[Track EQ and patchbay]
+  E --> F[Master FX / limiter]
+  F --> G[Audio output]
+  F --> H[PCM capture AudioWorklet or fallback]
+  H --> I[WAV encoder]
+  H --> J[MP3 worker / lamejs]
+  A --> K[MIDI and JSON export]
+  A --> L[Local project storage]
+  A -. Optional prompt .-> M[Mistral API]
+```
+
+| Module vérifié dans les sources | Responsabilité |
+| --- | --- |
+| [index.html](index.html) | Horloge, synthèse centrale, transport, état et récupération |
+| [psy-machines.js](psy-machines.js) | Synthèse acid/FM/percussions, theremin et capture vocale |
+| [studio-features.js](studio-features.js) | Console, EQ, bus master, capture PCM et export |
+| [studio-patchbay.js](studio-patchbay.js) | Routage des pistes et des bus |
+| [studio-audio-repair-v21.js](studio-audio-repair-v21.js) | Diagnostic et réparation du routage stéréo |
+| [composition-pro.js](composition-pro.js) | Clips, arrangement, planification et MIDI |
+| [field-kit-import-v18.js](field-kit-import-v18.js) | Import audio borné et gestion des gros fichiers |
+| [sw.js](sw.js) | Cache PWA et repli réseau |
+
+**Dépendances réelles :** l'interface et le DSP utilisent JavaScript natif et les API du navigateur ; l'encodeur MP3 lamejs 1.2.1 est une bibliothèque tierce distribuée séparément, sous LGPL-3.0. Les polices externes et le service Mistral facultatif nécessitent le réseau. Le traitement audio normal s'effectue localement ; le mode Mistral transmet des requêtes au fournisseur. Le microphone nécessite un contexte approprié et une autorisation. Le stockage local n'est pas chiffré par défaut, et les exports audio ne garantissent ni un niveau de mastering professionnel ni une absence de coupures. Le mode multi-sorties peut contourner le master stéréo ; vérifier le routage avant export.
+
+**État de validation :** inspection des sources et des licences sur GitHub. Les résultats historiques ci-dessous décrivent leurs versions respectives ; aucun nouveau test audio, benchmark, test physique, écoute ou contrôle de la disponibilité de la démo n'a été réalisé pour cette révision documentaire. Le titre HTML et les versions des modules/cache ne constituent pas un numéro unique de release.
+
+## Quickstart / Démarrage rapide
+
+```bash
+git clone https://github.com/Nikoju1977/the-lovestronautes-machine.git
+cd the-lovestronautes-machine
+python3 -m http.server 8080
+```
+
+Ouvrir http://localhost:8080/, activer le son par un geste utilisateur, lancer le test sonore puis un pattern. Conserver tous les scripts du dépôt : le fichier HTML seul ne contient pas tous les moteurs. Pour la composition, consulter [COMPOSITION_GUIDE.md](COMPOSITION_GUIDE.md) et [SAUVEGARDE_EXPORT.md](SAUVEGARDE_EXPORT.md). Les fonctionnalités PWA et micro dépendent d'un contexte sécurisé et des permissions.
+
+## Documentation technique et historique des versions
+
 ## V24 — Lecture mobile et anti-coupures (30 octobre 2026)
 - Nettoyage des graphes audio temporaires à la fin des notes (percussions, sub, FM, acid, voix, theremin, biniou), sans couper le mixage.
 - Correction de l'algorithme ECO : un seul retard du scheduler ne met plus tous les instruments secondaires en sourdine pendant 1,6 seconde.
@@ -389,7 +458,7 @@ La même validation est exécutée automatiquement par GitHub Actions sur les pu
 
 ## Licence
 
-[MIT](LICENSE) © 2026 Nicolas Julienne — Studio Niko Design
+[MIT](LICENSE) © 2026 Nicolas Julienne — Studio Niko Design. Le composant tiers [lamejs](vendor/LICENSE-lamejs.txt) conserve sa licence LGPL-3.0 et ses attributions. Les marques et logiciels matériels cités restent indépendants du projet.
 
 
 ## Sauvegarde et export audio — mise à jour du 22 novembre 2026
@@ -404,3 +473,25 @@ Import de composition confirmé avant remplacement, restauration de secours en c
 La sauvegarde locale conserve désormais une génération précédente quand l'espace le permet, et repousse les modifications différées lors de la suspension de la page. Le panneau repliable de **Composition Pro → Récupération après interruption** permet de restaurer volontairement ou d'exporter le précédent état JSON. En cas de fichier primaire illisible, le code tente de rétablir une copie précédente et avertit qu'il faut exporter une sauvegarde indépendante.
 
 L'import/export JSON n'intègre toujours pas les prises audio ni les fichiers d'échantillons. Les sauvegardes locales peuvent être effacées par le navigateur ; sauvegarde aussi le projet sur ton appareil. [Mode d'emploi](SAUVEGARDE_EXPORT.md). Aucun essai physique iPhone ou Android n'est revendiqué.
+
+## Roadmap & contribution
+
+Prochaines étapes proposées, non terminées :
+
+- [ ] Mesurer le jitter du scheduler, les dropouts et la consommation mémoire sur des sessions longues.
+- [ ] Vérifier le son, la capture et les imports de 100 Mio sur appareils physiques Android et iOS.
+- [ ] Comparer les exports MIDI/WAV/MP3 à des fixtures reproductibles et dans un DAW.
+- [ ] Documenter les limites du routage, les performances et la compatibilité par appareil.
+- [ ] Maintenir les attributions et conditions de distribution des bibliothèques tierces.
+
+**Première contribution / `good first issue` (label proposé, non créé ici) :** isoler une régression du transport, du graphe audio ou du téléchargement avec un projet JSON minimal, sans samples personnels.
+
+Les pull requests ciblées et rapports de bugs sont bienvenus : décrire l'appareil, le navigateur, la version du code, les étapes et le résultat attendu. Ajouter une régression lorsque possible. Ne pas publier de clés API, de fichiers audio privés ni de contenu sans droits. Respecter la licence MIT et les obligations applicables aux composants tiers.
+
+## English overview
+
+Thelovestronautes Machine is a browser-native electronic music workstation built around 18 tracks, local synthesis, audio-clock scheduling, a patchbay, channel EQ, master processing and Composition Pro arrangement. It supports MIDI type 1, JSON projects, real-time PCM WAV capture (16/24-bit) and MP3 encoding through a worker. Field Kit accepts local files up to 100 MiB under documented decoding and streaming limits. Audio assets are not embedded in project JSON. Web Audio is local, but optional Mistral requests and external font assets use the network.
+
+Clone the repository, serve its root with `python3 -m http.server 8080`, open http://localhost:8080/ and activate audio. Use the full directory, not only the HTML file. No new runtime tests or benchmarks were performed for this README update. Contributions are welcome under MIT for the main application; lamejs is separately licensed under LGPL-3.0. Hardware names describe inspirations, not official emulations or endorsements.
+
+**Studio Niko Design** · [MIT license](LICENSE) · [Third-party MP3 component notice](vendor/LICENSE-lamejs.txt) · [Portfolio](https://github.com/Nikoju1977).
