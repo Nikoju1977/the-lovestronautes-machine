@@ -8,15 +8,38 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
+  route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      custom: ${{ steps.source.outputs.custom }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read actual Pages publishing source
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          config=$(gh api "repos/$GITHUB_REPOSITORY/pages" 2>/dev/null) || config='{}'
+          printf '%s' "$config" | node scripts/pages-routing.mjs route | tee -a "$GITHUB_OUTPUT"
+
   deploy:
+    needs: route
+    if: needs.route.outputs.custom == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -28,13 +51,16 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
+      - name: Confirm artifact is visible
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/pages-routing.mjs artifact
 
       - name: Deploy to GitHub Pages
         id: deployment

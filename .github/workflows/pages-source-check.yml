@@ -1,0 +1,23 @@
+name: Pages source diagnostic
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/pages.yml'
+      - '.github/workflows/pages-source-check.yml'
+      - 'scripts/pages-routing.mjs'
+permissions:
+  contents: read
+  pages: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read source without changing settings
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          config=$(gh api "repos/$GITHUB_REPOSITORY/pages" 2>/dev/null) || config='{}'
+          printf '%s' "$config" | GITHUB_REF_NAME=main node scripts/pages-routing.mjs route

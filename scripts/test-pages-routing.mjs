@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {choosePagesRoute,waitForArtifact} from './pages-routing.mjs';
+assert.deepEqual(choosePagesRoute({build_type:'legacy',source:{branch:'main',path:'/'}},'main'),{custom:false,reason:'legacy-main-root-confirmed'});
+for(const cfg of [null,{}, {build_type:'legacy',source:{branch:'main',path:'/docs'}},{build_type:'legacy',source:{branch:'gh-pages',path:'/'}},{build_type:'workflow'}])assert.equal(choosePagesRoute(cfg,'main').custom,true);
+assert.equal(choosePagesRoute({build_type:'legacy',source:{branch:'main',path:'/'}},'feature').custom,true);
+let calls=0,delays=0;
+const good={id:42,name:'github-pages',expired:false};
+assert.equal(await waitForArtifact(async()=>{calls++;if(calls===1)throw Error('temporary API');if(calls===2)return [{...good,expired:true}];return [good];},async()=>delays++),42);
+assert.equal(calls,3);assert.equal(delays,2);
+await assert.rejects(waitForArtifact(async()=>[good,{...good,id:43}],async()=>{}),/Multiple/);
+calls=0;await assert.rejects(waitForArtifact(async()=>{calls++;return [];},async()=>{}, {attempts:3}),/bounded/);assert.equal(calls,3);
+console.log('PASS source-aware routing, unknown source preserves custom, delayed artifact visibility and bounded refusal');
