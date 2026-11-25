@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v33-transactional-history';
+const CACHE_NAME = 'lovestronautes-v34-master-rec-lifecycle';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,

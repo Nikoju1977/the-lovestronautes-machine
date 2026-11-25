@@ -56,8 +56,12 @@ for(const name of ['kick','snare','hat','sub','acid','fm','biniou','metal','ther
 assert.ok(scheduled.includes('studioSafeTrigger(machine,'),'Hardware instruments also isolated');
 assert.ok(index.includes('studioStabilityReportLateStep()'),'Playback must report scheduling lag');
 assert.ok(index.includes('studioEcoMode?400:170'),'Mobile sequence redraw should be throttled');
-assert.ok(!index.includes('recordingDest = ctx.createMediaStreamDestination();\n        masterOutput.connect(recordingDest);\n    }'),'No permanent recording stream while only playing');
-assert.ok(index.includes('recordingDest = ctx.createMediaStreamDestination();\n        masterOutput.connect(recordingDest);'),'REC retains a real capture bus');
-assert.ok(index.includes('masterOutput.disconnect(recordingDest)'),'Recorder releases capture bus after STOP or error');
+const recStart=index.indexOf('function toggleMasterRecording()'),recEnd=index.indexOf('// ── WEB MIDI',recStart);
+assert.ok(recStart>=0&&recEnd>recStart,'Master recording implementation exists');
+const rec=index.slice(recStart,recEnd),outside=index.slice(0,recStart)+index.slice(recEnd);
+assert.ok(!/masterOutput\.connect\(\s*(?:recordingDest|session\.dest)\s*\)/.test(outside),'No permanent master recording bus while playing');
+assert.match(rec,/session\.dest\s*=\s*ctx\.createMediaStreamDestination\(\)/,'REC creates a real capture bus');
+assert.match(rec,/masterOutput\.connect\(session\.dest\)/,'REC connects its own capture destination');
+assert.match(rec,/masterOutput\.disconnect\(session\.dest\)/,'REC releases its own capture destination');
 assert.ok(/const CACHE_NAME\s*=\s*['"]lovestronautes-v\d+[-\w]*['"]/.test(sw),'PWA cache must be refreshed for corrected audio');
 console.log('✓ 18-track scheduling, lazy recording path and PWA cache integration');
