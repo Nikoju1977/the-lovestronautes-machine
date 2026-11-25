@@ -44,6 +44,9 @@ jobs:
       - name: Mixer save coalescing regression
         run: node scripts/test-save-coalescing.mjs
 
+      - name: Startup recovery protection regression
+        run: node scripts/test-startup-recovery.mjs
+
       - name: Audio encoder tests
         run: node scripts/test-audio-exports.mjs
 

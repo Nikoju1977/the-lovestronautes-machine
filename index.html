@@ -951,8 +951,10 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 </div>
 
 <script>/* Studio Niko · helpers vague C */
-window.safeStorage = window.safeStorage || (function(){var mem=new Map(),ls=null;try{ls=window.localStorage;var t='__niko__';ls.setItem(t,'1');ls.removeItem(t);}catch(e){ls=null;}
-return{getItem:function(k){if(mem.has(k))return mem.get(k);try{return ls?ls.getItem(k):null;}catch(e){return null;}},
+window.safeStorage = window.safeStorage || (function(){var mem=new Map(),ls=null;try{ls=window.localStorage;}catch(e){ls=null;} // A full store may still be readable; writes are checked individually.
+return{getPersistentItem:function(k){if(!ls)throw Error('Stockage local inaccessible');return ls.getItem(k);},
+setPersistentItem:function(k,v){try{if(ls){ls.setItem(k,String(v));mem.delete(k);return true;}}catch(e){}return false;},
+getItem:function(k){if(mem.has(k))return mem.get(k);try{return ls?ls.getItem(k):null;}catch(e){return null;}},
 setItem:function(k,v){try{if(ls){ls.setItem(k,String(v));mem.delete(k);return true;}}catch(e){}mem.set(k,String(v));return false;},
 removeItem:function(k){try{if(ls)ls.removeItem(k);}catch(e){}mem.delete(k);},
 clear:function(){try{if(ls)ls.clear();}catch(e){}mem.clear();},
@@ -1153,6 +1155,7 @@ function applyProjectState(state, persist) {
 
 let studioLastBackupRotation=0;
 let studioLastPersistedSerialization=null;
+let studioRecoveryProtected=false;
 const STUDIO_RECOVERY_PREVIOUS='lovestronautes_state_previous';
 function studioValidSavedProject(raw){
     if(!raw)return null;
@@ -1164,7 +1167,12 @@ function studioValidSavedProject(raw){
 function studioPreviousBackup(){
     return studioValidSavedProject(safeStorage.getItem(STUDIO_RECOVERY_PREVIOUS));
 }
-function saveLiveState() {
+function saveLiveState(explicitRecoveryReplacement=false) {
+    if(studioRecoveryProtected&&explicitRecoveryReplacement!==true){
+        const hint=document.getElementById('cp-save-status');
+        if(hint)hint.textContent='Récupération protégée : exporte le projet et la sauvegarde brute avant de remplacer le stockage local.';
+        return false;
+    }
     let serialized;
     try{serialized=JSON.stringify(projectState());}
     catch(error){
@@ -1172,11 +1180,17 @@ function saveLiveState() {
         if(hint)hint.textContent='Sauvegarde impossible : '+error.message+' · Exporte le JSON dès que possible.';
         return false;
     }
-    const previousCurrent=safeStorage.getItem('lovestronautes_state');
+    let previousCurrent=safeStorage.getItem('lovestronautes_state');
+    if(studioRecoveryProtected&&typeof safeStorage.getPersistentItem==='function'){
+        try{previousCurrent=safeStorage.getPersistentItem('lovestronautes_state');}catch(_){return false;}
+    }
     // Only skip writes that were confirmed persistent in this page session.
-    const persisted=studioLastPersistedSerialization===serialized&&previousCurrent===serialized
-        ?true:safeStorage.setItem('lovestronautes_state',serialized)!==false;
+    const persisted=studioRecoveryProtected&&explicitRecoveryReplacement===true&&typeof safeStorage.setPersistentItem==='function'
+        ?safeStorage.setPersistentItem('lovestronautes_state',serialized)
+        :studioLastPersistedSerialization===serialized&&previousCurrent===serialized
+            ?true:safeStorage.setItem('lovestronautes_state',serialized)!==false;
     studioLastPersistedSerialization=persisted?serialized:null;
+    if(persisted&&explicitRecoveryReplacement===true)studioRecoveryProtected=false;
     const now=Date.now();
     // Rotate no more than once per two minutes: never copy large song states in the audio scheduler.
     if(persisted&&previousCurrent&&previousCurrent!==serialized&&
@@ -1209,13 +1223,14 @@ function studioQueueLiveSave(){
 
 function loadLiveState() {
     try {
-        const raw=safeStorage.getItem('lovestronautes_state');
-        if(raw){
+        const raw=typeof safeStorage.getPersistentItem==='function'?safeStorage.getPersistentItem('lovestronautes_state'):safeStorage.getItem('lovestronautes_state');
+        if(raw!==null){
             const data=studioValidSavedProject(raw);
             if(!data)throw Error('Le dernier projet local est invalide.');
             applyProjectState(data,false);
         }else matrix=patterns[curPat];
     }catch(error){
+        studioRecoveryProtected=true;
         console.warn('Dernière sauvegarde locale illisible :',error);
         try{
             const previous=studioPreviousBackup();
@@ -2245,8 +2260,20 @@ function studioImportProject(data){
 }
 
 function buildDNA() {
-    $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, piste BINI, SNARE, HAT, SUB, égaliseur 5 bandes, volumes, chaos, BPM, swing, morph et réglages Cyber Breton.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
-    $id('save-dna').addEventListener('click', function(){ const saved=saveLiveState();setStatus(saved?'SAUVEGARDE FORCÉE':'STOCKAGE NON CONFIRMÉ · EXPORTER LE JSON',saved?'ok':'al'); });
+    $id('panel-dna').innerHTML = '<div class="dnacard"><div class="dnatitle">PROJECT DNA</div><div class="dnainfo">Sauvegarde locale automatique + export portable JSON. L\'import restaure patterns, piste BINI, SNARE, HAT, SUB, égaliseur 5 bandes, volumes, chaos, BPM, swing, morph et réglages Cyber Breton.</div><button class="dbtn a" id="save-dna">💾 FORCER SAUVEGARDE LOCALE</button><button class="dbtn g" id="export-recovery-raw" hidden>⇩ EXPORTER SAUVEGARDE BRUTE</button><button class="dbtn g" id="export-project">⇩ EXPORTER PROJET JSON</button><button class="dbtn m" id="import-project">⇧ IMPORTER PROJET JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button class="dbtn r" id="nuke-dna">💥 RESET USINE (NUKE)</button></div>';
+    $id('save-dna').addEventListener('click', function(){
+        if(studioRecoveryProtected&&!window.confirm('Remplacer la sauvegarde locale illisible ? Exporte d’abord le projet récupéré et la sauvegarde brute.'))return;
+        const saved=saveLiveState(studioRecoveryProtected);setStatus(saved?'SAUVEGARDE FORCÉE':'STOCKAGE NON CONFIRMÉ · EXPORTER LE JSON',saved?'ok':'al');
+        if(saved)$id('export-recovery-raw').hidden=true;
+    });
+    $id('export-recovery-raw').hidden=!studioRecoveryProtected;
+    $id('export-recovery-raw').addEventListener('click',function(){
+        let raw;
+        try{raw=safeStorage.getPersistentItem('lovestronautes_state');}catch(_){raw=null;}
+        if(raw===null){setStatus('SAUVEGARDE BRUTE INACCESSIBLE','al');return;}
+        downloadBlob(new Blob([raw],{type:'text/plain'}),'lovestronautes-recovery-raw.txt');
+        setStatus('SAUVEGARDE BRUTE PRÉPARÉE','ok');
+    });
     $id('export-project').addEventListener('click', function(){
         const blob = new Blob([JSON.stringify(projectState(), null, 2)], {type:'application/json'});
         downloadBlob(blob, 'lovestronautes-project-' + new Date().toISOString().slice(0,10) + '.json');
@@ -2266,7 +2293,14 @@ function buildDNA() {
         }catch(err){setStatus('IMPORT REFUSÉ : '+err.message,'al');}
         finally{studioImportProject.pending=false;}
     });
-    $id('nuke-dna').addEventListener('click', function(){ safeStorage.removeItem('lovestronautes_state'); location.reload(); });
+    $id('nuke-dna').addEventListener('click', function(){
+        if(SEQ.playing||isPlaying||studioExportBusy){setStatus('ARRÊTE LA LECTURE ET L’EXPORT AVANT RESET','al');return;}
+        if(!window.confirm('Réinitialiser le projet local ? Exporte tes créations avant de continuer.'))return;
+        if(studioPendingLiveSave!==null&&typeof studioPendingLiveSave==='number')clearTimeout(studioPendingLiveSave);
+        studioPendingLiveSave=null;
+        safeStorage.removeItem('lovestronautes_state');
+        location.reload();
+    });
 }
 
 function buildKeyboard() { studioKeyboardBuild(); }
@@ -2303,6 +2337,7 @@ function syncProjectUI() {
 
 loadLiveState();
 buildFX(); buildPsyRack(); s1BuildRack(); taigaBuildRack(); hardwareBuildRacks(); fieldkitBuildRack(); grandmotherBuildRack(); creatorBuildUI(); loopsBuildUI(); composeInstall(); buildKeyboard(); syncProjectUI(); if(typeof studioPatchInstall==='function')studioPatchInstall(); mobileUIBuild(); studioStabilityInstall(); audioRepairInstall();
+if(studioRecoveryProtected){setStatus('RÉCUPÉRATION PROTÉGÉE · EXPORTER LE JSON','al');const hint=$id('cp-save-status');if(hint)hint.textContent='Sauvegarde illisible préservée. Exporte le projet récupéré et le fichier brut dans PROJECT DNA.';}
 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
@@ -2311,7 +2346,10 @@ $id('studio-refresh-btn').addEventListener('click', async function(){
     // Always preserve projects and stop the audio before replacing the document.
     try {
         if(SEQ.playing)stopSeq();
-        saveLiveState();
+        if(!saveLiveState()){
+            setStatus('SAUVEGARDE NON CONFIRMÉE · EXPORTER LE JSON AVANT ACTUALISATION','al');
+            button.disabled=false;button.textContent='ACTUALISER';return;
+        }
         if('serviceWorker' in navigator){
             const registration=await navigator.serviceWorker.getRegistration();
             if(registration){
