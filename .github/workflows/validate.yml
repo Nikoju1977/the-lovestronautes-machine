@@ -53,6 +53,9 @@ jobs:
       - name: Master recording lifecycle regression
         run: node scripts/test-master-recording.mjs
 
+      - name: Master recording bounded payload regression
+        run: node scripts/test-master-recording-budget.mjs
+
       - name: Audio encoder tests
         run: node scripts/test-audio-exports.mjs
 

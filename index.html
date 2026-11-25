@@ -1623,13 +1623,17 @@ function toggleMasterRecording() {
     if(!audioReady){initAudio();setTimeout(function(){if(audioReady&&!studioMasterSession&&!studioMasterRetry)toggleMasterRecording();},300);return;}
     if(!window.MediaRecorder||typeof ctx.createMediaStreamDestination!=='function'){setStatus('REC MASTER NON SUPPORTÉ','al');return;}
     const mime=bestRecordingMime();
-    const session={recorder:null,dest:null,chunks:[],stopping:false,done:false,error:null,timer:null};
+    // Bound the encoded payload retained in this page, not total browser RAM.
+    // Leave headroom for the final MediaRecorder data event after stop().
+    const SOFT_BYTES=64*1024*1024,HARD_BYTES=80*1024*1024;
+    const SOFT_CHUNKS=14400,HARD_CHUNKS=14500;
+    const session={recorder:null,dest:null,chunks:[],bytes:0,limitReached:false,truncated:false,stopping:false,done:false,error:null,timer:null};
     studioMasterSession=session;
     function finalize(){
         if(session.done)return;
         session.done=true;
         if(session.timer!==null)clearTimeout(session.timer);
-        if(session.dest){try{masterOutput.disconnect(session.dest);}catch(_){}}
+        if(session.dest){try{masterOutput.disconnect(session.dest);}catch(_){}for(const track of session.dest.stream?.getTracks?.()||[]){try{track.stop();}catch(_){}}}
         if(studioMasterSession===session){studioMasterSession=null;mediaRecorder=null;recordingDest=null;}
         btn.classList.remove('on');btn.textContent='● REC MASTER';btn.disabled=false;
         const type=session.recorder?.mimeType||mime||'audio/webm';
@@ -1637,7 +1641,7 @@ function toggleMasterRecording() {
         const blob=new Blob(session.chunks,{type});session.chunks.length=0;
         if(!blob.size){setStatus('ENREGISTREMENT VIDE · ESSAIE EXPORT WAV','al');return;}
         const name='lovestronautes-master-'+(session.error?'partiel-':'')+new Date().toISOString().replace(/[:.]/g,'-')+'.'+ext;
-        try{downloadBlob(blob,name);setStatus(session.error?'MASTER PARTIEL · INTÉGRITÉ NON GARANTIE':'MASTER PRÉPARÉ POUR TÉLÉCHARGEMENT',session.error?'al':'ok');}
+        try{downloadBlob(blob,name);setStatus(session.error?'MASTER PARTIEL · INTÉGRITÉ NON GARANTIE':session.limitReached?'LIMITE DE CAPTURE ATTEINTE · MASTER PRÉPARÉ':'MASTER PRÉPARÉ POUR TÉLÉCHARGEMENT',session.error||session.limitReached?'al':'ok');}
         catch(_){studioMasterRetry={blob,name};btn.textContent='⇩ RÉESSAYER EXPORT';setStatus('EXPORT MASTER NON TERMINÉ · RÉESSAIE REC','al');}
     }
     session.stop=function(){
@@ -1653,7 +1657,17 @@ function toggleMasterRecording() {
         masterOutput.connect(session.dest);
         const recorder=mime?new MediaRecorder(session.dest.stream,{mimeType:mime}):new MediaRecorder(session.dest.stream);
         session.recorder=recorder;mediaRecorder=recorder;
-        recorder.ondataavailable=function(e){if(!session.done&&e.data&&e.data.size)session.chunks.push(e.data);};
+        recorder.ondataavailable=function(e){
+            if(session.done||session.truncated||!e.data||!e.data.size)return;
+            if(session.bytes+e.data.size>HARD_BYTES||session.chunks.length>=HARD_CHUNKS){
+                // Never silently drop a middle fragment and pretend the file is complete.
+                session.truncated=true;session.error=session.error||'Limite mémoire dépassée';session.stop();return;
+            }
+            session.chunks.push(e.data);session.bytes+=e.data.size;
+            if(!session.stopping&&(session.bytes>=SOFT_BYTES||session.chunks.length>=SOFT_CHUNKS)){
+                session.limitReached=true;session.stop();
+            }
+        };
         recorder.onerror=function(e){if(session.done)return;session.error=e?.error?.message||'MediaRecorder interrompu';session.stop();};
         recorder.onstop=finalize;
         recorder.start(250);
