@@ -17,7 +17,25 @@
 
 [Quickstart](#quickstart--démarrage-rapide) · [Architecture](#architecture--sécurité) · [Roadmap](#roadmap--contribution) · [English overview](#english-overview) · [Issues](https://github.com/Nikoju1977/the-lovestronautes-machine/issues)
 
-> [Insérer ici un GIF de démonstration / Insert demo GIF here]
+> **À essayer en premier :** créer un pattern, l'arranger dans Composition Pro, puis exporter MIDI et audio. Le MIDI contient des événements musicaux, pas les timbres du moteur.
+
+## Parcours de validation audio / Reproducible audio check
+
+Procédure proposée, **non exécutée pour cette révision**. Pour chaque essai, relever le commit, le navigateur, l'appareil, la fréquence du contexte audio et la durée de lecture.
+
+| Essai | Résultat attendu et preuve à conserver |
+| --- | --- |
+| Moteur | Activer le son, jouer une séquence, observer le master ; noter toute interruption ou reprise nécessaire |
+| Routage | Tester mute/solo, panoramique et patchbay ; vérifier que la sortie stéréo attendue atteint le master |
+| Composition Pro | Éditer un clip, créer des sections, exporter MIDI ; contrôler les notes et le tempo dans un DAW |
+| PCM WAV | Exporter en 16 puis 24 bits ; contrôler en-têtes, durée, canaux et signal |
+| MP3 | Exporter un extrait ; vérifier décodage et lecture. Le Worker accepte les fréquences 32, 44,1 et 48 kHz |
+| Field Kit | Importer un fichier local compatible et tester une boucle ; ne pas dépasser la limite de 100 Mio par fichier |
+| Récupération | Exporter le JSON puis le réimporter ; conserver séparément les prises et samples |
+
+La limite mémoire de l'export est calculée sur les données PCM, et non sur la taille finale du MP3. Une session prolongée sur mobile doit être vérifiée séparément : les tests en navigateur automatisé n'établissent pas la stabilité de chaque appareil physique. Aucun niveau LUFS, true peak ou résultat de mastering n'est garanti.
+
+**English:** Check transport, routing, arrangement, MIDI, WAV, MP3 and project recovery individually. Keep audio assets separately from JSON and document device-specific glitches. These are proposed checks, not newly measured results.
 
 ## Pourquoi ce projet ?
 
@@ -102,7 +120,7 @@ Le bouton **COMPOSER UN MORCEAU** ouvre un espace de composition relié aux 18 s
 
 Les clips sont initialisés à partir de copies des patterns A–D. Les modifications de clips et de patterns sont ensuite indépendantes. L’export suit le même plan de notes que la lecture ; Mute/Solo et les pistes de section sont respectés. La durée des synthés à enveloppe ADSR inclut leur relâchement. Les percussions et les extraits audio gardent leur propre durée acoustique.
 
-La fin d’un morceau attend désormais l’horloge audio au lieu de couper les dernières notes pendant l’anticipation du séquenceur. Les exports sont recadrés sur les trames PCM et comprennent 1,6 seconde de fin d’effets, sans premier pas supplémentaire de la boucle suivante. Les exports longs sont bornés à 180 Mo de PCM pour limiter la pression mémoire. Garder la page visible est nécessaire. Le MIDI contient les notes ; les sons des synthés, les effets et les échantillons ne sont pas incorporés dans le `.mid`.
+La fin d’un morceau attend désormais l’horloge audio au lieu de couper les dernières notes pendant l’anticipation du séquenceur. Les exports sont recadrés sur les trames PCM et comprennent 1,6 seconde de fin d’effets, sans premier pas supplémentaire de la boucle suivante. Les exports longs sont bornés à 180 Mio de PCM pour limiter la pression mémoire. Garder la page visible est nécessaire. Le MIDI contient les notes ; les sons des synthés, les effets et les échantillons ne sont pas incorporés dans le `.mid`.
 
 Validation : tests de clips/sections, décodage MIDI indépendant, WAV 24 bits, recadrage PCM, régressions des instruments et tests navigateur dans GitHub Actions. Le test Chromium de composition édite les notes, utilise Annuler/Rétablir, mesure le signal du master et contrôle les fichiers réellement téléchargés sur deux formats d’écran. Les tests WebKit ne remplacent pas une écoute sur un iPhone physique.
 
