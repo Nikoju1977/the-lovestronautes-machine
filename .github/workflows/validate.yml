@@ -32,6 +32,9 @@ jobs:
       - name: Static validation
         run: node scripts/validate.mjs
 
+      - name: PWA cache isolation regression
+        run: node scripts/test-cache-isolation.mjs
+
       - name: Pages source and artifact retry regression
         run: node scripts/test-pages-routing.mjs
 

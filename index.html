@@ -952,7 +952,9 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
 
 <script>/* Studio Niko · helpers vague C */
 window.safeStorage = window.safeStorage || (function(){var mem=new Map(),ls=null;try{ls=window.localStorage;}catch(e){ls=null;} // A full store may still be readable; writes are checked individually.
-return{getItem:function(k){if(mem.has(k))return mem.get(k);try{return ls?ls.getItem(k):null;}catch(e){return null;}},
+return{getPersistentItem:function(k){if(!ls)throw Error('Stockage local inaccessible');return ls.getItem(k);},
+setPersistentItem:function(k,v){try{if(ls){ls.setItem(k,String(v));mem.delete(k);return true;}}catch(e){}return false;},
+getItem:function(k){if(mem.has(k))return mem.get(k);try{return ls?ls.getItem(k):null;}catch(e){return null;}},
 setItem:function(k,v){try{if(ls){ls.setItem(k,String(v));mem.delete(k);return true;}}catch(e){}mem.set(k,String(v));return false;},
 removeItem:function(k){try{if(ls)ls.removeItem(k);}catch(e){}mem.delete(k);},
 clear:function(){try{if(ls)ls.clear();}catch(e){}mem.clear();},
@@ -1178,10 +1180,15 @@ function saveLiveState(explicitRecoveryReplacement=false) {
         if(hint)hint.textContent='Sauvegarde impossible : '+error.message+' · Exporte le JSON dès que possible.';
         return false;
     }
-    const previousCurrent=safeStorage.getItem('lovestronautes_state');
+    let previousCurrent=safeStorage.getItem('lovestronautes_state');
+    if(studioRecoveryProtected&&typeof safeStorage.getPersistentItem==='function'){
+        try{previousCurrent=safeStorage.getPersistentItem('lovestronautes_state');}catch(_){return false;}
+    }
     // Only skip writes that were confirmed persistent in this page session.
-    const persisted=studioLastPersistedSerialization===serialized&&previousCurrent===serialized
-        ?true:safeStorage.setItem('lovestronautes_state',serialized)!==false;
+    const persisted=studioRecoveryProtected&&explicitRecoveryReplacement===true&&typeof safeStorage.setPersistentItem==='function'
+        ?safeStorage.setPersistentItem('lovestronautes_state',serialized)
+        :studioLastPersistedSerialization===serialized&&previousCurrent===serialized
+            ?true:safeStorage.setItem('lovestronautes_state',serialized)!==false;
     studioLastPersistedSerialization=persisted?serialized:null;
     if(persisted&&explicitRecoveryReplacement===true)studioRecoveryProtected=false;
     const now=Date.now();
@@ -1216,7 +1223,7 @@ function studioQueueLiveSave(){
 
 function loadLiveState() {
     try {
-        const raw=safeStorage.getItem('lovestronautes_state');
+        const raw=typeof safeStorage.getPersistentItem==='function'?safeStorage.getPersistentItem('lovestronautes_state'):safeStorage.getItem('lovestronautes_state');
         if(raw!==null){
             const data=studioValidSavedProject(raw);
             if(!data)throw Error('Le dernier projet local est invalide.');
@@ -2261,7 +2268,8 @@ function buildDNA() {
     });
     $id('export-recovery-raw').hidden=!studioRecoveryProtected;
     $id('export-recovery-raw').addEventListener('click',function(){
-        const raw=safeStorage.getItem('lovestronautes_state');
+        let raw;
+        try{raw=safeStorage.getPersistentItem('lovestronautes_state');}catch(_){raw=null;}
         if(raw===null){setStatus('SAUVEGARDE BRUTE INACCESSIBLE','al');return;}
         downloadBlob(new Blob([raw],{type:'text/plain'}),'lovestronautes-recovery-raw.txt');
         setStatus('SAUVEGARDE BRUTE PRÉPARÉE','ok');
