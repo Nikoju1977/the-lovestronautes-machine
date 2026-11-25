@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v30-project-import-safety';
+const CACHE_NAME = 'lovestronautes-v31-mixer-save-coalescing';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,

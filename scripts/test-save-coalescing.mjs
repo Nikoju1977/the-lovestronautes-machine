@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
+const html=readFileSync('index.html','utf8');
+const source=html.slice(html.indexOf('let studioLastBackupRotation='),html.indexOf('function loadLiveState()'));
+let writes=0,serializations=0,full=false,state={pat:{valid:true},bpm:120},id=0;
+const timers=new Map(),store=new Map();
+const scope={safeStorage:{getItem:k=>store.get(k)||null,setItem(k,v){writes++;store.set(k,v);return !full;}},projectState:()=>{serializations++;return state},validPatternBank:p=>p?.valid,document:{getElementById:()=>null},SEQ:{playing:false},setTimeout:cb=>{timers.set(++id,cb);return id},clearTimeout:n=>timers.delete(n)};
+const api=vm.runInNewContext(source+'\n;({saveLiveState,studioQueueLiveSave,getPending:()=>studioPendingLiveSave})',scope);
+assert.equal(api.saveLiveState(),true);const initial=writes;assert.equal(api.saveLiveState(),true);assert.equal(writes,initial);
+state={...state,bpm:130};const start=serializations;
+for(let i=0;i<120;i++)api.studioQueueLiveSave();assert.equal(timers.size,1);assert.equal(serializations,start);
+const flush=()=>{const [n,cb]=timers.entries().next().value;timers.delete(n);cb();};
+scope.SEQ.playing=true;flush();assert.equal(serializations,start);assert.equal(api.getPending(),'playback');
+scope.SEQ.playing=false;api.saveLiveState();assert.equal(serializations,start+1);
+full=true;state={...state,bpm:140};assert.equal(api.saveLiveState(),false);const before=writes;assert.equal(api.saveLiveState(),false);assert.ok(writes>before,'RAM fallback never becomes verified persistence');
+full=false;assert.equal(api.saveLiveState(),true);const last=writes;assert.equal(api.saveLiveState(),true);assert.equal(writes,last);
+console.log('PASS 120 save requests coalesced, pending timer deferred during playback, duplicate persistent writes suppressed, quota retry preserved');
