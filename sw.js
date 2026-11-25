@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v28-origin-safe-offline';
+const CACHE_NAME = 'lovestronautes-v29-safe-loop-library';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,

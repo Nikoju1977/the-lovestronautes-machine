@@ -8,6 +8,13 @@ const LOOP_PATTERNS=['A','B','C','D'];
 const LOOP_BARS=[1,2,4,8,16,32];
 const LOOP_MAX_CLIPS=24;
 const LOOP_MAX_NAME=48;
+const LOOP_MAX_ID=9999999;
+function loopsNextId(clips,preferred){
+ let id=Number.isSafeInteger(preferred)&&preferred>=1&&preferred<=LOOP_MAX_ID?preferred:1;
+ const used=new Set(clips.map(c=>c.id));
+ while(used.has(id))id=id===LOOP_MAX_ID?1:id+1;
+ return id;
+}
 let loopsState={pattern:'C',bars:4,clips:[],selected:0,nextId:1,running:false};
 
 function loopsSafeText(value){
@@ -24,7 +31,7 @@ function loopsSanitize(input){
   for(const item of raw.clips.slice(0,LOOP_MAX_CLIPS)){
    if(!item||typeof item!=='object'||!item.data||typeof item.data!=='object')continue;
    const clipId=Number(item.id);
-   if(!Number.isInteger(clipId)||clipId<1||clipId>9999999||state.clips.some(c=>c.id===clipId))continue;
+   if(!Number.isInteger(clipId)||clipId<1||clipId>LOOP_MAX_ID||state.clips.some(c=>c.id===clipId))continue;
    const tracks={};
    let found=false;
    for(const [key,steps] of Object.entries(item.data)){
@@ -42,7 +49,8 @@ function loopsSanitize(input){
   }
  }
  const maxId=state.clips.reduce((max,c)=>Math.max(max,c.id),0);
- state.nextId=Math.max(maxId+1,Number.isInteger(raw.nextId)?raw.nextId:1);
+ const preferred=Number.isSafeInteger(raw.nextId)&&raw.nextId>=1&&raw.nextId<=LOOP_MAX_ID?Math.max(maxId+1,raw.nextId):maxId+1;
+ state.nextId=loopsNextId(state.clips,preferred);
  state.selected=state.clips.some(c=>c.id===raw.selected)?raw.selected:0;
  return state;
 }
@@ -78,10 +86,11 @@ function loopsSaveClip(name){
  if(loopsState.clips.length>=LOOP_MAX_CLIPS){loopsNotice('Limite de 24 boucles enregistrées.');return false;}
  const title=String(name||'').trim().slice(0,LOOP_MAX_NAME)||'Boucle '+(loopsState.clips.length+1);
  const clip={
-  id:loopsState.nextId++,name:title,pattern:loopsState.pattern,bars:loopsState.bars,
+  id:loopsNextId(loopsState.clips,loopsState.nextId),name:title,pattern:loopsState.pattern,bars:loopsState.bars,
   bpm,data:loopsSnapshotPattern(loopsState.pattern)
  };
  loopsState.clips.push(clip);loopsState.selected=clip.id;
+ loopsState.nextId=loopsNextId(loopsState.clips,clip.id+1);
  loopsRefresh();saveLiveState();
  loopsNotice('BOUCLE ENREGISTRÉE : '+clip.name+'. Tu peux la rappeler ou exporter son audio.');
  return true;
@@ -225,8 +234,9 @@ function loopsRefresh(){
  if(bars)bars.value=String(loopsState.bars);
  const library=document.getElementById('loops-library');
  if(library){
-  library.innerHTML='<option value="0">— Choisir une boucle —</option>'+
-   loopsState.clips.map(c=>'<option value="'+c.id+'">'+loopsSafeText(c.name)+' · '+c.bars+' M · '+c.bpm+' BPM</option>').join('');
+  const options=[new Option('— Choisir une boucle —','0')];
+  for(const c of loopsState.clips)options.push(new Option(c.name+' · '+c.bars+' M · '+c.bpm+' BPM',String(c.id)));
+  library.replaceChildren(...options);
   library.value=String(loopsState.selected);
  }
  const play=document.getElementById('loops-play');

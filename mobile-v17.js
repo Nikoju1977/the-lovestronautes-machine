@@ -10,9 +10,10 @@ function mobileUIBuild(){
   ['sound','SON','unlock'],['play','PLAY','play-btn'],
   ['compose','COMPOSER','compose'],['seq','SEQ','seq'],['patch','CÂBLES','mix'],['gear','MACHINES','gear']
  ];
- dock.innerHTML=buttons.map(([key,label])=>
-  '<button type="button" data-mobile-action="'+key+'" aria-label="'+label+'"'+
-  ' aria-pressed="false">'+label+'</button>').join('');
+ for(const [key,label] of buttons){
+  const button=document.createElement('button');button.type='button';button.dataset.mobileAction=key;
+  button.textContent=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed','false');dock.appendChild(button);
+ }
  document.body.appendChild(dock);
  function goto(name){
   const tab=document.querySelector('.nt[data-panel="'+name+'"]');
@@ -57,7 +58,7 @@ function mobileUISyncDock(){
    action===panel;
   button.classList.toggle('active',!!selected);
   button.setAttribute('aria-pressed',String(!!selected));
-  if(action==='play')button.textContent=selected?'PAUSE':'PLAY';
+  if(action==='play'){button.textContent=selected?'PAUSE':'PLAY';button.setAttribute('aria-label',selected?'Mettre en pause':'Lire');}
   if(action==='sound')button.textContent=selected?'SON ✓':'SON';
  });
 }
