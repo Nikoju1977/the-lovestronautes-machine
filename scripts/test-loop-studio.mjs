@@ -24,7 +24,7 @@ const scope={patterns:bank,curPat:'C',matrix:bank.C,bpm:145,isPlaying:false,
  startSeq:()=>updates.push('start'),stopSeq:()=>updates.push('stop'),
  studioExport:async(type)=>updates.push('export-'+type),
  setTimeout,clearTimeout,JSON,Array,Number,Object,Math,Promise};
-const api=vm.runInNewContext(source+'\n({loopsState:()=>loopsState,loopsSanitize,loopsProjectState,loopsRestoreState,loopsSaveClip,loopsLoadClip,loopsDeleteClip,loopsAtBoundary,loopsPlay,loopsOnStop,loopsExport,loopsSetPattern})',scope);
+const api=vm.runInNewContext(source+'\n({loopsState:()=>loopsState,loopsSanitize,loopsProjectState,loopsRestoreState,loopsSaveClip,loopsLoadClip,loopsDeleteClip,loopsAtBoundary,loopsPlay,loopsOnStop,loopsExport,loopsSetPattern,loopsRefresh})',scope);
 assert.ok(api.loopsSaveClip('Rolling bass + kick'));
 assert.equal(api.loopsState().clips.length,1);
 assert.equal(api.loopsState().clips[0].name,'Rolling bass + kick');
@@ -76,3 +76,20 @@ assert.ok(studio.includes('<option>1</option><option>2</option>'));
 assert.ok(sw.includes('loop-studio.js')&&sw.includes('loop-studio.css'));
 console.log('✓ Music engine, project state, 1/2/4/8/16/32 bars and PWA routing');
 console.log('\nLoop Studio V14 tests: OK');
+
+// Imported counters must never create unsavable or duplicate clips.
+const maxId=9999999;
+api.loopsRestoreState({loops:{pattern:'C',bars:4,nextId:Number.MAX_SAFE_INTEGER,clips:[{id:maxId,name:'<img src=x onerror=alert(1)>',pattern:'C',bars:4,bpm:145,data:{kick:Array(16).fill(1)}}]}});
+assert.equal(api.loopsState().nextId,1);
+assert.ok(api.loopsSaveClip('Nouvelle boucle'));
+assert.equal(api.loopsState().clips[1].id,1);
+api.loopsRestoreState({loops:api.loopsProjectState()});
+assert.equal(api.loopsState().clips.length,2);
+const library={replaceChildren(...options){this.options=options;}};
+els['panel-loops']={};els['loops-library']=library;
+scope.Option=function(text,value){this.text=text;this.value=value;};
+api.loopsRefresh();
+assert.equal(library.options.length,3);
+assert.match(library.options[1].text,/<img src=x onerror=alert\(1\)>/);
+assert.equal(library.options[1].value,String(maxId));
+console.log('✓ Imported ID bounds and literal option text');
