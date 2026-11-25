@@ -32,6 +32,9 @@ jobs:
       - name: Static validation
         run: node scripts/validate.mjs
 
+      - name: Pages source and artifact retry regression
+        run: node scripts/test-pages-routing.mjs
+
       - name: Project import rollback regression
         run: node scripts/test-project-import.mjs
 
