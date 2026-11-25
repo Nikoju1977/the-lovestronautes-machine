@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v31-mixer-save-coalescing';
+const CACHE_NAME = 'lovestronautes-v32-isolated-shell';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,
@@ -66,53 +66,41 @@ self.addEventListener('activate', function(event) {
   );
 });
 
+const SHELL_URLS = new Set(APP_SHELL);
+const SCOPE_URL = new URL(scope);
 self.addEventListener('fetch', function(event) {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  // Never intercept external navigation (Suno, documentation, licensing, etc.).
-  // An offline failure on another domain must not display this app's cached UI.
-  if (url.origin !== self.location.origin) return;
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request, {cache:'no-store'})
-        .then(function(response) {
-          // Never keep HTTP 404/503 or non-readable responses as an offline app shell.
-          if (response && response.ok) {
-            const copy = response.clone();
-            event.waitUntil(caches.open(CACHE_NAME).then(function(cache) { return cache.put(request, copy); }));
-          }
-          return response;
-        })
-        .catch(async function() {
-          return (await caches.match(request)) || (await caches.match(INDEX_URL)) || Response.error();
-        })
-    );
-    return;
-  }
-
-  // JavaScript/CSS network-first, with a genuine cached asset fallback.
-  // If none was precached, signal an error rather than returning HTML with a bad MIME type.
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.endsWith('.css')) {
-    event.respondWith(fetch(request, {cache:'no-store'}).then(function(response){
-      if(response && response.ok) {
-        const copy=response.clone();
-        event.waitUntil(caches.open(CACHE_NAME).then(function(cache){return cache.put(request,copy);}));
+  // Only the exact declared static assets belong to this cache.
+  if (url.origin !== SCOPE_URL.origin || !url.pathname.startsWith(SCOPE_URL.pathname) || !SHELL_URLS.has(url.href)) return;
+  const networkFirst = request.mode === 'navigate' || url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.html') || url.pathname.endsWith('.css') || request.cache === 'no-store';
+  let cacheTask = Promise.resolve();
+  const responseTask = (async function() {
+    let cache;
+    try { cache = await caches.open(CACHE_NAME); } catch (_) {}
+    if (!networkFirst && cache) {
+      try { const hit = await cache.match(request); if (hit) return hit; } catch (_) {}
+    }
+    try {
+      const response = await fetch(request, networkFirst ? {cache:'no-store'} : undefined);
+      if (cache && response.ok && !response.redirected) {
+        try { cacheTask = cache.put(request, response.clone()).catch(function() {}); } catch (_) {}
       }
       return response;
-    }).catch(async function(){return (await caches.match(request)) || Response.error();}));
-    return;
-  }
-  event.respondWith(
-    caches.match(request).then(function(hit) {
-      if (hit) return hit;
-      return fetch(request).then(function(response) {
-        if (!response || response.status !== 200) return response;
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(function(cache) { cache.put(request, copy); });
-        return response;
-      });
-    })
-  );
+    } catch (_) {
+      if (cache) {
+        try {
+          const hit = await cache.match(request);
+          if (hit) return hit;
+          if (request.mode === 'navigate' && url.href === scope) return await cache.match(INDEX_URL) || Response.error();
+        } catch (_) {}
+      }
+      return Response.error();
+    }
+  })();
+  event.respondWith(responseTask);
+  // Register lifetime extension synchronously; do not delay audio asset delivery for cache writes.
+  event.waitUntil(responseTask.then(function() { return cacheTask; }).catch(function() {}));
 });
