@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'lovestronautes-v35-master-rec-bounded';
+const CACHE_NAME = 'lovestronautes-v36-master-disk';
 const scope = self.registration.scope;
 const APP_SHELL = [
   new URL('./', scope).href,

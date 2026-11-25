@@ -884,6 +884,7 @@ input[type=range]::-webkit-slider-thumb{background:#dcecf4;box-shadow:0 0 0 3px 
         <button class="mb" id="undo-btn" disabled>↶ UNDO</button>
         <button class="mb" id="redo-btn" disabled>↷ REDO</button>
         <button class="mb r" id="rec-btn">● REC MASTER</button>
+        <button class="mb" id="rec-disk-btn" title="Capture progressive vers un fichier, si le navigateur le permet">REC DISQUE</button>
         </div>
     </details>
 
@@ -1337,7 +1338,7 @@ document.addEventListener('visibilitychange', function() { if (document.visibili
 window.addEventListener('beforeunload', function(e) {
     fieldkitStopMic();fieldkitFreeStream();stopBiniouDrone();
     if(studioPendingLiveSave!==null){clearTimeout(studioPendingLiveSave);studioPendingLiveSave=null;saveLiveState();}
-    if(isPlaying){e.preventDefault();e.returnValue='';}
+    if(isPlaying||studioMasterSession||studioMasterRetry||studioMasterDiskOpening){e.preventDefault();e.returnValue='';}
 });
 
 // ── AUDIO ENGINE & MULTI-OUT ──────────────────────────────────────
@@ -1346,7 +1347,7 @@ let masterFilter, distShaper, analyserNode;
 let scopeCanvas = null, scopeCtx = null, scopeBuffer = new Float32Array(256);
 let chanGain = {};
 let duckingGain = null, channelMerger = null, recordingDest = null;
-let mediaRecorder = null, studioMasterSession=null, studioMasterRetry=null;
+let mediaRecorder = null, studioMasterSession=null, studioMasterRetry=null, studioMasterDiskOpening=false;
 let biniouInput = null, biniouDrive = null, biniouTone = null, biniouDelay = null, biniouFeedback = null, biniouDelayWet = null, biniouDry = null, biniouReverb = null, biniouReverbWet = null;
 let biniouDroneNodes = null;
 
@@ -1610,6 +1611,8 @@ function downloadBlob(blob, filename) {
 
 function toggleMasterRecording() {
     const btn=$id('rec-btn');
+    const disk=arguments[0]?.writer?arguments[0]:null;
+    if(typeof studioMasterDiskOpening!=='undefined'&&studioMasterDiskOpening)return;
     if(studioMasterRetry){
         try{downloadBlob(studioMasterRetry.blob,studioMasterRetry.name);studioMasterRetry=null;btn.textContent='● REC MASTER';setStatus('FICHIER MASTER PRÉPARÉ','ok');}
         catch(_){setStatus('EXPORT MASTER NON TERMINÉ · RÉESSAIE REC','al');}
@@ -1622,20 +1625,62 @@ function toggleMasterRecording() {
     if(isMultiOut){setStatus('REC MASTER: DÉSACTIVÉ EN MULTI-OUT','al');return;}
     if(!audioReady){initAudio();setTimeout(function(){if(audioReady&&!studioMasterSession&&!studioMasterRetry)toggleMasterRecording();},300);return;}
     if(!window.MediaRecorder||typeof ctx.createMediaStreamDestination!=='function'){setStatus('REC MASTER NON SUPPORTÉ','al');return;}
-    const mime=bestRecordingMime();
+    const mime=disk?disk.mime:bestRecordingMime();
     // Bound the encoded payload retained in this page, not total browser RAM.
     // Leave headroom for the final MediaRecorder data event after stop().
     const SOFT_BYTES=64*1024*1024,HARD_BYTES=80*1024*1024;
     const SOFT_CHUNKS=14400,HARD_CHUNKS=14500;
     const session={recorder:null,dest:null,chunks:[],bytes:0,limitReached:false,truncated:false,stopping:false,done:false,error:null,timer:null};
     studioMasterSession=session;
+    let diskQueue=Promise.resolve(),pendingBytes=0,pendingChunks=0,writtenBytes=0,diskFailure=null;
+    const DISK_SOFT_BYTES=8*1024*1024,DISK_HARD_BYTES=16*1024*1024;
+    const DISK_SOFT_CHUNKS=64,DISK_HARD_CHUNKS=128;
+    function releaseSession(){
+        if(studioMasterSession===session){studioMasterSession=null;mediaRecorder=null;recordingDest=null;}
+        btn.classList.remove('on');btn.textContent='● REC MASTER';btn.disabled=false;
+    }
+    async function finishDisk(){
+        let deadline;
+        try{
+            await Promise.race([
+                (async()=>{
+                    await diskQueue;
+                    if(diskFailure)throw diskFailure;
+                    if(!writtenBytes)throw Error('Capture vide');
+                    await disk.writer.close();
+                })(),
+                new Promise((_,reject)=>{deadline=setTimeout(()=>reject(Error('Délai de fermeture disque dépassé')),15000);})
+            ]);
+            setStatus(session.error?'FICHIER DISQUE PARTIEL · INTÉGRITÉ NON GARANTIE':session.limitReached?'LIMITE DE DÉBIT · FICHIER DISQUE FERMÉ':'FICHIER MASTER FERMÉ SUR DISQUE',session.error||session.limitReached?'al':'ok');
+        }catch(error){
+            diskFailure=error;
+            // An aborted or timed-out writable may never have committed a file.
+            try{Promise.resolve(disk.writer.abort()).catch(()=>{});}catch(_){}
+            setStatus('ÉCRITURE DISQUE NON CONFIRMÉE · '+error.message,'al');
+        }finally{if(deadline!==undefined)clearTimeout(deadline);releaseSession();}
+    }
+    function enqueueDisk(data){
+        if(diskFailure||session.truncated)return;
+        if(pendingBytes+data.size>DISK_HARD_BYTES||pendingChunks>=DISK_HARD_CHUNKS){
+            session.truncated=true;session.error=session.error||'Débit disque insuffisant';session.stop();return;
+        }
+        pendingBytes+=data.size;pendingChunks++;
+        diskQueue=diskQueue.then(async()=>{
+            if(diskFailure)return;
+            await disk.writer.write(data);writtenBytes+=data.size;
+        }).catch(error=>{diskFailure=error;session.error=error.message||'Écriture disque interrompue';session.stop();})
+          .finally(()=>{pendingBytes-=data.size;pendingChunks--;});
+        if(!session.stopping&&(pendingBytes>=DISK_SOFT_BYTES||pendingChunks>=DISK_SOFT_CHUNKS)){
+            session.limitReached=true;session.stop();
+        }
+    }
     function finalize(){
         if(session.done)return;
         session.done=true;
         if(session.timer!==null)clearTimeout(session.timer);
         if(session.dest){try{masterOutput.disconnect(session.dest);}catch(_){}for(const track of session.dest.stream?.getTracks?.()||[]){try{track.stop();}catch(_){}}}
-        if(studioMasterSession===session){studioMasterSession=null;mediaRecorder=null;recordingDest=null;}
-        btn.classList.remove('on');btn.textContent='● REC MASTER';btn.disabled=false;
+        if(disk){btn.disabled=true;btn.textContent='FERMETURE DISQUE…';void finishDisk();return;}
+        releaseSession();
         const type=session.recorder?.mimeType||mime||'audio/webm';
         const ext=mobileRecordingExtension(type);
         const blob=new Blob(session.chunks,{type});session.chunks.length=0;
@@ -1657,8 +1702,10 @@ function toggleMasterRecording() {
         masterOutput.connect(session.dest);
         const recorder=mime?new MediaRecorder(session.dest.stream,{mimeType:mime}):new MediaRecorder(session.dest.stream);
         session.recorder=recorder;mediaRecorder=recorder;
+        if(disk&&mobileRecordingExtension(recorder.mimeType||mime)!==mobileRecordingExtension(mime))throw Error('Format disque incompatible');
         recorder.ondataavailable=function(e){
             if(session.done||session.truncated||!e.data||!e.data.size)return;
+            if(disk){enqueueDisk(e.data);return;}
             if(session.bytes+e.data.size>HARD_BYTES||session.chunks.length>=HARD_CHUNKS){
                 // Never silently drop a middle fragment and pretend the file is complete.
                 session.truncated=true;session.error=session.error||'Limite mémoire dépassée';session.stop();return;
@@ -1671,11 +1718,32 @@ function toggleMasterRecording() {
         recorder.onerror=function(e){if(session.done)return;session.error=e?.error?.message||'MediaRecorder interrompu';session.stop();};
         recorder.onstop=finalize;
         recorder.start(250);
-        btn.classList.add('on');btn.textContent='■ STOP REC';setStatus('REC MASTER…','al');
+        btn.classList.add('on');btn.textContent=disk?'■ STOP DISQUE':'■ STOP REC';setStatus(disk?'REC MASTER SUR DISQUE…':'REC MASTER…','al');
     }catch(error){
         session.error=error.message||'Démarrage impossible';finalize();
         setStatus('ERREUR REC MASTER · '+session.error,'al');
     }
+}
+
+async function studioOpenMasterDisk(){
+    if(studioMasterSession||studioMasterRetry||studioMasterDiskOpening){setStatus('TERMINE LA CAPTURE EN COURS','al');return;}
+    if(!audioReady||isMultiOut){setStatus('ACTIVE L’AUDIO STÉRÉO AVANT REC DISQUE','al');return;}
+    if(typeof window.showSaveFilePicker!=='function'||!window.MediaRecorder){setStatus('REC DISQUE NON DISPONIBLE · UTILISE REC MASTER','al');return;}
+    const mime=bestRecordingMime(),ext=mobileRecordingExtension(mime);
+    if(!mime||ext==='audio'){setStatus('FORMAT DISQUE NON DISPONIBLE · UTILISE REC MASTER','al');return;}
+    studioMasterDiskOpening=true;
+    const btn=$id('rec-disk-btn');btn.disabled=true;
+    let writer;
+    try{
+        const handle=await window.showSaveFilePicker({suggestedName:'lovestronautes-master-'+new Date().toISOString().replace(/[:.]/g,'-')+'.'+ext,types:[{description:'Audio master',accept:{[mime.split(';')[0]]:['.'+ext]}}]});
+        writer=await handle.createWritable();
+        if(!audioReady||isMultiOut||studioMasterSession||studioMasterRetry)throw Error('État audio modifié');
+        studioMasterDiskOpening=false;
+        toggleMasterRecording({writer,mime});
+    }catch(error){
+        if(writer){try{await writer.abort();}catch(_){}}
+        setStatus(error.name==='AbortError'?'SÉLECTION DISQUE ANNULÉE':'REC DISQUE INDISPONIBLE · '+error.message,'al');
+    }finally{studioMasterDiskOpening=false;btn.disabled=false;}
 }
 
 // ── WEB MIDI (IN/OUT & VJ SYNC) ──────────────────────────────────
@@ -2384,7 +2452,7 @@ if(studioRecoveryProtected){setStatus('RÉCUPÉRATION PROTÉGÉE · EXPORTER LE 
 // ── EVENTS ───────────────────────────────────────────────────────
 $id('unlock').addEventListener('click', function() { activateStudioAudio(); });
 $id('studio-refresh-btn').addEventListener('click', async function(){
-    if(studioMasterSession||studioMasterRetry){setStatus('TERMINE L’ENREGISTREMENT MASTER AVANT ACTUALISATION','al');return;}
+    if(studioMasterSession||studioMasterRetry||studioMasterDiskOpening){setStatus('TERMINE L’ENREGISTREMENT MASTER AVANT ACTUALISATION','al');return;}
     const button=this;button.disabled=true;button.textContent='ACTUALISATION…';
     // Always preserve projects and stop the audio before replacing the document.
     try {
@@ -2547,6 +2615,8 @@ $id('swing-slider').addEventListener('input', function(e) {
 $id('undo-btn').addEventListener('click', undoProject);
 $id('redo-btn').addEventListener('click', redoProject);
 $id('rec-btn').addEventListener('click', toggleMasterRecording);
+$id('rec-disk-btn').addEventListener('click',studioOpenMasterDisk);
+if(typeof window.showSaveFilePicker!=='function'){$id('rec-disk-btn').disabled=true;$id('rec-disk-btn').title='Non disponible dans ce navigateur : utilise REC MASTER.';}
 
 document.querySelectorAll('.nt').forEach(function(tab){ tab.addEventListener('click',function(){ document.querySelectorAll('.nt').forEach(function(t){t.classList.remove('active');}); document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');}); tab.classList.add('active'); $id('panel-'+tab.getAttribute('data-panel')).classList.add('active'); }); });
 $id('psy-open-rack').addEventListener('click',function(){document.querySelector('[data-panel="gear"]').click();});
@@ -2587,7 +2657,8 @@ if ('serviceWorker' in navigator) {
       (typeof isPlaying!=='undefined'&&isPlaying)||
       (typeof studioExportBusy!=='undefined'&&studioExportBusy)||
       (typeof studioMasterSession!=='undefined'&&studioMasterSession)||
-      (typeof studioMasterRetry!=='undefined'&&studioMasterRetry);
+      (typeof studioMasterRetry!=='undefined'&&studioMasterRetry)||
+      (typeof studioMasterDiskOpening!=='undefined'&&studioMasterDiskOpening);
     if(busy){
       const health=document.getElementById('studio-playback-health');
       if(health)health.textContent='MISE À JOUR PRÊTE · APRÈS STOP';
