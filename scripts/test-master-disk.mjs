@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
+const html=readFileSync('index.html','utf8'),src=html.slice(html.indexOf('function toggleMasterRecording()'),html.indexOf('// ── WEB MIDI'));
+const recorders=[],connected=[],disconnected=[],downloads=[],timers=new Map();let id=0,status='',failDownload=false;
+class Recorder{constructor(stream,opts){this.mimeType=opts.mimeType;this.state='inactive';recorders.push(this);}start(){this.state='recording';}stop(){this.state='inactive';}data(text){this.ondataavailable({data:new Blob([text])});}}
+const btn={classList:{add(){},remove(){}},textContent:'',disabled:false};
+const env={Blob,Date,window:{MediaRecorder:Recorder},MediaRecorder:Recorder,$id:()=>btn,studioMasterSession:null,studioMasterRetry:null,mediaRecorder:null,recordingDest:null,isMultiOut:false,audioReady:true,ctx:{createMediaStreamDestination:()=>({stream:{},id:recorders.length})},masterOutput:{connect:d=>connected.push(d),disconnect:d=>{assert.ok(connected.includes(d),'Disconnect only a connected destination');disconnected.push(d.id);}},bestRecordingMime:()=> 'audio/webm',mobileRecordingExtension:()=> 'webm',downloadBlob:(blob,name)=>{if(failDownload)throw Error('download');downloads.push({blob,name});},setStatus:s=>status=s,setTimeout:f=>{timers.set(++id,f);return id;},clearTimeout:i=>timers.delete(i)};
+const toggle=vm.runInNewContext(src+'\ntoggleMasterRecording',env);
+const settle=async()=>{for(let i=0;i<12;i++)await new Promise(resolve=>setImmediate(resolve));};
+let chunks=[],closed=0,aborted=0;
+let writer={write:async b=>{chunks.push(await b.text());},close:async()=>{closed++;},abort:async()=>{aborted++;}};
+toggle({writer,mime:'audio/webm'});recorders[0].data('a');recorders[0].data('b');toggle();recorders[0].data('c');recorders[0].onstop();assert.ok(env.studioMasterSession,'Session locked until writer closes');await settle();
+assert.deepEqual(chunks,['a','b','c']);assert.equal(closed,1);assert.equal(env.studioMasterSession,null);assert.equal(downloads.length,0);assert.match(status,/FERMÉ SUR DISQUE/);
+writer={write:async()=>{throw Error('quota disque');},close:async()=>{throw Error('must not close');},abort:async()=>{aborted++;}};
+toggle({writer,mime:'audio/webm'});recorders[1].data('x');await settle();assert.equal(env.studioMasterSession.stopping,true);recorders[1].onstop();await settle();assert.equal(aborted,1);assert.match(status,/NON CONFIRMÉE/);
+let release;writer={write:()=>new Promise(r=>{release=r;}),close:async()=>{closed++;},abort:async()=>{aborted++;}};
+const small=src.replace('DISK_SOFT_BYTES=8*1024*1024,DISK_HARD_BYTES=16*1024*1024','DISK_SOFT_BYTES=8,DISK_HARD_BYTES=16');
+const budget=vm.runInNewContext(small+'\ntoggleMasterRecording',env);
+budget({writer,mime:'audio/webm'});recorders[2].data('12345678');assert.equal(env.studioMasterSession.stopping,true);recorders[2].data('123456789');assert.equal(env.studioMasterSession.truncated,true);recorders[2].onstop();await settle();release();await settle();assert.equal(closed,2);assert.match(status,/PARTIEL/);assert.equal(env.studioMasterSession,null);
+assert.deepEqual(disconnected,[0,1,2]);assert.equal(timers.size,0);
+console.log('PASS sequential disk writes, final chunk, close gating, write failure abort and bounded pending queue (scaled thresholds)');
